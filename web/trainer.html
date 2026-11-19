@@ -63,6 +63,7 @@ svg{display:block;min-width:640px;width:100%;height:auto}
 .hear{font:600 40px/1.2 Georgia,serif;min-height:52px;margin:0 0 8px;color:var(--mut)}.hear.ok{color:var(--ok)}
 .cell{fill:transparent;cursor:pointer}.cell:hover{fill:var(--acc);fill-opacity:.18}
 </style>
+<script src="selects.js"></script>
 </head>
 <body>
 <main>
@@ -286,23 +287,29 @@ function buildNotes(){
   N.forEach((n,i)=>{if(!acc&&n.length>1)return;const x=document.createElement('button');x.textContent=n;x.onclick=()=>answer(i);b.appendChild(x)});
 }
 function renderStats(){
-  const sc=$('scope').value,sm=$('smode').value,dark=matchMedia('(prefers-color-scheme:dark)').matches;
+  const sc=$('scope').value,sm=$('smode').value;
   const H=hist.filter(h=>(sc=='all'||(sc=='1'?h.ns==1:h.ns>1))&&(sm=='all'||h.m==sm));
   const avg=a=>a.length?a.reduce((x,y)=>x+y,0)/a.length:null;
   const tm=g=>avg(g.filter(h=>h.c).map(h=>h.ms/1000));
   const fmt=v=>v==null?'–':v.toFixed(1)+'s';
-  const col=v=>'hsl('+Math.round(120*(1-Math.min(1,Math.max(0,(v-1)/5))))+',55%,'+(dark?'28%':'80%')+')';
+  // Fast notes lean toward the theme's "good" colour, slow ones toward its "bad" colour,
+  // blended into the card colour so the text stays readable in every scheme.
+  const rgb=v=>{const p=document.createElement('i');p.style.color='var('+v+')';document.body.appendChild(p);const m=getComputedStyle(p).color.match(/[\d.]+/g).map(Number).slice(0,3);p.remove();return m};
+  const OK=rgb('--ok'),BAD=rgb('--bad'),CARD=rgb('--card');
+  const mix=(a,b,k)=>'rgb('+a.map((x,i)=>Math.round(x+(b[i]-x)*k)).join(',')+')';
+  const tone=v=>{const t=Math.min(1,Math.max(0,(v-1)/5));return OK.map((x,i)=>x+(BAD[i]-x)*t)};
+  const paint=(e,v)=>{const c=tone(v);e.style.background=mix(CARD,c,.3);e.style.borderColor=mix(CARD,c,.75)};
   const d=$('stats');d.innerHTML='';
   N.forEach((n,i)=>{
     const g=H.filter(h=>h.n==i),v=tm(g),e=document.createElement('div');
     e.innerHTML='<b>'+n+'</b><small>'+fmt(v)+'</small>';
-    if(v!=null){e.style.background=col(v);e.title=g.length+' answers'}
+    if(v!=null){paint(e,v);e.title=g.length+' answers'}
     d.appendChild(e)});
   const ss=$('sstats');ss.innerHTML='';
   [5,4,3,2,1,0].forEach(s=>{const n=SN[s];
     const g=H.filter(h=>h.s==s),v=tm(g),e=document.createElement('div');
     e.innerHTML='<b>'+(s==0?'e (high)':s==5?'E (low)':n)+'</b><small>'+fmt(v)+(g.length?' · '+g.length:'')+'</small>';
-    if(v!=null)e.style.background=col(v);
+    if(v!=null)paint(e,v);
     ss.appendChild(e)});
   const done=H.filter(h=>h.c);
   $('sum').textContent=H.length?H.length+' answers · average '+fmt(tm(H))+' per note'+(done.length>20?' · last 20: '+fmt(tm(done.slice(-20))):''):'No recorded answers yet';
@@ -758,6 +765,7 @@ $('hintb').onclick=()=>{
   $('msg').textContent='Hint shown — play it at any of these spots (no credit this round).';$('msg').className='msg';
 };
 buildNotes();renderStats();next();
+new MutationObserver(()=>renderStats()).observe(document.documentElement,{attributes:true,attributeFilter:['data-skin','data-theme','class']});
 </script>
 </body>
 </html>

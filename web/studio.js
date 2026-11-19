@@ -1,11 +1,17 @@
 // Studio additions to its practice screens (web/index.html).
 
+// Dropdown lists drawn in the colour scheme (web/selects.js).
+(function () { var s = document.createElement('script'); s.src = 'selects.js'; document.head.appendChild(s); })();
+
 // Studio's own "What's new" list (newest first). Keep the top entry's version
 // the same as the VERSION in CMakeLists.txt.
+
 window.STUDIO_CHANGES = [
   ['0.7.1', 'Nov 19, 2026', [
+    'Every dropdown list (metronome, exercises, log filters, dialogs, Fretboard Trainer settings, suggestion boxes) opens in your color scheme instead of the system\u2019s colors.',
+    'Fretboard Trainer note scores use your color scheme\u2019s colors, so the text is always readable.',
     'Mac: updating from inside Studio now works and reopens Studio (the update script was being written with Windows line endings). A log is kept in ~/Library/Logs.',
-    'Clicking the version number lands on What\u2019s new instead of partway down it.',
+    'Clicking the version number shows What\u2019s new from the top (it was hidden under the header bar).',
     'The selected menu tab no longer has a line across its top.',
     'Fretboard Trainer voice spellings: press Enter in any box to hear it, tick flat or sharp to hear \u201cA flat\u201d and so on, and pick from suggested spellings (also listed under Spelling ideas).',
     'If your audio interface can\u2019t be opened when Studio starts (for example right after an update), Studio keeps trying and never replaces your saved choice; the exercise\u2019s plugin loads as soon as the interface opens.',
