@@ -3,6 +3,13 @@
 // Studio's own "What's new" list (newest first). Keep the top entry's version
 // the same as the VERSION in CMakeLists.txt.
 window.STUDIO_CHANGES = [
+  ['0.7.0', 'Nov 19, 2026', [
+    'Mute input, in the top bar next to Tuner, turns your audio interface\u2019s input off completely: no sound, no level, nothing listening.',
+    'Mute guitar is in the Fretboard Trainer (top right): the trainer still hears you, you just don\u2019t hear yourself. It only applies in the trainer.',
+    'The Practice page no longer has a Mute button or input meter; the input meter is in Settings \u2192 Audio.',
+    'All Fretboard Trainer settings are in Settings. The trainer listens whenever it\u2019s running, so the Start listening button is gone, and Start lights up while running like other buttons.',
+    'Mute buttons follow the color scheme.'
+  ]],
   ['0.6.0', 'Nov 19, 2026', [
     'A Mute button for your guitar in the top bar, next to Tuner.',
     'Settings has a Privacy section that lists what Studio uses, and a switch for checking for updates at startup.',
@@ -69,7 +76,7 @@ window.STUDIO_CHANGES = [
     '.fxsplit .fxcar{border-radius:0 9px 9px 0;border-left:0;padding-left:10px;padding-right:10px}' +
     '.fxmute{font-weight:600}.fxmute.on{background:var(--bad);border-color:var(--bad);color:#fff}' +
     'nav#tabs button.navmute{align-self:center;margin:0 6px;padding:5px 12px;border:1px solid var(--line);border-radius:999px;color:var(--fg);font-weight:600}' +
-    'nav#tabs button.navmute.on{background:var(--bad);border-color:var(--bad);color:#fff}' +
+    'nav#tabs button.navmute.on{background:var(--acc);border-color:var(--acc);color:var(--accfg)}' +
     '.pvrow{display:grid;grid-template-columns:150px 1fr;gap:14px;padding:9px 0;border-top:1px solid var(--line)}' +
     '.pvrow b{font-weight:600}.pvrow .sub{font-size:14px;line-height:1.45}' +
     '@media (max-width:640px){.pvrow{grid-template-columns:1fr;gap:4px}}' +
@@ -91,8 +98,10 @@ window.STUDIO_CHANGES = [
   // Lets the Fretboard Trainer (an iframe on this page) show and use the same guitar mute.
   var studioMuteListeners = [];
   window.studioGuitarMute = {
+    // The guitar mute is for the Fretboard Trainer only (it still hears you, you just don't hear
+    // yourself). It's remembered for the trainer and lifted everywhere else.
     get: function () { return !!st.muted; },
-    set: function (on) { send('mute', { on: !!on }); },
+    set: function (on) { try { localStorage.setItem('studio.trainerMute', on ? '1' : '0'); } catch (e) {} send('mute', { on: !!on }); },
     onChange: function (f) { studioMuteListeners.push(f); }
   };
   // Lets the Fretboard Trainer hear the guitar through Studio's audio interface (Settings → Audio interface).
@@ -131,12 +140,13 @@ window.STUDIO_CHANGES = [
     main.textContent = st.plugin || 'Empty';
     main.classList.toggle('empty', !st.plugin);
     main.title = st.plugin ? 'Open ' + st.plugin : 'Pick a VST effect for this exercise';
-    ['fxMute', 'navMute'].forEach(function (id) {
-      var m = el(id); if (!m) return;
-      m.classList.toggle('on', !!st.muted);
-      m.textContent = st.muted ? 'Muted' : 'Mute';
-      m.title = st.muted ? 'Your guitar is muted. Click to hear it.' : 'Mute your guitar in Studio’s output';
-    });
+    var nm = el('navMute');
+    if (nm) {
+      nm.classList.toggle('on', !!st.inputMuted);
+      nm.textContent = st.inputMuted ? 'Input muted' : 'Mute input';
+      nm.title = st.inputMuted ? 'Studio is ignoring your audio interface’s input. Click to turn it back on.'
+                               : 'Turn off your audio interface’s input (no sound, no listening)';
+    }
     var au = el('pvAuto'); if (au) au.checked = st.autoUpdate !== false;
     el('fxMsg').textContent = st.message || '';
     var d = el('stDev'); if (d) d.textContent = st.device || '';
@@ -253,8 +263,8 @@ window.STUDIO_CHANGES = [
     var tunerTab = document.querySelector('#tabs button[data-v="tuner"]');
     if (tunerTab) {
       var nm = document.createElement('button');
-      nm.className = 'navmute'; nm.id = 'navMute'; nm.textContent = 'Mute';
-      nm.onclick = function () { send('mute', { on: !st.muted }); };
+      nm.className = 'navmute'; nm.id = 'navMute'; nm.textContent = 'Mute input';
+      nm.onclick = function () { send('inputMute', { on: !st.inputMuted }); };
       tunerTab.parentNode.insertBefore(nm, tunerTab.nextSibling);
     }
 
@@ -264,12 +274,10 @@ window.STUDIO_CHANGES = [
       slot.innerHTML = '<div class="fxrow" id="fxRow">' +
         '<span class="fxsplit"><button class="fxmain empty" id="fxMain">Empty</button>' +
         '<button class="fxcar" id="fxCar" title="Pick a VST effect" aria-label="Pick a VST effect">▾</button></span>' +
-        '<button class="fxmute" id="fxMute">Mute</button>' +
-        '<span class="sub">Input</span><span class="fxmeter" title="Input level"><i id="fxLvl"></i></span>' +
+
         '<div class="fxmsg" id="fxMsg"></div></div>';
       el('fxMain').onclick = function () { if (st.plugin) send('show'); else openPicker(); };
       el('fxCar').onclick = openPicker;
-      el('fxMute').onclick = function () { send('mute', { on: !st.muted }); };
     }
 
     // Settings: Studio's audio setup replaces the web app's audio input card.
@@ -278,9 +286,11 @@ window.STUDIO_CHANGES = [
       // The web app's input card becomes "Tuner and trainer": Studio chooses the input, so only
       // the tuning reference, boost and noise gate stay.
       var ah = audio.querySelector('h2'); if (ah) ah.textContent = 'Tuner and trainer';
-      ['inTest'].forEach(function (id) { var x = el(id); if (x) x.remove(); });
-      ['inDev', 'inChan'].forEach(function (id) { var x = el(id); if (x && x.closest('label')) x.closest('label').remove(); });
-      var lv = el('inLvl'); if (lv && lv.closest('.f')) lv.closest('.f').remove();
+      // hidden, not removed: the page still keeps them in step with the saved settings
+      var hide = function (x) { if (x) x.style.display = 'none'; };
+      hide(el('inTest'));
+      ['inDev', 'inChan'].forEach(function (id) { var x = el(id); if (x) hide(x.closest('label')); });
+      var lv = el('inLvl'); if (lv) hide(lv.closest('.f'));
       var as = audio.querySelector('p.sub'); if (as) as.textContent = 'They hear your guitar through the audio interface above.';
       var card = document.createElement('div');
       card.className = 'card';
@@ -289,6 +299,8 @@ window.STUDIO_CHANGES = [
         '<div class="row" style="gap:8px;flex-wrap:wrap"><button id="stAudio">Audio interface…</button>' +
         '<button id="stScan">Scan for plugins…</button></div>' +
         '<p class="sub" id="stDev" style="margin:10px 0 0"></p>' +
+        '<div class="row" style="gap:10px;align-items:center;margin-top:8px"><span class="sub">Input level</span>' +
+        '<span class="fxmeter" style="max-width:260px" title="Input level"><i id="fxLvl"></i></span></div>' +
         '<h2 style="margin:18px 0 6px">Studio</h2>' +
         '<div class="row" style="gap:10px;flex-wrap:wrap;align-items:center"><button id="stUpdBtn">Check for updates</button>' +
         '<span class="sub" id="stUpd"></span></div>';
@@ -319,7 +331,7 @@ window.STUDIO_CHANGES = [
 
     if (backend) {
       backend.addEventListener('studioStatus', function (s) {
-        st = { plugin: s.plugin || '', muted: !!s.muted, message: s.message || '', device: s.device || '', build: +s.build || 0, autoUpdate: s.autoUpdate !== false };
+        st = { plugin: s.plugin || '', muted: !!s.muted, inputMuted: !!s.inputMuted, message: s.message || '', device: s.device || '', build: +s.build || 0, autoUpdate: s.autoUpdate !== false };
         renderUpdate();
         renderSlot();
         studioMuteListeners.forEach(function (f) { try { f(st.muted); } catch (e) {} });
@@ -346,6 +358,33 @@ window.STUDIO_CHANGES = [
       });
     }
     renderSlot();
+
+    var trainerMute = function () { try { return localStorage.getItem('studio.trainerMute') === '1'; } catch (e) { return false; } };
+    var applyViewMute = function (v) { send('mute', { on: v === 'trainer' && trainerMute() }); };
+    if (typeof window.show === 'function') {
+      var origShow = window.show;
+      window.show = function (v) { origShow(v); applyViewMute(v); };
+    }
+    applyViewMute(typeof view !== 'undefined' ? view : 'practice');
+
+    // Fretboard Trainer settings live in Settings, with everything else.
+    var tt = el('audioCard');
+    if (tt) {
+      var fc = document.createElement('div');
+      fc.className = 'card'; fc.style.marginTop = '16px';
+      fc.innerHTML = '<h2 style="margin:0 0 6px">Fretboard Trainer</h2>' +
+        '<iframe id="trSetFrame" title="Fretboard Trainer settings" style="width:100%;border:0;display:block;height:600px;background:transparent"></iframe>';
+      tt.parentNode.insertBefore(fc, tt.nextSibling);
+      var fr = el('trSetFrame');
+      fr.addEventListener('load', function () {
+        try {
+          var m = fr.contentDocument.querySelector('main');
+          var fit = function () { var h = m.getBoundingClientRect().height; if (h > 0) fr.style.height = Math.ceil(h + 4) + 'px'; };
+          new ResizeObserver(fit).observe(m); fit();
+        } catch (e) {}
+      });
+      fr.src = 'trainer.html?embed=1&settings=1';
+    }
 
     // Studio's own windows (Audio settings, Scan for plugins…) follow the colour scheme.
     var probe = document.createElement('i'); probe.style.display = 'none'; document.body.appendChild(probe);

@@ -17,6 +17,7 @@ public:
             knownPlugins.recreateFromXml (*xml);
 
         toneOn = settings.getBoolValue ("toneOn", false);
+        inputOn = settings.getBoolValue ("inputOn", true);
 
         auto deviceXml = settings.getXmlValue ("audioDevice");
         deviceManager.initialise (2, 2, deviceXml.get(), true);
@@ -138,6 +139,16 @@ public:
 
     bool isToneOn() const noexcept { return toneOn; }
 
+    // Input mute: Studio ignores the audio interface's input completely (no sound, no level,
+    // nothing for the tuner or trainer to hear).
+    void setInputOn (bool on)
+    {
+        inputOn = on;
+        settings.setValue ("inputOn", on);
+        settings.saveIfNeeded();
+    }
+    bool isInputOn() const noexcept { return inputOn; }
+
     float getInputLevel() const noexcept { return inputLevel.load(); }
 
     // The Fretboard Trainer listens to the guitar here (the same input as in Audio settings),
@@ -206,7 +217,7 @@ public:
                                            int numSamples,
                                            const juce::AudioIODeviceCallbackContext&) override
     {
-        const float* guitar = numInputs > 0 ? inputs[0] : nullptr;
+        const float* guitar = (numInputs > 0 && inputOn.load()) ? inputs[0] : nullptr;
 
         float peak = 0.0f;
         if (guitar != nullptr)
@@ -311,6 +322,7 @@ private:
     double sampleRate = 48000.0;
     int blockSize = 512;
     std::atomic<bool> toneOn { false };
+    std::atomic<bool> inputOn { true };
     std::atomic<float> inputLevel { 0.0f };
 
     int tapDecim() const noexcept { return juce::jmax (1, juce::roundToInt (sampleRate / 12000.0)); }

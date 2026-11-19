@@ -37,7 +37,12 @@ h1{font:600 22px/1.2 Georgia,serif;margin:0 0 4px}
 .row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 button,select{font:inherit;color:var(--fg);background:var(--card);border:1px solid var(--line);border-radius:8px;padding:6px 12px;cursor:pointer}
 button.on{background:var(--acc);border-color:var(--acc);color:var(--accfg,#fff)}
-#fbMute.muted{background:var(--bad);border-color:var(--bad);color:#fff;font-weight:600}
+/* Studio: settings live in the app's Settings page; the trainer listens through Studio */
+html.studio #gear,html.studio #set,html.studio #startmic{display:none!important}
+html.setonly main>h1,html.setonly main>.intro,html.setonly main>.card:not(:first-of-type),html.setonly #modes,html.setonly #strs,html.setonly .inp,html.setonly .embnote{display:none!important}
+html.setonly #set{display:block!important;border-top:0!important;margin-top:0!important;padding-top:0!important}
+html.setonly main>.card:first-of-type{border:0;padding:0;background:none;box-shadow:none}
+html.setonly body,html.setonly main{background:transparent;margin:0;padding:0}
 label{font-size:14px;color:var(--mut);display:flex;gap:6px;align-items:center}
 .scroll{overflow-x:auto}
 svg{display:block;min-width:640px;width:100%;height:auto}
@@ -68,7 +73,6 @@ svg{display:block;min-width:640px;width:100%;height:auto}
 <button data-m="name" class="on">Name the note</button>
 <button data-m="find">Find the note</button>
 <button data-m="listen">Play the note</button>
-<button id="fbMute" title="Silence your guitar in Studio’s output" hidden>Mute</button>
 <button id="gear" aria-expanded="false">⚙ Settings</button>
 <span style="flex:1"></span>
 <label>Frets 0–<select id="maxf"><option>5</option><option>7</option><option selected>12</option><option>22</option><option>24</option></select></label>
@@ -103,10 +107,11 @@ svg{display:block;min-width:640px;width:100%;height:auto}
 
 <div class="card">
 <div class="row" id="runbar" style="margin-bottom:10px">
-<button id="runbtn" class="on">▶ Start</button>
+<button id="runbtn">▶ Start</button>
 <label>Game <select id="gmode"><option value="free">Free practice</option><option value="timed">Timed challenge</option></select></label>
 <label id="gdurl">Length <select id="gdur"><option value="1">1 min</option><option value="2">2 min</option><option value="5">5 min</option><option value="10">10 min</option><option value="15">15 min</option><option value="30">30 min</option></select></label>
 <span id="gclock" style="font:600 28px/1 Georgia,serif;margin-left:auto"></span>
+<button id="fbMute" title="Mute your guitar while the trainer still hears it" hidden>Mute guitar</button>
 </div>
 <div class="msg" id="gres" style="white-space:pre-line"></div>
 <div class="row" style="justify-content:space-between;align-items:flex-start"><div class="prompt" id="prompt"></div><button id="replay" style="display:none" title="Shortcut: R">🔊 Hear it again</button></div>
@@ -146,7 +151,7 @@ svg{display:block;min-width:640px;width:100%;height:auto}
 addEventListener('storage',e=>{if(e.key=='gp.skin'&&e.newValue)document.documentElement.setAttribute('data-skin',e.newValue);
   // input settings changed in the app's Settings → Audio input
   if(e.key=='fbset'&&typeof S!='undefined'){let n={};try{n=JSON.parse(e.newValue||'{}')}catch(x){}const dev=S.devId;
-    ['devId','chan','boost','gate','a4'].forEach(k=>{if(k in n)S[k]=n[k]});syncUI();if(gainN)gainN.gain.value=S.boost;route();
+    Object.keys(n).forEach(k=>{S[k]=n[k]});try{syncUI();applyNames();buildNotes();renderStats()}catch(x){}if(gainN)gainN.gain.value=S.boost;route();
     if(S.devId!=dev&&stream)startMic()}});
 try{document.getElementById('favsvg').href='icons/icon-'+(localStorage.getItem('gp.skin')||'brass')+'.svg'}catch(e){}
 function tellApp(r){try{const t=window.parent!==window?window.parent:window.opener;if(t)t.postMessage({gp:'trainer',running:r},location.origin)}catch(e){}}
@@ -347,7 +352,7 @@ function saveS(){try{localStorage.setItem('fbset',JSON.stringify(S))}catch(e){}}
 function applyNames(){const a=+S.flat?FLT:SH,b=+S.flat?SH:FLT;N.splice(0,12,...a);FL={};[1,3,6,8,10].forEach(i=>FL[i]=b[i])}
 function syncUI(){
   $('chan').value=S.chan;$('boost').value=S.boost;$('gate').value=S.gate;$('tol').value=S.tol;$('hold').value=S.hold;$('a4').value=S.a4;$('flat').value=String(+S.flat);
-  $('bv').textContent=S.boost+'×';$('gv').textContent=(S.gate/1000).toFixed(3);$('tv').textContent=S.tol;$('hv').textContent=Math.round(S.hold*50)+' ms';$('av').textContent=S.a4;$('tone').value=String(+S.tone);$('dur').value=String(S.dur);$('strict').value=String(+S.strict);$('speak').value=String(+S.speak);$('voice').value=S.voice||'';$('rate').value=String(S.rate);$('toneVol').value=String(S.toneVol);$('voiceVol').value=String(S.voiceVol);$('maxf').value=String(maxF);$('acc').checked=acc;
+  $('bv').textContent=S.boost+'×';$('gv').textContent=(S.gate/1000).toFixed(3);$('tv').textContent=S.tol;$('hv').textContent=Math.round(S.hold*50)+' ms';$('av').textContent=S.a4;$('tone').value=String(+S.tone);$('dur').value=String(S.dur);$('strict').value=String(+S.strict);$('speak').value=String(+S.speak);$('voice').value=S.voice||'';$('rate').value=String(S.rate);$('toneVol').value=String(S.toneVol);$('voiceVol').value=String(S.voiceVol);$('dv').textContent=S.dur+' s';$('rv').textContent=(+S.rate).toFixed(1)+'×';$('tvv').textContent=Math.round(S.toneVol*100)+'%';$('vvv').textContent=Math.round(S.voiceVol*100)+'%';$('maxf').value=String(maxF);$('acc').checked=acc;
 }
 function route(){
   if(!src||!gainN||!stream)return;
@@ -525,13 +530,15 @@ function playTone(force){
   }catch(e){}
 }
 $('replay').onclick=()=>cue(true);
-if(GI){['boost','gate','a4'].forEach(id=>{const l=$(id).closest('label');if(l)l.classList.remove('inp')});
+if(GI)document.documentElement.classList.add('studio');
+if(/[?&]settings=1/.test(location.search))document.documentElement.classList.add('setonly');
+if(GI&&!/[?&]settings=1/.test(location.search)){['boost','gate','a4'].forEach(id=>{const l=$(id).closest('label');if(l)l.classList.remove('inp')});
   const en=document.querySelector('.embnote');if(en)en.textContent='Studio hears your guitar through Settings → Audio interface.';
-  $('rd').textContent='Press “Start listening”. Tune up first, then play one note at a time and let it ring.'}
-// Studio: mute the guitar in the output (same switch as the Mute button by the effect slot)
+  $('rd').textContent='Tune up first, then play one note at a time and let it ring.'}
+// Studio: mute the guitar in the output while the trainer still hears it
 (function(){let gm=null;try{gm=window.parent!==window&&window.parent.studioGuitarMute}catch(e){}
   const b=$('fbMute');if(!gm||!b)return;b.hidden=false;
-  const show=m=>{b.classList.toggle('muted',!!m);b.textContent=m?'Muted':'Mute'};
+  const show=m=>{b.classList.toggle('on',!!m);b.textContent=m?'Guitar muted':'Mute guitar'};
   show(gm.get());gm.onChange(show);b.onclick=()=>gm.set(!gm.get())})();
 // ---- spoken requested note ----
 let voices=[],spkTok=0,curU=null;
@@ -622,7 +629,7 @@ function curCfg(){return{m:mode,dur:S.gmode=='timed'?+S.gdur:0,strs:[...active],
 function fmtClock(ms,up){const s=Math.max(0,up?Math.floor(ms/1000):Math.ceil(ms/1000));return Math.floor(s/60)+':'+String(s%60).padStart(2,'0')}
 function setRunUI(){
   $('runbtn').textContent=running?'⏹ Stop':'▶ Start';
-  $('runbtn').classList.toggle('on',!running);
+  $('runbtn').classList.toggle('on',running);
   $('gmode').disabled=running;$('gdur').disabled=running;
   $('gdurl').style.display=S.gmode=='timed'?'':'none';
   const lock=!!game;

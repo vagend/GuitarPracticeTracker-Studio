@@ -427,6 +427,7 @@ private:
         else if (action == "scan")   showPluginChooser();
         else if (action == "show")   showPluginEditor();
         else if (action == "mute")   engine.setToneOn (! (bool) msg.getProperty ("on", false));
+        else if (action == "inputMute") engine.setInputOn (! (bool) msg.getProperty ("on", false));
         else if (action == "listen") { listening = (bool) msg.getProperty ("on", false); engine.setTapOn (listening); }
         else if (action == "unload") { editorWindow.reset(); engine.removePlugin(); message = {}; clearExercisePlugin(); }
         else if (action == "exercise") switchExercise (msg.getProperty ("id", {}).toString());
@@ -625,6 +626,7 @@ private:
         obj->setProperty ("device", deviceSummary());
         obj->setProperty ("build", STUDIO_BUILD);
         obj->setProperty ("autoUpdate", settings.getBoolValue ("autoUpdateCheck", true));
+        obj->setProperty ("inputMuted", ! engine.isInputOn());
         web->emitEventIfBrowserIsVisible ("studioStatus", juce::var (obj));
     }
 
