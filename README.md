@@ -42,6 +42,10 @@ Not yet: a chain of several plugins.
    `build/GuitarPracticeStudio_artefacts/Release/`.
 3. If something fails, the details are in `build.log`.
 
-## Licences
+## Licence
 
-JUCE is used under its free Starter licence (JUCE 9 EULA). The VST3 SDK is MIT-licensed.
+Guitar Practice Studio is free software under the [GNU AGPLv3](LICENSE.md): anyone can use, change
+and share it, and shared changes must stay free under the same licence.
+
+It's built with [JUCE](https://juce.com), used under the AGPLv3. On Windows it includes Steinberg's
+ASIO interface, used under the GPLv3. The VST3 SDK is MIT-licensed.
