@@ -3,10 +3,16 @@
 // Studio's own "What's new" list (newest first). Keep the top entry's version
 // the same as the VERSION in CMakeLists.txt.
 window.STUDIO_CHANGES = [
+  ['0.4.0', 'Nov 18, 2026', [
+    'Studio is built for Windows and Mac on GitHub and updates itself: when a newer build is out, Studio offers it, and Settings → Studio has Check for updates.',
+    'Windows: ASIO audio interfaces are supported for low latency.',
+    'Each exercise has a Metronome setting (the switch on the Exercise card, or Edit exercise). Turn it off for jamming: Play then runs only the practice timer.',
+    'The Fretboard Trainer hears your guitar through Studio\u2019s audio interface, and its Mute button silences your guitar in Studio\u2019s output.',
+    'The trainer\u2019s third mode is called Play the note, and the voice says E as \u201ce\u201d.'
+  ]],
   ['0.3.0', 'Nov 18, 2026', [
     'One Play/Pause and Stop in the Metronome card run the metronome, the tempo ladder and the practice timer. Space plays and pauses.',
     'The Tempo ladder is a switch. The ladder graph is always shown: with the switch off, click a bar to pick a percentage of your goal; with it on, it shows your place in the ladder, click a bar to jump there, and click the current bar to hold that tempo (blue).',
-    'A Click switch turns the metronome sound off while Play still runs the timer.',
     'Switching Stopwatch/Countdown with time on the clock asks to discard it first. Studio\u2019s own dialogs replace the pop-ups its window couldn\u2019t show.'
   ]],
   ['0.2.0', 'Nov 18, 2026', [
@@ -54,7 +60,8 @@ window.STUDIO_CHANGES = [
     '.fxfoot{display:flex;justify-content:space-between;align-items:center;border-top:1px solid var(--line);margin-top:8px;padding-top:8px;color:var(--mut);font-size:13px}' +
     '.fxfoot button{font-size:13px}';
 
-  var st = { plugin: '', muted: true, message: '', device: '' };
+  var st = { plugin: '', muted: true, message: '', device: '', build: 0 };
+  var upd = { state: '', build: 0, error: '' };
   // Lets the Fretboard Trainer (an iframe on this page) show and use the same guitar mute.
   var studioMuteListeners = [];
   window.studioGuitarMute = {
@@ -95,6 +102,22 @@ window.STUDIO_CHANGES = [
     m.title = st.muted ? 'Studio is silent. Click to hear your guitar.' : 'Silence Studio’s output';
     el('fxMsg').textContent = st.message || '';
     var d = el('stDev'); if (d) d.textContent = st.device || '';
+  }
+
+  // ---- updates (Settings → Studio) ----
+  function renderUpdate() {
+    var t = el('stUpd'), b = el('stUpdBtn'); if (!t || !b) return;
+    var cur = st.build ? 'Build ' + st.build : 'Built on this computer';
+    b.disabled = upd.state === 'checking' || upd.state === 'downloading' || !st.build;
+    b.textContent = upd.state === 'available' ? 'Update to build ' + upd.build : 'Check for updates';
+    t.textContent = {
+      checking: cur + ' \u00b7 checking\u2026',
+      none: cur + ' \u00b7 up to date',
+      available: cur + ' \u00b7 build ' + upd.build + ' is available',
+      downloading: 'Downloading build ' + upd.build + '\u2026 Studio will restart.',
+      failed: cur + ' \u00b7 ' + (upd.error || 'update failed'),
+      local: cur + ' \u00b7 rebuild it to update'
+    }[upd.state] || cur;
   }
 
   // ---- picker ----
@@ -212,15 +235,20 @@ window.STUDIO_CHANGES = [
       card.innerHTML = '<h2 style="margin:0 0 6px">Audio</h2>' +
         '<div class="row" style="gap:8px;flex-wrap:wrap"><button id="stAudio">Audio interface…</button>' +
         '<button id="stScan">Scan for plugins…</button></div>' +
-        '<p class="sub" id="stDev" style="margin:10px 0 0"></p>';
+        '<p class="sub" id="stDev" style="margin:10px 0 0"></p>' +
+        '<h2 style="margin:18px 0 6px">Studio</h2>' +
+        '<div class="row" style="gap:10px;flex-wrap:wrap;align-items:center"><button id="stUpdBtn">Check for updates</button>' +
+        '<span class="sub" id="stUpd"></span></div>';
       audio.parentNode.insertBefore(card, audio);
       el('stAudio').onclick = function () { send('audio'); };
       el('stScan').onclick = function () { send('scan'); };
+      el('stUpdBtn').onclick = function () { if (upd.state === 'available') send('update'); else send('checkUpdate'); };
     }
 
     if (backend) {
       backend.addEventListener('studioStatus', function (s) {
-        st = { plugin: s.plugin || '', muted: !!s.muted, message: s.message || '', device: s.device || '' };
+        st = { plugin: s.plugin || '', muted: !!s.muted, message: s.message || '', device: s.device || '', build: +s.build || 0 };
+        renderUpdate();
         renderSlot();
         studioMuteListeners.forEach(function (f) { try { f(st.muted); } catch (e) {} });
         if (pick.open) { el('fxRemove').disabled = !st.plugin; renderList(); }
@@ -228,6 +256,12 @@ window.STUDIO_CHANGES = [
       backend.addEventListener('studioPlugins', function (p) {
         plugins = p.plugins || []; recent = p.recent || [];
         if (pick.open) renderList();
+      });
+      backend.addEventListener('studioUpdate', function (u) {
+        upd = { state: u.state || '', build: +u.build || upd.build, error: u.error || '' };
+        renderUpdate();
+        if (upd.state === 'available' && typeof window.toast === 'function')
+          window.toast('Studio build ' + upd.build + ' is available', 'Update', function () { send('update'); });
       });
       backend.addEventListener('studioInput', function (m) {
         if (inputListener) { try { inputListener(m.sr, m.d); } catch (e) {} }

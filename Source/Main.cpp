@@ -2,8 +2,87 @@
 #include <juce_gui_extra/juce_gui_extra.h>
 #include "AudioEngine.h"
 
+#ifndef STUDIO_BUILD
+ #define STUDIO_BUILD 0   // set by GitHub Actions; 0 means built on this computer
+#endif
+
 namespace
 {
+// Updates come from the newest GitHub release, built by .github/workflows/release.yml.
+const juce::String releaseFiles ("https://github.com/vagend/GuitarPracticeTracker-Studio/releases/latest/download/");
+
+#if JUCE_MAC
+const juce::String updateAsset ("GuitarPracticeStudio-mac.zip");
+#else
+const juce::String updateAsset ("GuitarPracticeStudio-setup.exe");
+#endif
+
+std::unique_ptr<juce::InputStream> openDownload (const juce::String& name, int timeoutMs)
+{
+    return juce::URL (releaseFiles + name)
+        .createInputStream (juce::URL::InputStreamOptions (juce::URL::ParameterHandling::inAddress)
+                                .withConnectionTimeoutMs (timeoutMs)
+                                .withNumRedirectsToFollow (10));
+}
+
+// The build number of the newest release, or 0 if it can't be read.
+int latestReleaseBuild()
+{
+    if (auto in = openDownload ("BUILD.txt", 10000))
+        return in->readEntireStreamAsString().trim().getIntValue();
+    return 0;
+}
+
+// Downloads the update and starts installing it. Returns an error message, or empty on success
+// (the app should then quit so the new version can replace it).
+juce::String downloadAndStartUpdate()
+{
+    auto temp = juce::File::getSpecialLocation (juce::File::tempDirectory)
+                    .getChildFile ("GuitarPracticeStudioUpdate");
+    temp.deleteRecursively();
+    temp.createDirectory();
+    const auto file = temp.getChildFile (updateAsset);
+
+    {
+        auto in = openDownload (updateAsset, 20000);
+        if (in == nullptr)
+            return "Couldn't download the update.";
+        juce::FileOutputStream out (file);
+        if (! out.openedOk() || out.writeFromInputStream (*in, -1) <= 0)
+            return "Couldn't save the update.";
+    }
+
+   #if JUCE_MAC
+    // Unpack, then a small script waits for Studio to quit, swaps in the new app and opens it.
+    const auto unpacked = temp.getChildFile ("new");
+    juce::ChildProcess unzip;
+    if (! unzip.start (juce::StringArray { "/usr/bin/ditto", "-x", "-k", file.getFullPathName(), unpacked.getFullPathName() })
+        || ! unzip.waitForProcessToFinish (120000) || unzip.getExitCode() != 0)
+        return "Couldn't unpack the update.";
+
+    const auto newApp = unpacked.getChildFile ("Guitar Practice Studio.app");
+    const auto oldApp = juce::File::getSpecialLocation (juce::File::currentApplicationFile);
+    if (! newApp.isDirectory())
+        return "The update didn't contain the app.";
+
+    const auto q = [] (const juce::File& f) { return f.getFullPathName().quoted ('\'') ; };
+    const auto script = temp.getChildFile ("install.sh");
+    script.replaceWithText ("#!/bin/bash\n"
+                            "while kill -0 " + juce::String ((int) getpid()) + " 2>/dev/null; do sleep 0.5; done\n"
+                            "rm -rf " + q (oldApp) + " && /usr/bin/ditto " + q (newApp) + " " + q (oldApp) + "\n"
+                            "/usr/bin/xattr -dr com.apple.quarantine " + q (oldApp) + " 2>/dev/null\n"
+                            "open " + q (oldApp) + "\n");
+    static juce::ChildProcess installer;   // kept alive; it finishes after Studio quits
+    if (! installer.start (juce::StringArray { "/bin/bash", script.getFullPathName() }, 0))
+        return "Couldn't start the update.";
+   #else
+    // The installer closes Studio, installs over it and opens it again.
+    if (! file.startAsProcess ("/SILENT /SUPPRESSMSGBOXES /NORESTART /CLOSEAPPLICATIONS"))
+        return "Couldn't start the installer.";
+   #endif
+    return {};
+}
+
 juce::File getWebFolder()
 {
    #if JUCE_MAC
@@ -187,6 +266,10 @@ public:
         auto options = juce::WebBrowserComponent::Options{}
                            .withNativeIntegrationEnabled()
                            .withKeepPageLoadedWhenBrowserIsHidden()
+                           .withBackend (juce::WebBrowserComponent::Options::Backend::webview2)
+                           .withWinWebView2Options (juce::WebBrowserComponent::Options::WinWebView2{}
+                                                        .withUserDataFolder (dataFolder.getChildFile ("WebView"))
+                                                        .withStatusBarDisabled())
                            .withResourceProvider ([] (const juce::String& p) { return serveWebFile (p); })
                            .withEventListener ("studio", [this] (const juce::var& msg)
                            {
@@ -233,6 +316,8 @@ private:
         else if (action == "unload") { editorWindow.reset(); engine.removePlugin(); message = {}; clearExercisePlugin(); }
         else if (action == "exercise") switchExercise (msg.getProperty ("id", {}).toString());
         else if (action == "list")   sendPluginList();
+        else if (action == "checkUpdate") checkForUpdate (true);
+        else if (action == "update") startUpdate();
         else if (action == "load")
         {
             const auto id = msg.getProperty ("id", {}).toString();
@@ -412,7 +497,68 @@ private:
         obj->setProperty ("muted", ! engine.isToneOn());
         obj->setProperty ("message", message);
         obj->setProperty ("device", deviceSummary());
+        obj->setProperty ("build", STUDIO_BUILD);
         web->emitEventIfBrowserIsVisible ("studioStatus", juce::var (obj));
+    }
+
+    //==============================================================================
+    // Updates: the page shows "Update to build N" when GitHub has a newer build.
+    void sendUpdate (const juce::String& state, int build = 0, const juce::String& error = {})
+    {
+        if (web == nullptr || ! web->ready)
+            return;
+        auto* obj = new juce::DynamicObject();
+        obj->setProperty ("state", state);   // checking, none, available, downloading, failed, local
+        obj->setProperty ("build", build);
+        obj->setProperty ("current", STUDIO_BUILD);
+        obj->setProperty ("error", error);
+        web->emitEventIfBrowserIsVisible ("studioUpdate", juce::var (obj));
+    }
+
+    void checkForUpdate (bool asked)
+    {
+        if (STUDIO_BUILD == 0)
+        {
+            if (asked) sendUpdate ("local");   // built on this computer: updates come from rebuilding
+            return;
+        }
+        if (asked) sendUpdate ("checking");
+        juce::Thread::launch ([safe = juce::Component::SafePointer<MainComponent> (this), asked]
+        {
+            const int latest = latestReleaseBuild();
+            juce::MessageManager::callAsync ([safe, asked, latest]
+            {
+                if (safe == nullptr) return;
+                if (latest > STUDIO_BUILD)  safe->sendUpdate ("available", latest);
+                else if (asked)             safe->sendUpdate (latest > 0 ? "none" : "failed", latest,
+                                                              latest > 0 ? juce::String() : "Couldn't reach GitHub.");
+            });
+        });
+    }
+
+    void startUpdate()
+    {
+        if (updating || STUDIO_BUILD == 0)
+            return;
+        updating = true;
+        sendUpdate ("downloading");
+        juce::Thread::launch ([safe = juce::Component::SafePointer<MainComponent> (this)]
+        {
+            const auto error = downloadAndStartUpdate();
+            juce::MessageManager::callAsync ([safe, error]
+            {
+                if (safe == nullptr) return;
+                if (error.isEmpty())
+                {
+                    safe->storeCurrentExercisePlugin();
+                    safe->engine.saveState();
+                    juce::JUCEApplication::getInstance()->systemRequestedQuit();
+                    return;
+                }
+                safe->updating = false;
+                safe->sendUpdate ("failed", 0, error);
+            });
+        });
     }
 
     // Every scanned plugin, plus the recently used ones (newest first).
@@ -476,6 +622,7 @@ private:
             sentFirstStatus = true;
             sendStatus();
             sendPluginList();
+            checkForUpdate (false);
         }
 
         auto* obj = new juce::DynamicObject();
@@ -589,6 +736,7 @@ private:
     juce::var exercisePlugins;
     bool sentFirstStatus = false;
     bool listening = false;
+    bool updating = false;
 
     std::unique_ptr<StudioWebView> web;
     std::unique_ptr<ToolWindow> audioWindow, chooserWindow, editorWindow;
