@@ -3,6 +3,10 @@
 // Studio's own "What's new" list (newest first). Keep the top entry's version
 // the same as the VERSION in CMakeLists.txt.
 window.STUDIO_CHANGES = [
+  ['0.5.0', 'Nov 19, 2026', [
+    'New Studio icon: the practice pick as a tarnished brass pocket watch, with real gears behind the dial.',
+    'New Brass color scheme with polished-brass buttons, now the default. Your old scheme is still in Settings \u2192 Color scheme.'
+  ]],
   ['0.4.0', 'Nov 18, 2026', [
     'Studio is built for Windows and Mac on GitHub and updates itself: when a newer build is out, Studio offers it, and Settings → Studio has Check for updates.',
     'Windows: ASIO audio interfaces are supported for low latency.',

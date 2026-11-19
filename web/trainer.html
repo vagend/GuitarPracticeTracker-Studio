@@ -6,13 +6,15 @@
 <title>Fretboard Trainer</title>
 <link rel="icon" id="favsvg" href="icons/icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
-<script>if(/[?&]embed\b/.test(location.search))document.documentElement.classList.add('embed');(function(){var k="green";try{k=localStorage.getItem("gp.skin")||"green"}catch(e){}document.documentElement.setAttribute("data-skin",k)})()</script>
+<script>if(/[?&]embed\b/.test(location.search))document.documentElement.classList.add('embed');(function(){var k="brass";try{k=localStorage.getItem("gp.skin")||"brass"}catch(e){}document.documentElement.setAttribute("data-skin",k)})()</script>
 <style>
 :root{--bg:#faf8f4;--fg:#1f1d1a;--mut:#7a746b;--card:#fff;--line:#ddd6ca;--wood:#e9d9bd;--str:#8a8478;--acc:#c2410c;--ok:#15803d;--bad:#b91c1c;
 box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
 @media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#17150f;--fg:#f1ece2;--mut:#a39b8c;--card:#221f17;--line:#3a352a;--wood:#2e2719;--str:#a39b8c;--acc:#fb923c;--ok:#4ade80;--bad:#f87171}}
 :root[data-theme="dark"]{--bg:#17150f;--fg:#f1ece2;--mut:#a39b8c;--card:#221f17;--line:#3a352a;--wood:#2e2719;--str:#a39b8c;--acc:#fb923c;--ok:#4ade80;--bad:#f87171}
 /*SKINS*/
+html:root[data-skin="brass"]{--bg:#0d0a07;--fg:#f1e6d2;--mut:#a8957a;--card:#17120c;--line:#3a2c1a;--wood:#21180e;--str:#a08a66;--acc:#d4a64a;--accfg:#1a1205;--ok:#9cc46a;--bad:#e8735a;color-scheme:dark}
+html:root[data-skin="brass"] button.on{background:linear-gradient(180deg,#f3d98e 0%,#d4a64a 45%,#9a6c24 100%);border-color:#7a5418;color:#1a1205}
 html:root[data-skin="green"]{--bg:#0a0c0a;--fg:#e6efe6;--mut:#8a9a8a;--card:#121612;--line:#253025;--wood:#17221a;--str:#6f826f;--acc:#22c55e;--accfg:#03140a;--ok:#4ade80;--bad:#f87171;color-scheme:dark}
 html:root[data-skin="greenlight"]{--bg:#f6faf6;--fg:#142014;--mut:#5d6e5d;--card:#ffffff;--line:#d5e2d5;--wood:#e2ecdc;--str:#7f8f7f;--acc:#15803d;--accfg:#ffffff;--ok:#15803d;--bad:#b91c1c;color-scheme:light}
 html:root[data-skin="blue"]{--bg:#090b0f;--fg:#e6ecf5;--mut:#8b97a8;--card:#11151c;--line:#232c3a;--wood:#141b26;--str:#6d7b8f;--acc:#38bdf8;--accfg:#03131c;--ok:#4ade80;--bad:#f87171;color-scheme:dark}
@@ -145,7 +147,7 @@ addEventListener('storage',e=>{if(e.key=='gp.skin'&&e.newValue)document.document
   if(e.key=='fbset'&&typeof S!='undefined'){let n={};try{n=JSON.parse(e.newValue||'{}')}catch(x){}const dev=S.devId;
     ['devId','chan','boost','gate','a4'].forEach(k=>{if(k in n)S[k]=n[k]});syncUI();if(gainN)gainN.gain.value=S.boost;route();
     if(S.devId!=dev&&stream)startMic()}});
-try{document.getElementById('favsvg').href='icons/icon-'+(localStorage.getItem('gp.skin')||'green')+'.svg'}catch(e){}
+try{document.getElementById('favsvg').href='icons/icon-'+(localStorage.getItem('gp.skin')||'brass')+'.svg'}catch(e){}
 function tellApp(r){try{const t=window.parent!==window?window.parent:window.opener;if(t)t.postMessage({gp:'trainer',running:r},location.origin)}catch(e){}}
 const N=['C','C♯','D','D♯','E','F','F♯','G','G♯','A','A♯','B'];
 const OPEN=[4,11,7,2,9,4], SN=['e','B','G','D','A','E'], X0=56, Y0=28, SP=34;

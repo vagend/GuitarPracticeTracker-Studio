@@ -62,7 +62,7 @@ jobs:
           $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
           if (!(Test-Path $iscc)) { choco install innosetup -y --no-progress | Out-Null }
           if (!(Test-Path $iscc)) { $iscc = (Get-Command iscc).Source }
-          & $iscc "/DAppVersion=0.4.${{ github.run_number }}" "/DSourceDir=$PWD\build\GuitarPracticeStudio_artefacts\Release" "/O$PWD\dist" packaging\windows-installer.iss
+          & $iscc "/DAppVersion=0.5.${{ github.run_number }}" "/DSourceDir=$PWD\build\GuitarPracticeStudio_artefacts\Release" "/O$PWD\dist" packaging\windows-installer.iss
           if ($LASTEXITCODE -ne 0) { exit 1 }
 
       - name: Check the installer

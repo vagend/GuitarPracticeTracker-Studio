@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.22)
 
 set(CMAKE_OSX_DEPLOYMENT_TARGET "11.0" CACHE STRING "Oldest macOS Studio runs on")
 
-project(GuitarPracticeStudio VERSION 0.4.0)
+project(GuitarPracticeStudio VERSION 0.5.0)
 
 # GitHub Actions passes its run number; builds made on your own computer are build 0.
 set(STUDIO_BUILD "0" CACHE STRING "Build number")
@@ -18,7 +18,7 @@ juce_add_gui_app(GuitarPracticeStudio
     PRODUCT_NAME "Guitar Practice Studio"
     COMPANY_NAME "vagend"
     BUNDLE_ID "com.vagend.guitarpracticestudio"
-    ICON_BIG "${CMAKE_CURRENT_SOURCE_DIR}/web/icons/icon-512.png"
+    ICON_BIG "${CMAKE_CURRENT_SOURCE_DIR}/web/icons/studio-1024.png"   # brass pocket-watch pick
     NEEDS_WEB_BROWSER TRUE
     NEEDS_CURL FALSE
     MICROPHONE_PERMISSION_ENABLED TRUE

@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Guitar Practice</title>
 <link rel="manifest" href="manifest.webmanifest">
-<script>(function(){var k="green";try{k=localStorage.getItem("gp.skin")||"green"}catch(e){}document.documentElement.setAttribute("data-skin",k)})()</script>
+<script>(function(){var k="brass";try{k=localStorage.getItem("gp.skin")||"brass"}catch(e){}document.documentElement.setAttribute("data-skin",k)})()</script>
 <link rel="icon" id="favsvg" href="icons/icon.svg" type="image/svg+xml">
 <link rel="icon" href="icons/icon-32.png" sizes="32x32" type="image/png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
@@ -19,6 +19,13 @@
 @media(prefers-color-scheme:dark){:root{--bg:#17150f;--fg:#f1ece2;--mut:#a39b8c;--card:#221f17;--line:#3a352a;--soft:#2a261c;--acc:#fb923c;--accfg:#1b1209;--ok:#4ade80;--bad:#f87171;--bar:#fb923c;--grid:#332e24;
 --e1:#4ade80;--e2:#a3e635;--e3:#fbbf24;--e4:#f87171;--e5:#fca5a5;--e6:#c4b5fd;color-scheme:dark}}
 /*SKINS*/
+html:root[data-skin="brass"]{--bg:#0d0a07;--fg:#f1e6d2;--mut:#a8957a;--card:#17120c;--line:#3a2c1a;--soft:#1f180f;--acc:#d4a64a;--accfg:#1a1205;--ok:#9cc46a;--bad:#e8735a;--bar:#d4a64a;--grid:#2a2015;--e1:#e0b866;--e2:#c87a4a;--e3:#9cc46a;--e4:#e8735a;--e5:#f0c9a0;--e6:#b9a3d6;color-scheme:dark}
+/* Brass (Studio's default): polished-brass controls and bronze-edged cards */
+html:root[data-skin="brass"] .card{background:linear-gradient(180deg,#1b150d,#140f09);border-color:#4a3820;box-shadow:inset 0 1px 0 rgba(255,220,150,.08),0 2px 10px rgba(0,0,0,.5)}
+html:root[data-skin="brass"] button.on,html:root[data-skin="brass"] button.primary,html:root[data-skin="brass"] .sw.on i{background:linear-gradient(180deg,#f3d98e 0%,#d4a64a 45%,#9a6c24 100%);border-color:#7a5418;color:#1a1205;text-shadow:0 1px 0 rgba(255,240,200,.5);box-shadow:inset 0 1px 0 rgba(255,250,220,.6),0 1px 2px rgba(0,0,0,.6)}
+html:root[data-skin="brass"] header,html:root[data-skin="brass"] nav{border-bottom-color:#5a4422}
+html:root[data-skin="brass"] h1,html:root[data-skin="brass"] h2{color:#f0d28c}
+html:root[data-skin="brass"] .clock{color:#f3e2bd;text-shadow:0 0 18px rgba(212,166,74,.18)}
 html:root[data-skin="green"]{--bg:#0a0c0a;--fg:#e6efe6;--mut:#8a9a8a;--card:#121612;--line:#253025;--soft:#1a211a;--acc:#22c55e;--accfg:#03140a;--ok:#4ade80;--bad:#f87171;--bar:#22c55e;--grid:#1d261d;--e1:#2dd4bf;--e2:#a3e635;--e3:#fbbf24;--e4:#f87171;--e5:#fca5a5;--e6:#c4b5fd;color-scheme:dark}
 html:root[data-skin="greenlight"]{--bg:#f6faf6;--fg:#142014;--mut:#5d6e5d;--card:#ffffff;--line:#d5e2d5;--soft:#ecf3ec;--acc:#15803d;--accfg:#ffffff;--ok:#15803d;--bad:#b91c1c;--bar:#15803d;--grid:#e3ece3;--e1:#0d9488;--e2:#65a30d;--e3:#d97706;--e4:#dc2626;--e5:#7f1d1d;--e6:#7c3aed;color-scheme:light}
 html:root[data-skin="blue"]{--bg:#090b0f;--fg:#e6ecf5;--mut:#8b97a8;--card:#11151c;--line:#232c3a;--soft:#182029;--acc:#38bdf8;--accfg:#03131c;--ok:#4ade80;--bad:#f87171;--bar:#38bdf8;--grid:#1c2430;--e1:#4ade80;--e2:#a3e635;--e3:#fbbf24;--e4:#f87171;--e5:#fca5a5;--e6:#c4b5fd;color-scheme:dark}
@@ -1500,10 +1507,10 @@ $('#tunToSet').onclick=e=>{e.preventDefault();show('settings');setTimeout(()=>$(
 syncInUI();
 
 // ---------- color scheme ----------
-const SKINS=[{"k": "green", "n": "Green & Black", "bg": "#0a0c0a", "card": "#121612", "a": "#22c55e", "fg": "#e6efe6"}, {"k": "greenlight", "n": "Green & White", "bg": "#f6faf6", "card": "#ffffff", "a": "#15803d", "fg": "#142014"}, {"k": "blue", "n": "Blue & Black", "bg": "#090b0f", "card": "#11151c", "a": "#38bdf8", "fg": "#e6ecf5"}, {"k": "red", "n": "Red & Black", "bg": "#0d0909", "card": "#171010", "a": "#ef4444", "fg": "#f2e8e8"}, {"k": "purple", "n": "Purple & Black", "bg": "#0b0a0f", "card": "#15121c", "a": "#a78bfa", "fg": "#ece8f5"}, {"k": "orange", "n": "Original orange", "bg": "#faf8f4", "card": "#17150f", "a": "#c2410c", "fg": "#1f1d1a", "note": "Light or dark to match your computer"}];
-function curSkin(){return document.documentElement.getAttribute('data-skin')||'green'}
+const SKINS=[{"k": "brass", "n": "Brass", "bg": "#0d0a07", "card": "#17120c", "a": "#d4a64a", "fg": "#f1e6d2"}, {"k": "green", "n": "Green & Black", "bg": "#0a0c0a", "card": "#121612", "a": "#22c55e", "fg": "#e6efe6"}, {"k": "greenlight", "n": "Green & White", "bg": "#f6faf6", "card": "#ffffff", "a": "#15803d", "fg": "#142014"}, {"k": "blue", "n": "Blue & Black", "bg": "#090b0f", "card": "#11151c", "a": "#38bdf8", "fg": "#e6ecf5"}, {"k": "red", "n": "Red & Black", "bg": "#0d0909", "card": "#171010", "a": "#ef4444", "fg": "#f2e8e8"}, {"k": "purple", "n": "Purple & Black", "bg": "#0b0a0f", "card": "#15121c", "a": "#a78bfa", "fg": "#ece8f5"}, {"k": "orange", "n": "Original orange", "bg": "#faf8f4", "card": "#17150f", "a": "#c2410c", "fg": "#1f1d1a", "note": "Light or dark to match your computer"}];
+function curSkin(){return document.documentElement.getAttribute('data-skin')||'brass'}
 function applySkin(k){
-  if(!SKINS.some(s=>s.k==k))k='green';
+  if(!SKINS.some(s=>s.k==k))k='brass';
   document.documentElement.setAttribute('data-skin',k);
   try{localStorage.setItem('gp.skin',k)}catch(e){}
   const ic='icons/icon-'+k+'.svg';$('#logo').src=ic;$('#favsvg').href=ic;
