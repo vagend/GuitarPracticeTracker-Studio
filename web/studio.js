@@ -8,6 +8,7 @@
 
 window.STUDIO_CHANGES = [
   ['0.7.1', 'Nov 19, 2026', [
+    'If your audio interface is switched off or unplugged, Studio turns audio off instead of switching to the computer\u2019s own microphone and speakers (which could howl through an amp plugin), says so, and reconnects on its own when the interface is back.',
     'Every dropdown list (metronome, exercises, log filters, dialogs, Fretboard Trainer settings, suggestion boxes) opens in your color scheme instead of the system\u2019s colors.',
     'Fretboard Trainer note scores use your color scheme\u2019s colors, so the text is always readable.',
     'Mac: updating from inside Studio now works and reopens Studio (the update script was being written with Windows line endings). A log is kept in ~/Library/Logs.',

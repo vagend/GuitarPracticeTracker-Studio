@@ -781,8 +781,33 @@ private:
                 if (engine.getPlugin() == nullptr && loadingFor.isEmpty())
                     applyExercise(); // a plugin that couldn't load without a device
             }
+            else if (! retryingDevice)
+            {
+                followDevice (true);   // unplugged, switched off or back again
+            }
             sendStatus();
         }
+    }
+
+    void followDevice (bool devicesChanged)
+    {
+        const bool wasOpen = engine.isWantedDeviceOpen();
+        retryingDevice = true;
+        engine.followWantedDevice (devicesChanged);
+        retryingDevice = false;
+        if (engine.isWantedDeviceOpen())
+        {
+            if (! wasOpen)
+            {
+                message = {};
+                if (engine.getPlugin() == nullptr && loadingFor.isEmpty())
+                    applyExercise();
+            }
+        }
+        else if (engine.reopenGaveUp())
+            message = "Couldn't open your audio interface. Check it's on and connected, or pick another in Settings > Audio interface.";
+        else
+            message = "Your audio interface isn't connected. Audio is off until it's back; Studio reconnects on its own.";
     }
 
     void timerCallback() override
@@ -790,21 +815,12 @@ private:
         if (web == nullptr || ! web->ready)
             return;
 
-        // Your audio interface didn't open at start-up (maybe still busy): keep trying for 20 s.
-        if (! engine.isWantedDeviceOpen() && deviceRetries < 20 && ++deviceRetryTicks >= 20)
+        // Your audio interface is missing (busy at start-up, unplugged or switched off):
+        // look for it every 2 s.
+        if (! engine.isWantedDeviceOpen() && ++deviceRetryTicks >= 40)
         {
-            deviceRetryTicks = 0; ++deviceRetries;
-            retryingDevice = true;
-            engine.retryWantedDevice();
-            retryingDevice = false;
-            if (engine.isWantedDeviceOpen())
-            {
-                if (engine.getPlugin() == nullptr && loadingFor.isEmpty())
-                    applyExercise();
-                message = {};
-            }
-            else if (deviceRetries == 20)
-                message = "Couldn't open your audio interface. Check it's connected, then pick it in Settings > Audio interface.";
+            deviceRetryTicks = 0;
+            followDevice (false);
             sendStatus();
         }
 
@@ -930,7 +946,7 @@ private:
     bool sentFirstStatus = false;
     bool listening = false;
     bool retryingDevice = false;
-    int deviceRetries = 0, deviceRetryTicks = 0;
+    int deviceRetryTicks = 0;
     bool updating = false;
 
     std::unique_ptr<StudioWebView> web;

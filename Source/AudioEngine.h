@@ -20,7 +20,8 @@ public:
         inputOn = settings.getBoolValue ("inputOn", true);
 
         wantedDevice = settings.getXmlValue ("audioDevice");
-        deviceManager.initialise (2, 2, wantedDevice.get(), true);
+        // Only fall back to the computer's default device if you never picked one.
+        deviceManager.initialise (2, 2, wantedDevice.get(), wantedDevice == nullptr);
         deviceManager.addAudioCallback (this);
         checkDevice();
     }
@@ -31,19 +32,41 @@ public:
     // while and never saves the stand-in device over your choice.
     bool isWantedDeviceOpen() const noexcept { return deviceOk; }
 
-    void retryWantedDevice()
+    // Called when devices come and go, and now and then while your interface is missing.
+    // Studio never runs on a stand-in device: the computer's own microphone and speakers
+    // through an amp plugin can howl. So it reopens your interface when it's there again,
+    // and otherwise leaves audio off.
+    void followWantedDevice (bool devicesChanged)
     {
-        if (deviceOk || wantedDevice == nullptr)
+        if (wantedDevice == nullptr)
             return;
-        deviceManager.initialise (2, 2, wantedDevice.get(), true);
         checkDevice();
+        if (deviceOk)
+            return;
+        if (devicesChanged)
+            reopenAttempts = 0;
+        const auto now = juce::Time::getMillisecondCounter();
+        if (wantedDeviceListed() && reopenAttempts < 20 && now - lastReopen > 1500)
+        {
+            ++reopenAttempts;
+            lastReopen = now;
+            deviceManager.initialise (2, 2, wantedDevice.get(), false);
+            checkDevice();
+            if (deviceOk)
+                return;
+        }
+        if (deviceManager.getCurrentAudioDevice() != nullptr)
+            deviceManager.closeAudioDevice();
     }
+
+    bool reopenGaveUp() const noexcept { return reopenAttempts >= 20; }
 
     // You picked a device in Audio settings: that's the new choice.
     void deviceChosen()
     {
         wantedDevice = deviceManager.createStateXml();
         deviceOk = true;
+        standIn.store (false);
         saveState();
     }
 
@@ -214,6 +237,8 @@ public:
 
     void audioDeviceAboutToStart (juce::AudioIODevice* device) override
     {
+        standIn.store (! isWantedDevice (device));
+
         sampleRate = device->getCurrentSampleRate();
         blockSize  = device->getCurrentBufferSizeSamples();
 
@@ -241,6 +266,16 @@ public:
                                            int numSamples,
                                            const juce::AudioIODeviceCallbackContext&) override
     {
+        if (standIn.load())
+        {
+            // Not your interface (the computer's own mic and speakers): stay silent.
+            for (int ch = 0; ch < numOutputs; ++ch)
+                if (outputs[ch] != nullptr)
+                    juce::FloatVectorOperations::clear (outputs[ch], numSamples);
+            inputLevel.store (0.0f);
+            return;
+        }
+
         const float* guitar = (numInputs > 0 && inputOn.load()) ? inputs[0] : nullptr;
 
         float peak = 0.0f;
@@ -350,6 +385,40 @@ private:
 
     std::unique_ptr<juce::XmlElement> wantedDevice;
     bool deviceOk = true;
+    int reopenAttempts = 0;
+    std::atomic<bool> standIn { false };
+
+    // Is this the interface you picked? (Always yes if you never picked one.)
+    bool isWantedDevice (juce::AudioIODevice* dev) const
+    {
+        if (wantedDevice == nullptr || dev == nullptr)
+            return true;
+        const auto type = wantedDevice->getStringAttribute ("deviceType");
+        const auto out  = wantedDevice->getStringAttribute ("audioOutputDeviceName");
+        const auto in   = wantedDevice->getStringAttribute ("audioInputDeviceName");
+        if (type.isNotEmpty() && dev->getTypeName() != type)
+            return false;
+        // Separate input and output devices open as one device named after both.
+        const auto name = dev->getName();
+        return (out.isEmpty() && in.isEmpty())
+               || (out.isNotEmpty() && name.contains (out))
+               || (in.isNotEmpty() && name.contains (in));
+    }
+    juce::uint32 lastReopen = 0;
+
+    // Is your interface in the computer's device list right now?
+    bool wantedDeviceListed()
+    {
+        const auto type = wantedDevice->getStringAttribute ("deviceType");
+        const auto out  = wantedDevice->getStringAttribute ("audioOutputDeviceName");
+        const auto in   = wantedDevice->getStringAttribute ("audioInputDeviceName");
+        for (auto* t : deviceManager.getAvailableDeviceTypes())
+            if (type.isEmpty() || t->getTypeName() == type)
+                if ((out.isEmpty() || t->getDeviceNames (false).contains (out))
+                    && (in.isEmpty() || t->getDeviceNames (true).contains (in)))
+                    return true;
+        return false;
+    }
 
     void checkDevice()
     {
