@@ -98,7 +98,7 @@ svg{display:block;min-width:640px;width:100%;height:auto}
 <label class="f"><span class="t">Speaking speed: <i id="rv"></i></span><input type="range" id="rate" min="0.6" max="1.5" step="0.1"></label>
 <label class="f"><span class="t">Note tone volume: <i id="tvv"></i></span><input type="range" id="toneVol" min="0" max="1" step="0.05"></label>
 <label class="f"><span class="t">Voice volume: <i id="vvv"></i></span><input type="range" id="voiceVol" min="0" max="1" step="0.05"></label>
-<div class="f" style="grid-column:1/-1"><span class="t">How the voice says each note (type a spelling, press Enter to hear it)</span><div class="row" id="sayrow"></div></div>
+<div class="f" style="grid-column:1/-1"><span class="t">How the voice says each note (press Enter in a box to hear it)</span><div class="row" id="sayrow"></div></div>
 </div>
 <p class="sub inp" style="margin:10px 0 8px">Microphone settings apply in “Play the note”. Press Start listening once to load your device list, then pick your interface. Settings are saved in this browser.</p>
 <button id="defaults">Restore defaults</button>
@@ -725,14 +725,26 @@ function testNote(i){
   setTimeout(()=>{if(tok==spkTok){try{speechSynthesis.speak(u)}catch(e){}}},60);
 }
 function syncSay(){for(const L of 'ABCDEFG'){const e=$('say'+L);if(e)e.value=(S.say&&S.say[L])||DEF.say[L]}}
+const SAYSUG={A:['ahe','eigh','ae','eh','ayy','aye','a.'],B:['bee','be','bea','bih'],C:['see','sea','cee','si'],D:['dee','de','dea','dih'],E:['e','ee','eee','ea'],F:['eff','ef','ehf','f'],G:['gee','jee','ji','gea']};
+function sayTest(L){
+  if(!HAS_TTS)return;
+  const w=(S.say&&S.say[L])||DEF.say[L],acc=$('sayFlat').checked?' flat':$('saySharp').checked?' sharp':'';
+  stopSpeech();const tok=spkTok,u=mkUtter(w+acc);
+  setTimeout(()=>{if(tok==spkTok){try{speechSynthesis.speak(u)}catch(e){}}},60);
+}
 (function(){
-  const row=$('sayrow'),PC={C:0,D:2,E:4,F:5,G:7,A:9,B:11};
+  const row=$('sayrow');
   'ABCDEFG'.split('').forEach(L=>{
-    const lab=document.createElement('label'),inp=document.createElement('input');
+    const lab=document.createElement('label'),inp=document.createElement('input'),dl=document.createElement('datalist');
     lab.textContent=L+' ';inp.type='text';inp.id='say'+L;inp.maxLength=12;inp.autocomplete='off';
-    inp.onchange=()=>{S.say=Object.assign({},S.say,{[L]:inp.value.trim()||DEF.say[L]});inp.value=S.say[L];saveS();testNote(PC[L])};
-    lab.appendChild(inp);row.appendChild(lab);
+    dl.id='sug'+L;SAYSUG[L].forEach(w=>{const o=document.createElement('option');o.value=w;dl.appendChild(o)});inp.setAttribute('list',dl.id);
+    const save=()=>{S.say=Object.assign({},S.say,{[L]:inp.value.trim()||DEF.say[L]});inp.value=S.say[L];saveS()};
+    inp.onchange=save;
+    inp.onkeydown=e=>{if(e.key=='Enter'){e.preventDefault();save();sayTest(L)}};
+    lab.appendChild(inp);lab.appendChild(dl);row.appendChild(lab);
   });
+  const acc=(id,txt,other)=>{const l=document.createElement('label'),c=document.createElement('input');c.type='checkbox';c.id=id;l.appendChild(c);l.append(' '+txt);c.onchange=()=>{if(c.checked)$(other).checked=false};row.appendChild(l)};
+  acc('sayFlat','flat','saySharp');acc('saySharp','sharp','sayFlat');
   syncSay();
 })();
 $('dev').onchange=e=>{S.devId=e.target.value;saveS();startMic()};
