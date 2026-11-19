@@ -773,11 +773,14 @@ public:
 
         engine = std::make_unique<AudioEngine> (*settings);
         mainWindow = std::make_unique<MainWindow> (getApplicationName(),
-                                                   new MainComponent (*engine, *settings, dataFolder));
+                                                   new MainComponent (*engine, *settings, dataFolder),
+                                                   *settings);
     }
 
     void shutdown() override
     {
+        if (mainWindow != nullptr)
+            mainWindow->saveSize();
         mainWindow.reset();
         engine.reset();
         settings.reset();
@@ -788,21 +791,53 @@ public:
     class MainWindow final : public juce::DocumentWindow
     {
     public:
-        MainWindow (const juce::String& name, juce::Component* content)
-            : DocumentWindow (name, juce::Colour (0xff15181d), DocumentWindow::allButtons)
+        MainWindow (const juce::String& name, juce::Component* content, juce::PropertiesFile& s)
+            : DocumentWindow (name, juce::Colour (0xff15181d), DocumentWindow::allButtons), props (s)
         {
             setUsingNativeTitleBar (true);
             setContentOwned (content, true);
             setResizable (true, true);
-            setResizeLimits (900, 600, 10000, 10000);
-            centreWithSize (getWidth(), getHeight());
+
+            // Fit the screen Studio opens on (laptops with display scaling can be smaller than
+            // the app's preferred 1280 x 860), and reopen at whatever size you left it.
+            const auto area = screenArea();
+            setResizeLimits (juce::jmin (760, area.getWidth()), juce::jmin (520, area.getHeight()), 10000, 10000);
+
+            const auto saved = props.getValue ("windowState");
+            if (saved.isEmpty() || ! restoreWindowStateFromString (saved))
+                centreWithSize (juce::jmin (1280, area.getWidth() * 92 / 100),
+                                juce::jmin (860, area.getHeight() * 92 / 100));
+
+            // Never larger than the screen or off it, even if the screen changed since last time.
+            if (! isFullScreen())
+                setBounds (getBounds().constrainedWithin (screenArea()));
             setVisible (true);
+        }
+
+        void saveSize()
+        {
+            props.setValue ("windowState", getWindowStateAsString());
+            props.saveIfNeeded();
+        }
+
+        juce::Rectangle<int> screenArea() const
+        {
+            const auto& displays = juce::Desktop::getInstance().getDisplays();
+            if (auto* d = displays.getDisplayForRect (getBounds()))
+                return d->userBounds.toNearestInt();
+            if (auto* d = displays.getPrimaryDisplay())
+                return d->userBounds.toNearestInt();
+            return { 0, 0, 1280, 860 };
         }
 
         void closeButtonPressed() override
         {
+            saveSize();
             juce::JUCEApplication::getInstance()->systemRequestedQuit();
         }
+
+    private:
+        juce::PropertiesFile& props;
     };
 
 private:
