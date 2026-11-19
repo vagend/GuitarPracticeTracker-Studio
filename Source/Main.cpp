@@ -2,6 +2,10 @@
 #include <juce_gui_extra/juce_gui_extra.h>
 #include "AudioEngine.h"
 
+#if JUCE_MAC
+ #include <unistd.h>   // getpid, for the updater
+#endif
+
 #ifndef STUDIO_BUILD
  #define STUDIO_BUILD 0   // set by GitHub Actions; 0 means built on this computer
 #endif
@@ -263,6 +267,7 @@ public:
     MainComponent (AudioEngine& e, juce::PropertiesFile& props, juce::File dataFolder)
         : engine (e), settings (props), appData (dataFolder)
     {
+        const juce::Component::SafePointer<MainComponent> self (this);
         auto options = juce::WebBrowserComponent::Options{}
                            .withNativeIntegrationEnabled()
                            .withKeepPageLoadedWhenBrowserIsHidden()
@@ -271,9 +276,9 @@ public:
                                                         .withUserDataFolder (dataFolder.getChildFile ("WebView"))
                                                         .withStatusBarDisabled())
                            .withResourceProvider ([] (const juce::String& p) { return serveWebFile (p); })
-                           .withEventListener ("studio", [this] (const juce::var& msg)
+                           .withEventListener ("studio", [self] (const juce::var& msg)
                            {
-                               juce::MessageManager::callAsync ([safe = juce::Component::SafePointer<MainComponent> (this), msg]
+                               juce::MessageManager::callAsync ([safe = self, msg]
                                {
                                    if (safe != nullptr)
                                        safe->handleAction (msg);
@@ -523,7 +528,8 @@ private:
             return;
         }
         if (asked) sendUpdate ("checking");
-        juce::Thread::launch ([safe = juce::Component::SafePointer<MainComponent> (this), asked]
+        const juce::Component::SafePointer<MainComponent> self (this);
+        juce::Thread::launch ([safe = self, asked]
         {
             const int latest = latestReleaseBuild();
             juce::MessageManager::callAsync ([safe, asked, latest]
@@ -542,7 +548,8 @@ private:
             return;
         updating = true;
         sendUpdate ("downloading");
-        juce::Thread::launch ([safe = juce::Component::SafePointer<MainComponent> (this)]
+        const juce::Component::SafePointer<MainComponent> self (this);
+        juce::Thread::launch ([safe = self]
         {
             const auto error = downloadAndStartUpdate();
             juce::MessageManager::callAsync ([safe, error]
