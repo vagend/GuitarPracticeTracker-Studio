@@ -1226,6 +1226,8 @@ function metStart(){
 function metStop(){curveCancel();metHalt()}
 function metHalt(){$('#metCard').classList.remove('gr');MET.on=false;if(MET.w)MET.w.postMessage('stop');clearInterval(MET.iv);MET.q=[];MET.lit.forEach(e=>e.classList.remove('now'));MET.lit=[];renderMetBtn()}
 const PCTS=[70,75,80,85,90,95,100,105,110];
+// a bar clicked before Play: the ladder starts there
+let LADSTART=null;
 const CURVE={on:false,hold:false,counting:false,steps:[],pcts:[],idx:0,bar:0,bars:4,ready:1,readyBar:0,first:true,ref:0,max:0,last:null,top:0};
 function curveMaxOf(ex){if(!ex)return null;return ex.curveMax||(ex.goal?ex.goal*1.1:null)}
 function curveSteps(ex){const max=curveMaxOf(ex);if(!max)return null;const ref=max/1.1;
@@ -1257,8 +1259,9 @@ function curveInfo(){const C=CURVE;let t;
   $('#curvePrev').disabled=C.idx+(C.jump||0)<=0&&!C.paused}
 function setTempo(v){$('#bpm').value=v;renderLadPanel()}
 function curveStart(){const ex=exById(T.ex),c=curveSteps(ex);if(!c)return;
-  Object.assign(CURVE,{on:true,hold:false,counting:false,steps:c.steps,pcts:c.pcts,ref:c.ref,max:c.max,idx:0,bar:0,bars:curveBarsVal(),len:curveLenVal(),rep:1,paused:false,resume:false,stay:false,jump:0,repReady:exRepReady(ex),kind:'tempo',readyN:0,ready:exReady(ex),readyBar:0,first:true,top:0,ex:T.ex,t0:Date.now()});
-  setTempo(c.steps[0]);renderLadder();
+  const s0=LADSTART&&LADSTART.ex==T.ex&&LADSTART.i<c.steps.length?LADSTART.i:0;LADSTART=null;
+  Object.assign(CURVE,{on:true,hold:false,counting:false,steps:c.steps,pcts:c.pcts,ref:c.ref,max:c.max,idx:s0,start:s0,bar:0,bars:curveBarsVal(),len:curveLenVal(),rep:1,paused:false,resume:false,stay:false,jump:0,repReady:exRepReady(ex),kind:'tempo',readyN:0,ready:exReady(ex),readyBar:0,first:true,top:0,ex:T.ex,t0:Date.now()});
+  setTempo(c.steps[s0]);renderLadder();
   if(MET.on){MET.step=0;MET.q=[];MET.next=actx.currentTime+.08}else metStart();
   if(!running())startPause();
   renderCurve()}
@@ -1271,7 +1274,7 @@ function stepStart(){const C=CURVE;setTempo(C.steps[C.idx]);C.top=Math.max(C.top
   if(C.ready>0){C.counting=true;C.kind='tempo';C.readyN=C.ready;C.readyBar=1}else{C.counting=false;C.bar=1}}
 // called at the start of every measure: count-in measures (beats only), then `bars` repeats of `len` measures, with optional count-in measures between repeats
 function curveBar(){const C=CURVE;
-  if(C.first){C.first=false;C.idx=0;stepStart()}
+  if(C.first){C.first=false;C.idx=C.start||0;stepStart()}
   else if(C.resume){C.resume=false;setTempo(C.steps[C.idx]);C.counting=true;C.kind='resume';C.readyN=Math.max(1,C.ready);C.readyBar=1}
   else if(C.jump){const j=C.jump;C.jump=0;C.idx=Math.max(0,C.idx+j);C.stay=false;if(C.idx>=C.steps.length){curveDone();return}stepStart()}
   else if(C.counting){if(++C.readyBar>C.readyN){C.counting=false;C.bar=1}}
@@ -1311,13 +1314,14 @@ function renderLadPanel(){const ex=exById(T.ex),pn=$('#ladPanel');if(!pn)return;
     setBars(bars,PCTS.map(p=>{const v=Math.round(g*p/100);return'<span class="col" data-v="'+v+'" title="'+p+'% · '+v+' BPM"><i class="'+(v==bpm?'cur':'')+'" style="height:'+Math.round(p/110*58)+'px"></i><b>'+p+'</b></span>'}).join(''));
     bars.onclick=e=>{const b=e.target.closest('.col');if(b)setTempo(+b.dataset.v)};return}
   const c=curveSteps(ex);if(!c){big.textContent='—';sub.textContent='Set a goal or a ladder max';setBars(bars,'');return}
-  const C=CURVE,act=(C.on||C.hold)&&C.ex==T.ex,idx=act?(C.hold?c.steps.length:C.idx):-1;
-  setBars(bars,c.pcts.map((p,i)=>'<span class="col" data-i="'+i+'" title="'+p+'% · '+c.steps[i]+' BPM"><i class="'+(!act?'':i<idx?'done':i==idx?(C.stay?'hold':'cur'):'')+'" style="height:'+Math.round(p/110*58)+'px"></i></span>').join(''));
-  if(!act){big.textContent='70%';sub.textContent='first tempo · max '+c.max+' BPM'}
+  const C=CURVE,act=(C.on||C.hold)&&C.ex==T.ex,pre=!act&&LADSTART&&LADSTART.ex==T.ex&&LADSTART.i<c.steps.length?LADSTART.i:-1,idx=act?(C.hold?c.steps.length:C.idx):-1;
+  setBars(bars,c.pcts.map((p,i)=>'<span class="col" data-i="'+i+'" title="'+p+'% · '+c.steps[i]+' BPM"><i class="'+(!act?(i==pre?'cur':''):i<idx?'done':i==idx?(C.stay?'hold':'cur'):'')+'" style="height:'+Math.round(p/110*58)+'px"></i></span>').join(''));
+  if(!act){big.textContent=c.pcts[pre<0?0:pre]+'%';sub.textContent=(pre>0?'start here':'first tempo')+' · max '+c.max+' BPM'}
   else if(C.hold){big.textContent='90%';sub.textContent='ladder done · Stop to end'}
   else{big.textContent=(C.paused?'Paused · ':'')+C.pcts[C.idx]+'%';sub.innerHTML=(C.stay?'<span style="color:#60a5fa;font-weight:600">holding</span>':'ladder step')+' · max '+c.max+' BPM';
     reps.innerHTML=Array.from({length:C.bars},(_,k)=>'<i class="'+(k<C.rep-(C.counting&&C.kind!='rep'?1:0)&&!(C.counting&&C.kind=='tempo')?'f':'')+'"></i>').join('')}
-  bars.onclick=e=>{const b=e.target.closest('.col');if(!b||!CURVE.on)return;const i=+b.dataset.i;
+  bars.onclick=e=>{const b=e.target.closest('.col');if(!b)return;const i=+b.dataset.i;
+    if(!CURVE.on){if(CURVE.hold&&CURVE.ex==T.ex)return;LADSTART={ex:T.ex,i};setTempo(c.steps[i]);return}
     if(i==CURVE.idx+(CURVE.jump||0)&&!CURVE.paused){CURVE.stay=!CURVE.stay;renderLadPanel();return}
     curveSkip(i-(CURVE.idx+(CURVE.jump||0)));renderLadPanel()}}
 function renderMetTempo(){renderLadPanel()}
