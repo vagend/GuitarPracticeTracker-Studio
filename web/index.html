@@ -1289,26 +1289,27 @@ function transportPause(){if(running())pause();if(CURVE.on&&!CURVE.paused)curveP
 function transportStop(){if(CURVE.on||CURVE.hold)curveEnd();else{if(MET.on)metStop();if(running())pause()}renderTimer();renderMetBtn()}
 function renderMetBtn(){const pl=playing();$('#metGo').textContent=pl?'⏸ Pause':'▶ Play';
   $('#metStop').disabled=!(MET.on||running()||CURVE.on||CURVE.hold);renderLadPanel()}
+function setBars(el,html){if(el._h!==html){el._h=html;el.innerHTML=html}}
 function renderLadPanel(){const ex=exById(T.ex),pn=$('#ladPanel');if(!pn)return;
   const on=ladderOn(ex);$('#swLad').classList.toggle('on',on);$('#swLad').hidden=!usesMet(ex);
   if(!ex||ex.trainer){pn.hidden=true;return}pn.hidden=false;
   const big=$('#lpBig'),sub=$('#lpSub'),reps=$('#lpReps'),bars=$('#lpBars');reps.innerHTML='';const bpm=num($('#bpm').value);
   if(!on){const g=+ex.goal;
-    if(!g){big.textContent='—';sub.textContent='Set a goal (Edit exercise) for quick picks';bars.innerHTML='';return}
+    if(!g){big.textContent='—';sub.textContent='Set a goal (Edit exercise) for quick picks';setBars(bars,'');return}
     big.textContent=bpm?Math.round(bpm/g*100)+'%':'—';sub.textContent='of goal ('+trim(g)+' BPM)';
-    bars.innerHTML=PCTS.map(p=>{const v=Math.round(g*p/100);return'<span class="col" data-v="'+v+'" title="'+p+'% · '+v+' BPM"><i class="'+(v==bpm?'cur':'')+'" style="height:'+Math.round(p/110*58)+'px"></i><b>'+p+'</b></span>'}).join('');
-    bars.querySelectorAll('.col').forEach(b=>b.onclick=()=>{setTempo(+b.dataset.v);renderLadPanel()});return}
-  const c=curveSteps(ex);if(!c){big.textContent='—';sub.textContent='Set a goal or a ladder max';bars.innerHTML='';return}
+    setBars(bars,PCTS.map(p=>{const v=Math.round(g*p/100);return'<span class="col" data-v="'+v+'" title="'+p+'% · '+v+' BPM"><i class="'+(v==bpm?'cur':'')+'" style="height:'+Math.round(p/110*58)+'px"></i><b>'+p+'</b></span>'}).join(''));
+    bars.onclick=e=>{const b=e.target.closest('.col');if(b)setTempo(+b.dataset.v)};return}
+  const c=curveSteps(ex);if(!c){big.textContent='—';sub.textContent='Set a goal or a ladder max';setBars(bars,'');return}
   const C=CURVE,act=(C.on||C.hold)&&C.ex==T.ex,idx=act?(C.hold?c.steps.length:C.idx):-1;
-  bars.innerHTML=c.pcts.map((p,i)=>'<span class="col" data-i="'+i+'" title="'+p+'% · '+c.steps[i]+' BPM"><i class="'+(!act?'':i<idx?'done':i==idx?(C.stay?'hold':'cur'):'')+'" style="height:'+Math.round(p/110*58)+'px"></i></span>').join('');
+  setBars(bars,c.pcts.map((p,i)=>'<span class="col" data-i="'+i+'" title="'+p+'% · '+c.steps[i]+' BPM"><i class="'+(!act?'':i<idx?'done':i==idx?(C.stay?'hold':'cur'):'')+'" style="height:'+Math.round(p/110*58)+'px"></i></span>').join(''));
   if(!act){big.textContent='70%';sub.textContent='first tempo · top '+c.max+' BPM'}
   else if(C.hold){big.textContent='90%';sub.textContent='ladder done · Stop to end'}
   else{big.textContent=(C.paused?'Paused · ':'')+C.pcts[C.idx]+'%';sub.textContent='ladder step · top '+c.max+' BPM';
     if(C.stay)reps.innerHTML='<span class="holdtag">Holding · click the bar to go on</span>';
     else reps.innerHTML=Array.from({length:C.bars},(_,k)=>'<i class="'+(k<C.rep-(C.counting&&C.kind!='rep'?1:0)&&!(C.counting&&C.kind=='tempo')?'f':'')+'"></i>').join('')}
-  bars.querySelectorAll('.col').forEach(b=>b.onclick=()=>{if(!CURVE.on)return;const i=+b.dataset.i;
+  bars.onclick=e=>{const b=e.target.closest('.col');if(!b||!CURVE.on)return;const i=+b.dataset.i;
     if(i==CURVE.idx+(CURVE.jump||0)&&!CURVE.paused){CURVE.stay=!CURVE.stay;renderLadPanel();return}
-    curveSkip(i-(CURVE.idx+(CURVE.jump||0)));renderLadPanel()})}
+    curveSkip(i-(CURVE.idx+(CURVE.jump||0)));renderLadPanel()}}
 function renderMetTempo(){renderLadPanel()}
 function renderMet(){
   const M=MC();
