@@ -1,0 +1,1552 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Guitar Practice</title>
+<link rel="manifest" href="manifest.webmanifest">
+<script>(function(){var k="green";try{k=localStorage.getItem("gp.skin")||"green"}catch(e){}document.documentElement.setAttribute("data-skin",k)})()</script>
+<link rel="icon" id="favsvg" href="icons/icon.svg" type="image/svg+xml">
+<link rel="icon" href="icons/icon-32.png" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="theme-color" id="themecolor" content="#0a0c0a">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Practice">
+<style>
+:root{--bg:#faf8f4;--fg:#1f1d1a;--mut:#6f695f;--card:#fff;--line:#ddd6ca;--soft:#f3eee5;--acc:#c2410c;--accfg:#fff;--ok:#15803d;--bad:#b91c1c;--bar:#c2410c;--grid:#e8e2d6;
+--e1:#16a34a;--e2:#65a30d;--e3:#d97706;--e4:#dc2626;--e5:#7f1d1d;--e6:#7c3aed;color-scheme:light}
+@media(prefers-color-scheme:dark){:root{--bg:#17150f;--fg:#f1ece2;--mut:#a39b8c;--card:#221f17;--line:#3a352a;--soft:#2a261c;--acc:#fb923c;--accfg:#1b1209;--ok:#4ade80;--bad:#f87171;--bar:#fb923c;--grid:#332e24;
+--e1:#4ade80;--e2:#a3e635;--e3:#fbbf24;--e4:#f87171;--e5:#fca5a5;--e6:#c4b5fd;color-scheme:dark}}
+/*SKINS*/
+html:root[data-skin="green"]{--bg:#0a0c0a;--fg:#e6efe6;--mut:#8a9a8a;--card:#121612;--line:#253025;--soft:#1a211a;--acc:#22c55e;--accfg:#03140a;--ok:#4ade80;--bad:#f87171;--bar:#22c55e;--grid:#1d261d;--e1:#2dd4bf;--e2:#a3e635;--e3:#fbbf24;--e4:#f87171;--e5:#fca5a5;--e6:#c4b5fd;color-scheme:dark}
+html:root[data-skin="greenlight"]{--bg:#f6faf6;--fg:#142014;--mut:#5d6e5d;--card:#ffffff;--line:#d5e2d5;--soft:#ecf3ec;--acc:#15803d;--accfg:#ffffff;--ok:#15803d;--bad:#b91c1c;--bar:#15803d;--grid:#e3ece3;--e1:#0d9488;--e2:#65a30d;--e3:#d97706;--e4:#dc2626;--e5:#7f1d1d;--e6:#7c3aed;color-scheme:light}
+html:root[data-skin="blue"]{--bg:#090b0f;--fg:#e6ecf5;--mut:#8b97a8;--card:#11151c;--line:#232c3a;--soft:#182029;--acc:#38bdf8;--accfg:#03131c;--ok:#4ade80;--bad:#f87171;--bar:#38bdf8;--grid:#1c2430;--e1:#4ade80;--e2:#a3e635;--e3:#fbbf24;--e4:#f87171;--e5:#fca5a5;--e6:#c4b5fd;color-scheme:dark}
+html:root[data-skin="red"]{--bg:#0d0909;--fg:#f2e8e8;--mut:#a08f8f;--card:#171010;--line:#352222;--soft:#201616;--acc:#ef4444;--accfg:#1a0505;--ok:#4ade80;--bad:#fca5a5;--bar:#ef4444;--grid:#2a1b1b;--e1:#4ade80;--e2:#a3e635;--e3:#fbbf24;--e4:#f87171;--e5:#fca5a5;--e6:#c4b5fd;color-scheme:dark}
+html:root[data-skin="purple"]{--bg:#0b0a0f;--fg:#ece8f5;--mut:#998fae;--card:#15121c;--line:#2c2539;--soft:#1d1826;--acc:#a78bfa;--accfg:#120a24;--ok:#4ade80;--bad:#f87171;--bar:#a78bfa;--grid:#241e30;--e1:#4ade80;--e2:#a3e635;--e3:#fbbf24;--e4:#f87171;--e5:#fca5a5;--e6:#c4b5fd;color-scheme:dark}
+.skins{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.skin{display:block;text-align:left;padding:0;overflow:hidden;border-radius:12px;border:2px solid var(--line);background:var(--card)}
+.skin.on{border-color:var(--acc)}
+.skin .pv{display:flex;flex-direction:column;gap:6px;padding:12px;height:78px}
+.skin .pv i{display:block;height:8px;border-radius:4px}
+.skin .pv b{display:block;width:46px;height:18px;border-radius:6px}
+.skin .nm{padding:8px 10px;font-size:13px;font-weight:600}
+.skin .nm small{display:block;font-weight:400;color:var(--mut)}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif;padding-bottom:env(safe-area-inset-bottom,0)}
+[hidden]{display:none!important}
+header.top{position:sticky;top:0;z-index:20;background:var(--bg);border-bottom:1px solid var(--line);padding:calc(8px + env(safe-area-inset-top,0px)) 16px 0}
+.hrow{display:flex;align-items:center;gap:10px;max-width:1100px;margin:0 auto}
+.logo{width:34px;height:34px;border-radius:8px}
+h1{font:600 20px/1.2 Georgia,serif;margin:0}
+.ver{border:0;background:none;padding:2px 6px;font:500 12px/1 system-ui,sans-serif;color:var(--mut);border-radius:6px;cursor:pointer}.ver:hover{background:var(--soft);color:var(--fg)}
+.chlog h3{font:600 14px/1.3 system-ui,sans-serif;margin:12px 0 4px}.chlog h3 small{font-weight:400;color:var(--mut);margin-left:6px}.chlog ul{margin:0;padding-left:20px;font-size:14px}.chlog li{margin:2px 0}
+/* metronome */
+.beatdots{display:flex;gap:8px;margin:14px 0 10px;flex-wrap:wrap}
+.beatdots i{font-style:normal;width:34px;height:34px;border-radius:50%;display:grid;place-items:center;font:600 14px/1 system-ui,sans-serif;background:var(--soft);color:var(--mut);border:2px solid var(--line);transition:background .05s}
+.beatdots i.pb{border-color:var(--acc)}
+.beatdots i.now{background:var(--acc);color:var(--accfg);border-color:var(--acc)}
+.grtag{display:none;font:700 13px/1 system-ui,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#1a1204;background:var(--e3);border-radius:999px;padding:7px 12px}
+#metCard.gr .grtag{display:inline-block}
+#metCard.gr .beatdots i.now{background:var(--e3);border-color:var(--e3);color:#1a1204}
+.mwrap{display:flex;gap:8px;align-items:flex-start}
+.mlab{display:grid;grid-template-rows:16px repeat(3,24px);gap:4px;font-size:12px;color:var(--mut);padding-top:5px;flex:none}
+.mlab span{display:flex;align-items:center}
+.mgrid{display:flex;flex-wrap:wrap;gap:8px;min-width:0;touch-action:none;user-select:none;-webkit-user-select:none}
+.mbeat{display:grid;grid-template-columns:repeat(var(--n),24px);grid-template-rows:16px repeat(3,24px);gap:4px;padding:5px;border-radius:9px;background:var(--soft)}
+.mh{font-size:10px;color:var(--mut);text-align:center;line-height:16px}
+.mc{padding:0;border-radius:5px;border:1px solid var(--line);background:var(--card)}
+.mc.on.p{background:var(--acc);border-color:var(--acc)}
+.mc.on.s{background:color-mix(in srgb,var(--acc) 62%,var(--card));border-color:transparent}
+.mc.on.m{background:color-mix(in srgb,var(--acc) 32%,var(--card));border-color:transparent}
+.mc.now{outline:2px solid var(--fg);outline-offset:1px}
+details summary{cursor:pointer;color:var(--mut);font-size:14px}
+.vrow{display:grid;grid-template-columns:minmax(0,1fr) 100px auto auto auto;gap:8px;align-items:center;padding:6px 0;border-top:1px solid var(--line);font-size:14px}
+.vrow .vname small{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--mut);font-size:12px}
+@media(max-width:600px){.vrow{grid-template-columns:minmax(0,1fr) 90px auto}}
+.chk{display:flex;gap:8px;align-items:flex-start;font-size:14px;margin-top:6px}
+.chk input{margin-top:3px;flex:none}
+.tempo input{width:84px;text-align:center;font-size:18px;font-weight:600}
+.tempo button{padding:6px 10px}
+.tileinp{width:100%;min-width:0;background:transparent;border:1px solid transparent;border-radius:6px;padding:0 4px;margin-left:-5px;font:600 17px/1.3 system-ui,sans-serif;color:var(--fg);font-variant-numeric:tabular-nums}
+.tileinp:hover{border-color:var(--line)}
+.tileinp:focus{border-color:var(--acc);outline:none;background:var(--card)}
+.tileinp::placeholder{color:var(--mut);font-weight:500}
+.tunwrap{max-width:620px;margin:0 auto}
+.tunwrap .tnote{font-size:96px;min-height:110px}
+.grid2.tools{grid-template-columns:minmax(0,1.7fr) minmax(0,1fr)}
+@media(max-width:1000px){.grid2.tools{grid-template-columns:1fr}}
+/* tuner */
+.tnote{font:600 64px/1.1 ui-monospace,SFMono-Regular,Menlo,monospace;text-align:center;margin-top:14px;min-height:72px}
+.tnote.ok{color:var(--ok)}
+svg.tmeter{display:block;width:100%;max-width:420px;margin:6px auto;height:auto}
+.tstr{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin:8px 0}
+.tstr div{padding:5px 12px;border:1px solid var(--line);border-radius:8px;font-size:14px}
+.tstr div.near{border-color:var(--acc)}
+.tnotes{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}#tunNotes select{width:auto;min-width:0;flex:0 0 auto;padding:4px 6px}
+button.linkish{background:none;border:0;color:var(--mut);font-size:13px;padding:4px 0;cursor:pointer;text-decoration:underline dotted}
+.tstr div.hit{background:var(--ok);border-color:var(--ok);color:var(--accfg)}
+.ok{color:var(--ok)}
+.pill{margin-left:auto;font:600 15px/1 ui-monospace,SFMono-Regular,Menlo,monospace;font-variant-numeric:tabular-nums;background:var(--acc);color:var(--accfg);border:0;border-radius:999px;padding:7px 12px;cursor:pointer}
+.pill.paused{background:var(--soft);color:var(--fg);border:1px solid var(--line)}
+nav#tabs{display:flex;gap:2px;max-width:1100px;margin:6px auto 0;overflow-x:auto;scrollbar-width:none}
+nav#tabs button{border:0;background:none;padding:9px 14px;border-bottom:3px solid transparent;border-radius:0;color:var(--mut);font-weight:600;white-space:nowrap}
+nav#tabs button.on{color:var(--fg);border-bottom-color:var(--acc)}
+nav#tabs .tabgap{flex:1;min-width:12px}
+main{max-width:1100px;margin:0 auto;padding:16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:16px}
+.card h2{font:600 16px/1.3 system-ui,sans-serif;margin:0 0 10px}
+.grid2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);gap:16px}
+.grid2>.card{margin-bottom:0}
+@media(max-width:820px){.grid2{grid-template-columns:1fr}#v-practice .grid2:not(.tools)>.card:last-child{order:-1}}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.sp{flex:1}
+.sub{color:var(--mut);font-size:13px}
+button,select,input,textarea{font:inherit;color:var(--fg)}
+button{background:var(--card);border:1px solid var(--line);border-radius:9px;padding:7px 13px;cursor:pointer}
+button:hover{border-color:var(--mut)}
+button.primary{background:var(--acc);border-color:var(--acc);color:var(--accfg);font-weight:600}
+button.danger{color:var(--bad)}
+button:disabled{opacity:.45;cursor:default}
+select,input[type=text],input[type=number],input[type=date],textarea{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:7px 9px;min-width:0}
+input[type=number]{width:90px}
+label.f,div.f{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--mut)}
+label.f>*{color:var(--fg)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{border-radius:999px;padding:5px 11px;font-size:13px;background:var(--soft);border:1px solid var(--line)}
+.chip.on{background:var(--acc);border-color:var(--acc);color:var(--accfg)}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px}
+.tile{background:var(--soft);border-radius:10px;padding:10px 12px}
+.tile .k{font-size:12px;color:var(--mut)}
+.tile .v{font:600 22px/1.2 system-ui,sans-serif;font-variant-numeric:tabular-nums}
+.tile .v small{font-size:13px;font-weight:500;color:var(--mut)}
+.meter{height:6px;border-radius:3px;background:var(--line);overflow:hidden;margin-top:6px}
+.meter i{display:block;height:100%;background:var(--acc);border-radius:3px}
+.meter.lvlgate{position:relative;height:10px;overflow:visible}.meter.lvlgate b{position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--fg);opacity:.6}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.seg button{border:0;border-radius:0;padding:7px 14px}
+.seg button.on{background:var(--acc);color:var(--accfg)}
+.clock{font:600 76px/1 ui-monospace,SFMono-Regular,Menlo,monospace;font-variant-numeric:tabular-nums;text-align:center;letter-spacing:-2px;margin:18px 0 6px}
+.clock.done{color:var(--ok)}
+.cbar{height:6px;border-radius:3px;background:var(--line);overflow:hidden;max-width:420px;margin:0 auto 8px}
+.cbar i{display:block;height:100%;background:var(--acc)}
+.center{justify-content:center}
+.big{font-size:17px;padding:10px 26px}
+.exinfo{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:10px}
+.exsub{color:var(--mut);font-size:14px;margin:6px 2px 0;min-height:1em;display:flex;align-items:center;gap:10px}.exsub>span:first-child{flex:1}
+.ladsec{margin-top:12px;border:1px solid var(--line);border-radius:10px;padding:9px 12px}
+.ladsec summary{cursor:pointer}.ladsec summary .sub{margin-left:6px}
+.ladgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
+.ladgrid label{display:block;background:var(--soft);border-radius:8px;padding:7px 10px}
+.ladgrid span{display:block;font-size:12px;color:var(--mut);margin-bottom:4px}
+.ladgrid input{width:4.2em}
+@media(max-width:640px){.exinfo,.ladgrid{grid-template-columns:repeat(2,1fr)}}.ladgrid select{max-width:100%}.ladgrid small{color:var(--mut)}
+.exinfo div{background:var(--soft);border-radius:8px;padding:7px 10px}
+.exinfo b{display:block;font-size:17px;font-variant-numeric:tabular-nums}
+.exinfo span{font-size:12px;color:var(--mut)}
+.ed{display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--mut);margin-right:5px;vertical-align:1px}
+.ed1{background:var(--e1)}.ed2{background:var(--e2)}.ed3{background:var(--e3)}.ed4{background:var(--e4)}.ed5{background:var(--e5)}.ed6{background:var(--e6)}
+.pch{font:600 13px/1.3 system-ui,sans-serif;color:var(--mut);margin:14px 0 4px}.pch:first-child{margin-top:0}
+.firstex{grid-column:1/-1;padding:6px 2px}.firstex b{font-size:17px}.firstex p{margin:6px 0 12px}
+.curve,.curvectl,#bStart,#bm5,#bp5{display:none!important}
+.sw{display:inline-flex;align-items:center;gap:7px;cursor:pointer;font-size:14px;user-select:none}
+.sw i{width:34px;height:19px;border-radius:10px;background:var(--line);position:relative;transition:background .15s}
+.sw i::after{content:'';position:absolute;top:2px;left:2px;width:15px;height:15px;border-radius:50%;background:#fff;transition:left .15s}
+.sw.on i{background:var(--acc)}.sw.on i::after{left:17px}
+.ladrun{display:flex;align-items:center;gap:20px;margin-top:12px;padding:12px 16px 24px;border:1px solid var(--line);border-radius:12px;background:var(--soft);width:max-content;max-width:100%}
+.lpL{min-width:150px}.lpBig{font:700 26px/1 system-ui,sans-serif}.lpL .sub{margin-top:5px}
+.lpReps{display:flex;gap:5px;margin-top:7px}.lpReps i{width:9px;height:9px;border-radius:50%;border:2px solid var(--acc)}.lpReps i.f{background:var(--acc)}
+.lpReps .holdtag{font:600 12px system-ui,sans-serif;color:#60a5fa}
+.stairs{display:flex;align-items:flex-end;gap:0;height:60px}
+.stairs .col{display:flex;align-items:flex-end;justify-content:center;width:21px;height:84px;margin-bottom:-24px;padding-bottom:24px;box-sizing:border-box;cursor:pointer;position:relative}
+.stairs .col:hover i{border-color:var(--acc)}
+.stairs i{width:16px;border-radius:3px 3px 0 0;border:1.5px solid var(--line);border-bottom:none;position:relative;pointer-events:none}
+.stairs i:hover{border-color:var(--acc)}
+.stairs i.done{background:color-mix(in srgb,var(--acc) 35%,transparent);border-color:transparent}
+.stairs i.cur{background:var(--acc);border-color:var(--acc)}
+.stairs i.hold{background:#60a5fa;border-color:#60a5fa;box-shadow:0 0 0 3px rgba(96,165,250,.35)}
+.stairs .col b{position:absolute;bottom:6px;left:50%;transform:translateX(-50%);font:500 10px system-ui,sans-serif;color:var(--mut);pointer-events:none}
+.curveopts{margin-top:8px;gap:6px 16px}
+.curvectl{margin-top:8px;gap:8px}.curvectl button{font-size:13px;padding:6px 11px}#curveStay.on{outline:2px solid var(--acc);outline-offset:1px;font-weight:600}
+.effs{display:flex;flex-wrap:wrap;gap:6px}
+.effs button{font-size:13px;padding:6px 11px;border-radius:999px}
+.feelHint{min-height:20px;margin-top:8px;font-size:13px;color:var(--mut)}.feelHint b{color:var(--fg);font-weight:600}
+.effs button.on{outline:2px solid var(--acc);outline-offset:1px;font-weight:600}
+table{border-collapse:collapse;width:100%}
+th,td{text-align:left;padding:7px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:12px;color:var(--mut);font-weight:600}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+td.nw{white-space:nowrap}
+tr.click{cursor:pointer}tr.click:hover td{background:var(--soft)}
+.tscroll{overflow-x:auto}
+.day{border-top:1px solid var(--line);padding:10px 0}
+.day:first-child{border-top:0}
+.dayh{display:flex;gap:10px;align-items:baseline;margin-bottom:4px}
+.dayh b{font-size:15px}
+.ent{display:grid;grid-template-columns:minmax(0,1fr) 80px 64px 120px;gap:8px;padding:6px 8px;border-radius:8px;cursor:pointer;align-items:center}
+.ent:hover{background:var(--soft)}
+.ent .nm{overflow:hidden;text-overflow:ellipsis}
+.ent .nm small{display:block;color:var(--mut)}
+.ent .n{text-align:right;font-variant-numeric:tabular-nums}
+@media(max-width:600px){.ent{grid-template-columns:minmax(0,1fr) 64px 50px}.ent .eff{grid-column:1/-1;font-size:13px}}
+.pct{height:6px;border-radius:3px;background:var(--line);width:80px;display:inline-block;vertical-align:middle;margin-right:6px;overflow:hidden}
+.pct i{display:block;height:100%;background:var(--bar)}
+svg.chart{width:100%;height:auto;display:block;overflow:visible}
+svg.chart text{font:11px system-ui,sans-serif;fill:var(--mut)}
+.hb{display:grid;grid-template-columns:minmax(90px,38%) 1fr 70px;gap:8px;align-items:center;padding:3px 0;font-size:13px}
+.hb .l{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hb .b{height:14px;background:var(--grid);border-radius:4px;overflow:hidden}
+.hb .b i{display:block;height:100%;background:var(--bar);border-radius:0 4px 4px 0}
+.hb .v{text-align:right;font-variant-numeric:tabular-nums;color:var(--mut)}
+#tip{position:fixed;z-index:50;pointer-events:none;background:var(--fg);color:var(--bg);font-size:12px;line-height:1.35;padding:6px 9px;border-radius:7px;max-width:260px}
+#toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:60;background:var(--fg);color:var(--bg);padding:10px 16px;border-radius:10px;font-size:14px;box-shadow:0 6px 24px rgba(0,0,0,.25);display:flex;gap:12px;align-items:center}
+#toast button{background:transparent;color:inherit;border-color:currentColor;padding:3px 10px}
+dialog{border:1px solid var(--line);border-radius:14px;background:var(--card);color:var(--fg);padding:18px;width:min(520px,94vw)}
+dialog::backdrop{background:rgba(0,0,0,.4)}
+dialog h2{margin:0 0 12px;font:600 17px/1.3 system-ui,sans-serif}
+.fgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.fgrid .w{grid-column:1/-1}
+.fgrid input:not([type=checkbox]),.fgrid select,.fgrid textarea{width:100%}
+.chk small{display:block;color:var(--mut);font-size:12px;margin-top:1px}
+.opts{grid-column:1/-1;border-top:1px solid var(--line);padding-top:10px;display:flex;flex-direction:column;gap:8px}
+.opts .chk{margin-top:0}
+iframe#trFrame{width:100%;border:0;height:900px;display:block;border-radius:10px;background:var(--bg)}
+.banner{background:var(--soft);border:1px solid var(--line);border-radius:10px;padding:10px 14px;margin-bottom:16px;font-size:14px}
+.kbd{font:12px ui-monospace,monospace;border:1px solid var(--line);border-radius:4px;padding:0 4px}
+.ladder .chip{font-variant-numeric:tabular-nums}
+.erow{display:grid;grid-template-columns:28px 160px 1fr 34px;gap:8px;align-items:center;margin-bottom:6px}
+.erow input{width:100%}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="hrow">
+    <img class="logo" id="logo" src="icons/icon.svg" alt="">
+    <h1>Guitar Practice</h1><button id="verTag" class="ver" title="What’s new"></button>
+    <button id="installBtn" hidden>Install app</button>
+    <button id="pill" class="pill" hidden title="Go to the timer"></button>
+  </div>
+  <nav id="tabs">
+    <button data-v="practice" class="on">Practice</button>
+    <button data-v="trainer">Fretboard</button>
+    <button data-v="log">Log</button>
+    <button data-v="exercises">Exercises</button>
+    <button data-v="stats">Stats</button>
+    <span class="tabgap"></span>
+    <button data-v="tuner">Tuner</button>
+    <button data-v="settings">Settings</button>
+  </nav>
+</header>
+
+<main>
+<div id="fileBanner" class="banner" hidden>This page was opened as a file. It works, but it can't be installed as an app and its data is kept separately. Use <b>Start Guitar Practice.command</b> (Mac) or <b>Start Guitar Practice.bat</b> (Windows) to open it the installable way.</div>
+
+<!-- PRACTICE -->
+<section id="v-practice" class="view">
+  <div class="card">
+    <div class="tiles" id="todayTiles"></div>
+  </div>
+
+  <div class="grid2">
+    <div class="card">
+      <div class="row" style="margin-bottom:10px">
+        <h2 style="margin:0">Exercise</h2>
+        <span class="sp"></span>
+        <button id="editEx">Edit exercise</button>
+      </div>
+      <select id="exSel" style="width:100%" aria-label="Exercise"></select>
+      <div class="exsub" id="exSub"></div>
+      <div class="exinfo" id="exInfo"></div>
+      <details class="ladsec" id="ladSec" hidden>
+        <summary><b>Tempo ladder</b> <span class="sub" id="ladSum"></span></summary>
+        <div class="ladgrid">
+          <label title="How many measures one time through this exercise takes"><span>Length</span><input id="exLen" type="number" min="1" max="64" step="1" inputmode="numeric"> <small>measures</small></label>
+          <label title="The top of the ladder (110%). Leave empty to use the goal + 10%."><span>Ladder max</span><input id="exMax" type="number" min="0" step="1" inputmode="numeric"> <small>BPM</small></label>
+          <label title="How many times you play the exercise at each tempo"><span>Repeats per tempo</span><input id="curveBars" type="number" min="1" max="64" step="1" inputmode="numeric"></label>
+          <label title="Clicks on each beat at the new tempo before you start playing it"><span>Count-in before each new tempo</span><select id="curveReady"><option value="0">none</option><option value="1">1 measure</option><option value="2">2 measures</option><option value="4">4 measures</option></select></label>
+          <label title="Clicks on each beat between one repeat and the next at the same tempo"><span>Count-in between repeats</span><select id="curveRepReady"><option value="0">none</option><option value="1">1 measure</option><option value="2">2 measures</option><option value="4">4 measures</option></select></label>
+        </div>
+      </details>
+      <div id="fxSlot"></div>
+    </div>
+
+    <div class="card">
+      <div class="row">
+        <div class="seg" id="tmode"><button data-m="up">Stopwatch</button><button data-m="down">Countdown</button></div>
+      </div>
+      <div class="chips" id="presets" style="margin-top:12px"></div>
+      <div class="clock" id="clock">0:00</div>
+      <div class="cbar" id="cbar"><i style="width:0"></i></div>
+      <div class="sub" id="clockSub" style="text-align:center;min-height:20px"></div>
+      <div class="row center" style="margin-top:14px">
+        <button id="bStart" class="primary big">Start</button>
+        <button id="bFinish" class="big">Finish &amp; log</button>
+        <button id="bReset" class="danger">Discard</button>
+      </div>
+      <p class="sub" style="text-align:center;margin:12px 0 0"><span class="kbd">Space</span> plays and pauses · the metronome’s Play and Stop run this timer too</p>
+    </div>
+  </div>
+
+  <div class="card" id="logForm" hidden style="margin-top:16px;border-color:var(--acc)">
+    <h2>Log this practice — <span id="lfEx"></span></h2>
+    <div class="row" style="align-items:flex-end;gap:14px">
+      <label class="f">Minutes<input id="lfMin" type="number" min="0" step="1"></label>
+      <label class="f"><span id="lfBpmL">BPM</span><input id="lfBpm" type="number" min="0" step="any"></label>
+      <label class="f" style="flex:1;min-width:200px">Note (optional)<input id="lfNote" type="text" placeholder="e.g. clean up the position shift"></label>
+    </div>
+    <label class="chk" id="lfLadRow" hidden><input type="checkbox" id="lfLad"> <span>Tempo ladder run<small id="lfLadInfo"></small></span></label>
+    <div class="sub" style="margin:12px 0 6px">How did it feel?</div>
+    <div class="effs" id="lfEff"></div>
+    <div class="feelHint" id="lfFeel"></div>
+    <div class="sub" id="lfHint" style="margin-top:10px"></div>
+    <div class="row" style="margin-top:14px">
+      <button id="lfSave" class="primary">Save</button>
+      <button id="lfCancel">Not now</button>
+    </div>
+  </div>
+
+  <div class="tools" style="margin-top:16px">
+    <div class="card" id="metCard">
+      <div class="row">
+        <h2 style="margin:0">Metronome</h2>
+        <span class="sp"></span>
+        <label class="sw" id="swLad" title="Step the tempo up the ladder and back down automatically"><i></i>Tempo ladder</label>
+        <button id="metTap" title="Tap 4 or more times to set the tempo">Tap tempo</button>
+        <button id="metGo" class="primary" title="Play and pause the metronome and the practice timer (Space)">▶ Play</button>
+        <button id="metStop" title="Stop the metronome and the timer (the time stays until you finish or discard)">■ Stop</button>
+      </div>
+      <div class="row tempo" style="margin-top:12px">
+        <span class="sub">Tempo</span>
+        <button id="bm5" aria-label="minus 5">−5</button><button id="bm1" aria-label="minus 1">−1</button>
+        <input id="bpm" type="number" inputmode="decimal" min="20" max="400" step="any" placeholder="100" aria-label="Metronome tempo in BPM">
+        <button id="bp1" aria-label="plus 1">+1</button><button id="bp5" aria-label="plus 5">+5</button>
+        <span class="sub">BPM</span>
+      </div>
+      <div class="ladrun" id="ladPanel"><div class="lpL"><div class="lpBig" id="lpBig"></div><div class="sub" id="lpSub"></div><div class="lpReps" id="lpReps"></div></div><div class="stairs" id="lpBars"></div></div>
+      <div class="row curve" style="margin-top:10px">
+        <button id="curveGo" title="Steps the metronome up to your ladder max and back down to 90%. Also starts and stops the practice timer.">▶ Tempo ladder</button>
+        <span class="sub" id="curveInfo"></span>
+      </div>
+      <div class="row curvectl" id="curveCtl" hidden>
+        <button id="curvePrev" title="Go back to the previous tempo (after the count-in)">⏮ Previous tempo</button>
+        <button id="curveStay" title="Keep repeating the current tempo until you press it again">⏸ Stay at this tempo</button>
+        <button id="curveNext" title="Skip to the next tempo (after the count-in)">Next tempo ⏭</button>
+      </div>
+      <div class="row" style="margin-top:12px">
+        <label class="row sub" style="gap:6px">Beats per bar <select id="metBeats"></select></label>
+        <label class="row sub" style="gap:6px">Division <select id="metSub"></select></label>
+      </div>
+      <div class="row" style="gap:12px;align-items:center"><div class="beatdots" id="metDots"></div><span class="grtag">Count-in</span></div>
+      <div class="mwrap">
+        <div class="mlab"><span>&nbsp;</span><span>Primary</span><span>Secondary</span><span>Minor</span></div>
+        <div class="mgrid" id="metGrid"></div>
+      </div>
+      <div class="row" style="margin-top:10px">
+        <span class="sub">Patterns:</span>
+        <button class="chip" data-pre="basic" title="Primary on 1, secondary on the other beats, minor on the divisions">Basic</button>
+        <button class="chip" data-pre="rock" title="Primary on 1 and 3, secondary on 2 and 4, minor on every division">Rock beat</button>
+        <button class="chip" data-pre="beats" title="Primary on 1, secondary on the other beats">Beats only</button>
+        <button class="chip" data-pre="clear">Clear</button>
+      </div>
+      <p class="sub" style="margin:8px 0 0">Tap the squares to turn sounds on and off. Several sounds can play on the same step.</p>
+      <details id="metMore" style="margin-top:12px">
+        <summary>Sounds &amp; options</summary>
+        <div style="margin-top:10px">
+          <label class="row sub" style="gap:6px;margin-bottom:10px">Built-in sounds
+            <select id="metKit"><option value="drums">Drum kit (kick, snare, hi-hat)</option><option value="click">Classic click (high, middle, low)</option></select></label>
+          <div id="metVoices"></div>
+          <label class="row sub" style="gap:8px;margin-top:6px">Master volume <input type="range" id="metMaster" min="0" max="1" step="0.05" style="flex:1"></label>
+          <label class="chk"><input type="checkbox" id="metWithTimer"> Start and stop with the practice timer</label>
+          <label class="chk"><input type="checkbox" id="metFollow"> Set the division from the exercise’s subdivision (e.g. 16th, 8th Triplets)</label>
+          <input type="file" id="metFile" accept="audio/*,.wav,.aif,.aiff,.mp3,.m4a,.ogg,.flac" hidden>
+        </div>
+      </details>
+    </div>
+
+  </div>
+
+
+  <div class="card" style="margin-top:16px">
+    <div class="row"><h2 style="margin:0">Today</h2><span class="sp"></span><button id="addToday">+ Add entry</button></div>
+    <div id="todayList" style="margin-top:8px"></div>
+  </div>
+</section>
+
+<!-- LOG -->
+<section id="v-tuner" class="view" hidden>
+  <div class="tunwrap">
+    <div class="card" id="tunCard">
+      <div class="row">
+        <h2 style="margin:0">Tuner</h2><span class="sp"></span>
+        <button id="tunWhich" class="linkish" title="Change the instrument and tuning"></button>
+      </div>
+      <div class="tnote" id="tunNote">–</div>
+      <div class="sub" id="tunFreq" style="text-align:center;min-height:20px">&nbsp;</div>
+      <svg id="tunMeter" viewBox="0 0 400 70" class="tmeter" role="img" aria-label="Tuning meter"></svg>
+      <div class="tstr" id="tunStr"></div>
+      <div class="sub" id="tunMsg" style="text-align:center;min-height:20px"></div>
+      <div class="meter"><i id="tunLvl" style="width:0"></i></div>
+      <details style="margin-top:12px" id="tunSet">
+        <summary>Tuning</summary>
+        <div class="fgrid" style="margin-top:10px">
+          <label class="f">Instrument<select id="tunInst"><option value="guitar">Guitar</option><option value="bass">Bass</option></select></label>
+          <label class="f">Strings<select id="tunNStr"></select></label>
+          <label class="f w">Tuning<select id="tunPre"></select></label>
+          <div class="f w"><span>Strings, low to high</span><div class="tnotes" id="tunNotes"></div></div>
+        </div>
+        <p class="sub" style="margin:8px 0 0">Audio input, channel, boost, noise gate and A4 reference are in <a href="#settings" id="tunToSet">Settings</a>.</p>
+      </details>
+    </div>
+  </div>
+</section>
+
+<section id="v-trainer" class="view" hidden>
+  <iframe id="trFrame" title="Fretboard trainer" allow="microphone; autoplay"></iframe>
+</section>
+
+<section id="v-log" class="view" hidden>
+  <div class="card">
+    <div class="row">
+      <select id="fEx" aria-label="Filter by exercise"></select>
+      <select id="fTech" aria-label="Filter by technique"></select>
+      <select id="fRange" aria-label="Date range"><option value="30">Last 30 days</option><option value="90">Last 90 days</option><option value="365">Last year</option><option value="all" selected>All time</option></select>
+      <span class="sp"></span>
+      <button id="addEntry" class="primary">+ Add entry</button>
+      <button id="csvBtn">Export CSV</button>
+    </div>
+    <div class="sub" id="logSum" style="margin-top:10px"></div>
+  </div>
+  <div class="card" id="logList"></div>
+</section>
+
+<!-- EXERCISES -->
+<section id="v-exercises" class="view" hidden>
+  <div class="card">
+    <div class="row" style="margin-bottom:10px">
+      <h2 style="margin:0">Exercises</h2><span class="sp"></span>
+      <label class="sub row" style="gap:6px"><input type="checkbox" id="showArch"> Show archived</label>
+      <button id="addEx" class="primary">+ Add exercise</button>
+    </div>
+    <div class="tscroll"><table id="exTable"></table></div>
+  </div>
+  <div class="grid2">
+    <div class="card">
+      <h2>Tempo converter</h2>
+      <div class="row" style="align-items:flex-end">
+        <label class="f">BPM<input id="cvBpm" type="number" value="120" step="any"></label>
+        <label class="f">From<select id="cvFrom"></select></label>
+        <label class="f">To<select id="cvTo"></select></label>
+      </div>
+      <p id="cvOut" style="font-size:18px;margin:12px 0 4px"></p>
+      <p class="sub" id="cvNps" style="margin:0"></p>
+    </div>
+    <div class="card">
+      <h2>Effort key</h2>
+      <div id="effKey"></div>
+      <p class="sub" style="margin:8px 0 0">Edit these in Settings.</p>
+    </div>
+  </div>
+</section>
+
+<!-- STATS -->
+<section id="v-stats" class="view" hidden>
+  <div class="card">
+    <div class="row" style="margin-bottom:12px">
+      <select id="sRange" aria-label="Date range"><option value="30">Last 30 days</option><option value="90" selected>Last 90 days</option><option value="365">Last year</option><option value="all">All time</option></select>
+      <span class="sub" id="sRangeNote"></span>
+    </div>
+    <div class="tiles" id="sTiles"></div>
+  </div>
+  <div class="card">
+    <h2>Minutes per day</h2>
+    <div id="chDaily"></div>
+  </div>
+  <div class="grid2">
+    <div class="card"><h2>Time by technique</h2><div id="chTech"></div></div>
+    <div class="card"><h2>Time by exercise</h2><div id="chEx"></div></div>
+  </div>
+  <div class="card" style="margin-top:16px">
+    <div class="row" style="margin-bottom:8px"><h2 style="margin:0">Progress</h2><span class="sp"></span><select id="sEx" aria-label="Exercise"></select></div>
+    <div id="chTempo"></div>
+  </div>
+</section>
+
+<!-- SETTINGS -->
+<section id="v-settings" class="view" hidden>
+  <div class="grid2">
+    <div class="card">
+      <h2>Practice</h2>
+      <div class="fgrid">
+        <label class="f">Daily goal (minutes)<input id="stGoal" type="number" min="0" step="5"></label>
+        <label class="f">Countdown buttons (minutes)<input id="stPresets" type="text" placeholder="1, 2, 5, 10, 15"></label>
+        <label class="f w">Chime volume<span class="row"><input id="stVol" type="range" min="0" max="1" step="0.05" style="flex:1"><button id="stTest">Test</button></span></label>
+        <label class="chk w"><input type="checkbox" id="stNotify"> Show a notification when a countdown ends while the app is in the background</label>
+      </div>
+    </div>
+    <div class="card">
+      <h2>Backup</h2>
+      <p class="sub" style="margin-top:0">Your practice data lives in this app on this computer. Export a backup now and then — it's a small file you can keep anywhere.</p>
+      <div class="row">
+        <button id="bkExport" class="primary">Export backup</button>
+        <button id="bkImport">Import backup…</button>
+        <button id="bkCsv">Export CSV</button>
+        <input type="file" id="bkFile" accept=".json,application/json" hidden>
+      </div>
+      <p class="sub" id="bkInfo"></p>
+    </div>
+  </div>
+  <div class="card" style="margin-top:16px" id="audioCard">
+    <div class="row"><h2 style="margin:0">Audio input</h2><span class="sp"></span><button id="inTest">🎤 Test input</button></div>
+    <p class="sub" style="margin:6px 0 10px">Used by the tuner and the fretboard trainer.</p>
+    <div class="fgrid">
+      <label class="f w">Audio interface / microphone<select id="inDev"><option value="">Default input</option></select></label>
+      <label class="f">Channel<select id="inChan"><option value="mix">Mix (both inputs)</option><option value="0">Input 1 (left)</option><option value="1">Input 2 (right)</option></select></label>
+      <label class="f"><span>A4 reference: <span id="inA4v"></span> Hz</span><input type="range" id="inA4" min="430" max="450"></label>
+      <label class="f"><span>Input boost: <span id="inBoostv"></span></span><input type="range" id="inBoost" min="1" max="20" step="0.5"></label>
+      <label class="f"><span>Noise gate: <span id="inGatev"></span></span><input type="range" id="inGate" min="1" max="50"></label>
+      <div class="f w"><span>Level <span id="inMsg" class="sub"></span></span><div class="meter lvlgate"><i id="inLvl" style="width:0"></i><b id="inGateMark"></b></div></div>
+    </div>
+  </div>
+  <div class="card" style="margin-top:16px">
+    <h2>Color scheme</h2>
+    <div class="skins" id="skinPick"></div>
+  </div>
+  <div class="grid2" style="margin-top:16px">
+    <div class="card">
+      <h2>Effort levels</h2>
+      <div id="effEdit"></div>
+      <button id="effAdd">+ Add level</button>
+    </div>
+    <div class="card">
+      <h2>Techniques</h2>
+      <div id="techEdit"></div>
+      <div class="row" style="margin-top:8px"><input id="techNew" type="text" placeholder="New technique"><button id="techAdd">Add</button></div>
+    </div>
+  </div>
+  <div class="card" style="margin-top:16px" id="about">
+    <h2>What’s new <span class="sub" id="verNow" style="font-weight:400"></span></h2>
+    <div class="chlog" id="chlog"></div>
+  </div>
+  <div class="card" style="margin-top:16px">
+    <h2>Installing</h2>
+    <p class="sub" style="margin:0">Start it with <b>Start Guitar Practice.command</b> on a Mac or <b>Start Guitar Practice.bat</b> on Windows. Then, in Chrome or Edge, use the install icon at the right end of the address bar (or the <b>Install app</b> button up top). In Safari on a Mac: <b>File → Add to Dock</b>. Once installed it opens in its own window and keeps working even when the launcher isn’t running. Each computer keeps its own practice log; use Export/Import backup to move it.</p>
+  </div>
+</section>
+</main>
+
+<dialog id="dlgEntry">
+  <form method="dialog">
+    <h2 id="deTitle">Edit entry</h2>
+    <div class="fgrid">
+      <label class="f">Date<input id="deDate" type="date" required></label>
+      <label class="f">Minutes<input id="deMin" type="number" min="0" step="any" required></label>
+      <label class="f w">Exercise<select id="deEx"></select></label>
+      <label class="f"><span id="deBpmL">BPM</span><input id="deBpm" type="number" min="0" step="any"></label>
+      <label class="f">Effort<select id="deEff"></select></label>
+      <label class="f w">Note<input id="deNote" type="text"></label>
+      <label class="chk w"><input type="checkbox" id="deLad"> <span>Tempo ladder run<small>Doesn’t count toward the best tempo or goal progress.</small></span></label>
+    </div>
+    <div class="row" style="margin-top:16px">
+      <button value="save" class="primary" id="deSave">Save</button>
+      <button value="cancel" formnovalidate>Cancel</button>
+      <span class="sp"></span>
+      <button value="delete" class="danger" id="deDel" formnovalidate>Delete</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="dlgEx">
+  <form method="dialog">
+    <h2 id="dxTitle">Exercise</h2>
+    <div class="fgrid">
+      <label class="f w">Name<input id="dxName" type="text" required></label>
+      <label class="f">Technique<select id="dxTech"></select></label>
+      <label class="f">Subdivision<input id="dxSub" type="text" list="subs" placeholder="16th"></label>
+      <label class="f">Goal tempo<input id="dxGoal" type="number" min="0" step="any"></label>
+      <label class="f">Tempo ladder max BPM<input id="dxMax" type="number" min="0" step="any" placeholder="same as goal"></label>
+      <label class="f">Length (measures)<input id="dxLen" type="number" min="1" max="64" step="1" placeholder="1"></label>
+      <label class="f">Ladder repeats per tempo<input id="dxReps" type="number" min="1" max="64" step="1" placeholder="4"></label>
+      <label class="f">Measure label<input id="dxMetric" type="text" placeholder="BPM"></label>
+      <label class="f w">Notes<textarea id="dxNotes" rows="2"></textarea></label>
+      <div class="opts">
+        <label class="chk"><input type="checkbox" id="dxMet"><span>Metronome<small>Off: Play starts only the practice timer.</small></span></label>
+        <label class="chk"><input type="checkbox" id="dxArch"><span>Archived<small>Hides it from the exercise list. Its practice history is kept.</small></span></label>
+      </div>
+    </div>
+    <div class="row" style="margin-top:16px">
+      <button value="save" class="primary">Save</button>
+      <button value="cancel" formnovalidate>Cancel</button>
+      <span class="sp"></span>
+      <button value="delete" class="danger" id="dxDel" formnovalidate>Delete</button>
+    </div>
+  </form>
+</dialog>
+<datalist id="subs"><option>8th</option><option>8th Triplets</option><option>16th</option><option>16th Triplets</option><option>Quarter</option></datalist>
+
+<div id="tip" hidden></div>
+<div id="toast" hidden></div>
+
+<script>
+const APP_VERSION='2.1.0';
+const CHANGES=[
+['2.1.0','Nov 18, 2026',['The Exercise card is reorganized: Edit exercise is in its top-right corner, the technique and subdivision are one line under the name, and Goal, Best, Last time and Total sit in one row.',
+ 'Everything the tempo ladder uses is now in a Tempo ladder section of the Exercise card: length, ladder max, repeats per tempo and both count-ins. Close it if you don’t use the ladder; it stays closed.',
+ 'Count-ins (formerly “get-ready clicks”) are saved with each exercise. Your exercises start with the count-ins you had set.',
+ 'The ladder’s row of tempo buttons is gone. While it runs, the metronome shows the percentage and tempo, like “90% · 147 BPM · count-in (1 of 1)”.']],
+['2.0.1','Nov 16, 2026',['Cleaner app icon: the music note is gone and the stopwatch is bigger. If your installed app still shows the old icon, it updates on its own after a while, or you can uninstall and reinstall the app (your practice log is kept).']],
+['2.0','Nov 15, 2026',['First public release. New installs start with a few example exercises (the same ones as in the videos) that you can edit, archive or delete.',
+ 'Practice: pick an exercise, time it with the stopwatch or a countdown, and log the minutes, tempo and how it felt. Today’s minutes, your streak and your daily goal are always at the top.',
+ 'Metronome with drum or click sounds, tap tempo, divisions including triplets, and a beat pattern you can draw (click and drag across the grid).',
+ 'Tempo ladder: steps the metronome up past your goal and back down, with count-ins, repeats per tempo, pause and resume, and skip or stay on a tempo. Ladder runs don’t count as your best tempo.',
+ 'Fretboard trainer for learning every note on the neck (name it, find it, or play it into a mic), with timed challenges. It logs its own time and score.',
+ 'Tuner for guitar or bass in standard, drop, open or custom tunings; audio input set once in Settings.',
+ 'Log, Exercises and Stats tabs with filters, CSV export, daily minutes against your goal and progress charts. Backups you can export and import.']],
+];
+// In-app dialogs: Studio's window can't show the browser's alert()/confirm() pop-ups.
+function ask(title,msg,{ok='OK',cancel='Cancel',danger=false}={}){return new Promise(res=>{
+  const d=document.createElement('dialog');d.className='askdlg';
+  d.innerHTML=(title?'<h2></h2>':'')+'<p style="margin:0;white-space:pre-line"></p><div class="row" style="justify-content:flex-end;gap:8px;margin-top:18px">'+(cancel?'<button value="0"></button>':'')+'<button value="1"></button></div>';
+  if(title)d.querySelector('h2').textContent=title;d.querySelector('p').textContent=msg;
+  const bs=d.querySelectorAll('button');if(cancel){bs[0].textContent=cancel;bs[1].textContent=ok}else bs[0].textContent=ok;
+  const okB=d.querySelector('button[value="1"]');if(danger)okB.className='danger';else if(!cancel)okB.className='primary';
+  bs.forEach(b=>b.onclick=()=>d.close(b.value));
+  d.addEventListener('close',()=>{d.remove();res(d.returnValue==='1')});
+  document.body.appendChild(d);d.showModal();bs[0].focus()})}
+function tell(msg){return ask('',msg,{cancel:null})}
+const SEED={"v":1,"exercises":[{"archived":false,"notes":"Strict alternate picking, all six strings and back.","trainer":false,"goal":140,"sub":"16th","metric":"BPM","id":1,"technique":"Alternate Picking","name":"Chromatic 1-2-3-4","lenBars":1,"curveBars":4},{"archived":false,"notes":"","trainer":false,"goal":120,"sub":"16th","metric":"BPM","id":2,"technique":"Alternate Picking","name":"G major 3-note-per-string scale","lenBars":2,"curveBars":2},{"archived":false,"notes":"","trainer":false,"goal":110,"sub":"16th Triplets","metric":"BPM","id":3,"technique":"Legato","name":"Hammer-on and pull-off trills","lenBars":1,"curveBars":4},{"archived":false,"notes":"","trainer":false,"goal":90,"sub":"16th Triplets","metric":"BPM","id":4,"technique":"Sweep Picking","name":"Three-string arpeggios","lenBars":2,"curveBars":3},{"archived":false,"notes":"","trainer":false,"goal":130,"sub":"16th","metric":"BPM","id":5,"technique":"Economy Picking","name":"Pentatonic in fours","lenBars":2,"curveBars":2},{"archived":false,"notes":"","trainer":false,"goal":170,"sub":"16th","metric":"BPM","id":6,"technique":"Rhythm","name":"Palm-muted gallop","lenBars":4,"curveBars":2,"curveMax":180},{"archived":false,"notes":"","trainer":true,"goal":null,"sub":"","metric":"Score","id":7,"technique":"Fretboard Notes","name":"Fretboard Trainer"},{"archived":false,"notes":"Playing songs you already know.","trainer":false,"goal":null,"sub":"","metric":"BPM","id":8,"technique":"","name":"Jamming","metronome":false}],"efforts":[{"id":1,"name":"Effortless","desc":"Easy all day"},{"id":2,"name":"Easy","desc":"Can play it cleanly but must be careful"},{"id":3,"name":"Tiring","desc":"Can play it for a while but get tired and make mistakes"},{"id":4,"name":"Broken","desc":"Can play a few notes here and there"},{"id":5,"name":"Impossible","desc":"Can't play it at all yet"},{"id":6,"name":"Tempo Ladder","desc":"A tempo ladder run"}],"techniques":["Alternate Picking","Economy Picking","Sweep Picking","Legato","Tapping","Rhythm","Chords","Scales","Songs","Fretboard Notes"],"entries":[]};
+const DEFSET={goal:25,presets:[1,2,5,10,15,20,25,30],chimeVol:0.6,notify:false,lastBackup:null};
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
+const LS={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},
+  set(k,v){try{localStorage.setItem(k,JSON.stringify(v));return true}catch(e){toast('Couldn’t save — browser storage is blocked or full');return false}}};
+const clone=o=>JSON.parse(JSON.stringify(o));
+function fresh(){const d=clone(SEED);d.settings=Object.assign({},DEFSET);d.created=Date.now();return d}
+let D=LS.get('gp.data',null);
+if(!D||!Array.isArray(D.entries)||!Array.isArray(D.exercises)){D=fresh();LS.set('gp.data',D)}
+D.settings=Object.assign({},DEFSET,D.settings||{});
+D.efforts=D.efforts||clone(SEED.efforts);D.techniques=D.techniques||clone(SEED.techniques);
+// exactly one exercise opens the fretboard trainer; on first run it is renamed "Fretboard Trainer"
+function fixTrainerEx(){let t=D.exercises.find(e=>/^fretboard (notes|trainer)$/i.test(e.name))||D.exercises.find(e=>e.trainer);
+  D.exercises.forEach(e=>{e.trainer=e===t});
+  if(t&&!D.settings.trainerRenamed&&/^fretboard notes$/i.test(t.name))t.name='Fretboard Trainer';D.settings.trainerRenamed=true}
+fixTrainerEx();
+function save(){LS.set('gp.data',D)}
+
+// ---------- helpers ----------
+const pad=n=>String(n).padStart(2,'0');
+const dkey=(d=new Date())=>d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+const parseD=k=>{const[y,m,d]=k.split('-').map(Number);return new Date(y,m-1,d)};
+const addDays=(k,n)=>{const d=parseD(k);d.setDate(d.getDate()+n);return dkey(d)};
+const fmtDate=(k,o)=>parseD(k).toLocaleDateString(undefined,o||{month:'short',day:'numeric'});
+const fmtMin=m=>{m=Math.round(m);const h=Math.floor(m/60);return h?h+'h '+(m%60)+'m':m+' min'};
+const fmtH=m=>(m/60).toFixed(1)+' h';
+const num=v=>{if(v===''||v==null)return null;const n=parseFloat(v);return isFinite(n)?n:null};
+const trim=n=>n==null?'':String(Math.round(n*100)/100);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const exById=id=>D.exercises.find(e=>e.id==id);
+const effById=id=>D.efforts.find(e=>e.id==id);
+const isDup=e=>D.exercises.some(x=>x!==e&&x.name.trim().toLowerCase()==e.name.trim().toLowerCase());
+const techTag=e=>e&&e.technique&&isDup(e)&&e.technique.trim().toLowerCase()!=e.name.trim().toLowerCase()?e.technique:'';
+const exName=e=>e?(e.name+(techTag(e)?' ('+techTag(e)+')':'')):'(deleted exercise)';
+const exShort=(e,n)=>e?(shortName(e.name,n)+(techTag(e)?' ('+techTag(e)+')':'')):'(deleted exercise)';
+const shortName=(s,n=26)=>s.length<=n?s:s.slice(0,n-10).trimEnd()+'…'+s.slice(-8).trimStart();
+const uid=()=>'e'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+function selAll(el){if(!el||el._sa)return;el._sa=1;let fresh=false;const sel=()=>{try{el.select()}catch(e){}};
+  el.addEventListener('focus',()=>{fresh=true;sel()});
+  el.addEventListener('click',()=>{if(fresh){fresh=false;sel()}});
+  el.addEventListener('blur',()=>{fresh=false});
+  el.addEventListener('dblclick',sel)}
+const cmpEntry=(a,b)=>a.date<b.date?-1:a.date>b.date?1:(a.t||0)-(b.t||0);
+const effHtml=id=>{const f=effById(id);return f?'<span class="ed ed'+f.id+'"></span>'+esc(f.name):'<span class="sub">—</span>'};
+const metricOf=ex=>(ex&&ex.metric)||'BPM';
+let toastT=null;
+function toast(msg,btn,fn){const t=$('#toast');t.innerHTML='<span>'+esc(msg)+'</span>';if(btn){const b=document.createElement('button');b.textContent=btn;b.onclick=()=>{t.hidden=true;fn()};t.appendChild(b)}t.hidden=false;clearTimeout(toastT);toastT=setTimeout(()=>t.hidden=true,btn?8000:2600)}
+
+function dayTotals(list=D.entries){const m={};for(const e of list)m[e.date]=(m[e.date]||0)+(+e.min||0);return m}
+const LADRE=/speed\s*curve|tempo\s*ladder/i;
+function isLadder(e){if(e.ladder!=null)return!!e.ladder;const f=effById(e.effort);return!!(f&&LADRE.test(f.name))}
+function exStats(id){const es=D.entries.filter(e=>e.ex==id).sort(cmpEntry);let tot=0,best=null;
+  for(const e of es){tot+=+e.min||0;if(e.bpm!=null&&!isLadder(e)&&(best==null||e.bpm>best))best=e.bpm}
+  return{tot,best,last:es[es.length-1]||null,lastB:es.filter(e=>e.bpm!=null&&!isLadder(e)).pop()||null,n:es.length}}
+function streaks(){const t=dayTotals();const days=Object.keys(t).filter(k=>t[k]>0).sort();let longest=0,run=0,prev=null;
+  for(const k of days){run=(prev&&addDays(prev,1)==k)?run+1:1;if(run>longest)longest=run;prev=k}
+  let cur=0,k=dkey();if(!(t[k]>0))k=addDays(k,-1);while(t[k]>0){cur++;k=addDays(k,-1)}
+  return{cur,longest,days:days.length}}
+function weekStart(){const d=new Date();const w=(d.getDay()+6)%7;d.setDate(d.getDate()-w);return dkey(d)}
+function activeExercises(){return D.exercises.filter(e=>!e.archived)}
+function exOptions(sel,{all,includeArchived,noTrainer,noSub}={}){
+  const byT={};for(const e of D.exercises){if(e.archived&&!includeArchived&&e.id!=sel)continue;if(noTrainer&&e.trainer)continue;(byT[e.technique||'No technique']=byT[e.technique||'No technique']||[]).push(e)}
+  let h=all?'<option value="">All exercises</option>':'';
+  for(const t of Object.keys(byT).sort()){h+='<optgroup label="'+esc(t)+'">'+byT[t].map(e=>'<option value="'+e.id+'"'+(e.id==sel?' selected':'')+'>'+esc(exName(e))+(e.sub&&!noSub?' — '+esc(e.sub):'')+(e.archived?' (archived)':'')+'</option>').join('')+'</optgroup>'}
+  return h}
+
+// ---------- tabs ----------
+let view='practice';
+function show(v){if(!$('#v-'+v))v='practice';if(view=='trainer'&&v!='trainer'&&typeof TR!='undefined')trainerLeave();if(v!='tuner'&&view=='tuner'&&typeof TU!='undefined'&&TU.stream)tunStop();if(v=='tuner')setTimeout(tunAuto,0);if(v!='settings'&&typeof IN!='undefined'&&IN.stream)inStop();if(v=='settings'&&typeof inList=='function')setTimeout(inList,0);view=v;$$('.view').forEach(s=>s.hidden=s.id!='v-'+v);$$('#tabs button').forEach(b=>b.classList.toggle('on',b.dataset.v==v));
+  try{history.replaceState(null,'','#'+v)}catch(e){}render()}
+$$('#tabs button').forEach(b=>b.onclick=()=>show(b.dataset.v));
+function render(){({practice:renderPractice,tuner:()=>{},trainer:loadTrainer,log:renderLog,exercises:renderExercises,stats:renderStats,settings:renderSettings})[view]();renderTimer()}
+
+// ---------- timer ----------
+let T=LS.get('gp.timer',null)||{mode:'up',target:10*60000,acc:0,start:null,seg0:null,ex:null,done:false};
+if(T.ex==null||!exById(T.ex)||exById(T.ex).trainer){const l=D.entries.filter(e=>!(exById(e.ex)||{}).trainer).sort(cmpEntry).pop();T.ex=l?l.ex:(activeExercises().find(e=>!e.trainer)||{}).id;}
+const running=()=>T.start!=null;
+const elapsed=()=>T.acc+(T.start?Date.now()-T.start:0);
+function saveT(){LS.set('gp.timer',T)}
+let actx=null,chimeNodes=[],chimeArmed=false,wl=null;
+function audio(){try{actx=actx||new(window.AudioContext||window.webkitAudioContext)();if(actx.state=='suspended')actx.resume()}catch(e){}return actx}
+function chime(delay=0,vol){const a=audio();const v=vol!=null?vol:+D.settings.chimeVol;if(!a||!v)return[];const t0=a.currentTime+Math.max(0,delay)+0.03,nodes=[];
+  [[0,880],[.18,1174.66],[.36,1567.98],[.95,880],[1.13,1174.66],[1.31,1567.98]].forEach(([dt,f])=>{
+    const o=a.createOscillator(),g=a.createGain();o.type='sine';o.frequency.value=f;
+    g.gain.setValueAtTime(0,t0+dt);g.gain.linearRampToValueAtTime(.32*v,t0+dt+.012);g.gain.exponentialRampToValueAtTime(.0001,t0+dt+1.4);
+    o.connect(g);g.connect(a.destination);o.start(t0+dt);o.stop(t0+dt+1.5);nodes.push(o)});return nodes}
+function cancelChime(){chimeNodes.forEach(o=>{try{o.stop()}catch(e){}});chimeNodes=[];chimeArmed=false}
+async function wake(){try{if('wakeLock' in navigator&&!wl){wl=await navigator.wakeLock.request('screen');wl.addEventListener('release',()=>{wl=null})}}catch(e){}}
+function releaseWake(){try{if(wl)wl.release()}catch(e){}wl=null}
+function clockStr(ms,up){const s=up?Math.floor(ms/1000):Math.ceil(ms/1000),h=Math.floor(s/3600),m=Math.floor(s%3600/60),x=s%60;return(h?h+':'+pad(m):m)+':'+pad(x)}
+function pause(){if(!running())return;T.acc=elapsed();T.start=null;cancelChime();releaseWake();saveT();if(CURVE.on&&!CURVE.paused)curvePause();else if(MC().withTimer&&MET.on)metStop()}
+function startPause(){
+  audio();
+  if(T.done)resetTimer();
+  if(running())pause();
+  else{
+    if(T.ex==null||!exById(T.ex)){toast('Pick an exercise first');return}
+    if(T.mode=='down'&&T.acc>=T.target)return;
+    T.start=Date.now();if(!T.seg0)T.seg0=Date.now();
+    if(T.mode=='down'){cancelChime();chimeNodes=chime((T.target-T.acc)/1000);chimeArmed=true}
+    wake();saveT();
+    // the metronome follows the timer for playing exercises only — never for the Fretboard Trainer
+    if(CURVE.on&&CURVE.paused)curveResume();else if(MC().withTimer&&!MET.on&&!(exById(T.ex)||{}).trainer)metStart();
+  }
+  renderTimer();
+}
+function resetTimer(){cancelChime();releaseWake();if(CURVE.paused)curveEnd();if(MC().withTimer&&MET.on)metStop();T.acc=0;T.start=null;T.seg0=null;T.done=false;saveT();renderTimer()}
+function notifyDone(){if(D.settings.notify&&document.hidden&&'Notification' in window&&Notification.permission=='granted'){try{new Notification('Time’s up',{body:exName(exById(T.ex))+' — '+Math.round(T.target/60000)+' min done',icon:'icons/icon-192.png'})}catch(e){}}}
+function tick(){
+  if(T.mode=='down'&&running()&&elapsed()>=T.target){
+    T.acc=T.target;T.start=null;T.done=true;saveT();if(MC().withTimer&&MET.on)metStop();
+    if(!chimeArmed)chimeNodes=chime(0);chimeArmed=false;
+    releaseWake();notifyDone();try{navigator.vibrate&&navigator.vibrate([200,100,200])}catch(e){}
+    openLog();
+  }
+  renderTimer();
+}
+setInterval(tick,250);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden){if(running())wake();tick()}});
+let lastClock='';
+function hasPracticeEx(){return D.exercises.some(e=>!e.trainer&&!e.archived)}
+function renderTimer(){
+  const el=elapsed(),down=T.mode=='down',v=down?Math.max(0,T.target-el):el,txt=clockStr(v,!down);
+  if(txt!==lastClock){$('#clock').textContent=txt;lastClock=txt}
+  $('#clock').classList.toggle('done',!!T.done);
+  $('#cbar').style.visibility=down?'visible':'hidden';$('#cbar i').style.width=(down?Math.min(100,100*el/T.target):0)+'%';
+  $$('#tmode button').forEach(b=>{b.classList.toggle('on',b.dataset.m==T.mode)});
+  $('#presets').style.display=down?'':'none';
+  $$('#presets .chip[data-m]').forEach(c=>c.classList.toggle('on',+c.dataset.m*60000==T.target));
+  $('#bStart').textContent=running()?'Pause':(T.acc>0&&!T.done?'Resume':'Start');
+  $('#bFinish').disabled=!(el>=1000);$('#bReset').disabled=!(el>0);$('#bStart').disabled=!running()&&!exById(T.ex);if(typeof renderMetBtn=='function'&&$('#metStop'))renderMetBtn();
+  const ex=exById(T.ex);
+  $('#clockSub').textContent=T.done?'Time’s up — log it below':(el>0||running())?(running()?'Practicing ':'Paused · ')+exName(ex)+(down?' · '+clockStr(el,true)+' done':''):(down?Math.round(T.target/60000)+'-minute countdown':'Ready');
+  const p=$('#pill'),act=running()||el>0;p.hidden=!act||view=='practice';
+  if(act){p.textContent='⏱ '+txt;p.classList.toggle('paused',!running())}
+  document.title=running()?txt+' · Guitar Practice':'Guitar Practice';
+}
+$('#pill').onclick=()=>show('practice');
+$('#bStart').onclick=startPause;
+$('#bFinish').onclick=()=>{if(elapsed()<1000){toast('Nothing to log yet');return}pause();openLog()};
+async function discardSession(after){
+  if(elapsed()>60000&&!await ask('Discard practice?','Discard '+fmtMin(elapsed()/60000)+' of practice without logging it?'+(after?' '+after:''),{ok:'Discard',cancel:'Keep it',danger:true}))return false;
+  $('#logForm').hidden=true;pendingEx=null;resetTimer();syncExSel();return true}
+$('#bReset').onclick=()=>discardSession();
+$$('#tmode button').forEach(b=>b.onclick=async()=>{if(b.dataset.m==T.mode)return;
+  if(T.acc>0||running()){if(!await discardSession('Then switch to '+b.textContent+'.'))return}
+  T.mode=b.dataset.m;T.done=false;saveT();renderTimer()});
+function buildPresets(){const c=$('#presets');c.innerHTML=D.settings.presets.map(m=>'<button class="chip" data-m="'+m+'">'+m+' min</button>').join('')+'<span class="row" style="gap:4px"><input id="customMin" type="number" min="0.5" step="0.5" placeholder="min" style="width:70px" aria-label="Custom minutes"><button class="chip" id="customSet">Set</button></span>';
+  $$('#presets .chip[data-m]').forEach(b=>b.onclick=()=>setTarget(+b.dataset.m));
+  $('#customSet').onclick=()=>{const m=num($('#customMin').value);if(m>0)setTarget(m)};
+  $('#customMin').onkeydown=e=>{if(e.key=='Enter')$('#customSet').click()}}
+function setTarget(m){const ms=Math.round(m*60000);if(T.done){resetTimer()}if(ms<=T.acc){toast('That’s less than the time already done');return}
+  T.target=ms;if(running()){cancelChime();chimeNodes=chime((T.target-elapsed())/1000);chimeArmed=true}saveT();renderTimer()}
+addEventListener('keydown',e=>{
+  if(e.code!='Space'||view!='practice'||e.ctrlKey||e.metaKey||e.altKey)return;
+  if(['INPUT','SELECT','TEXTAREA','BUTTON'].includes(e.target.tagName)||$('dialog[open]'))return;
+  e.preventDefault();$('#metGo').click()});
+
+// ---------- practice view ----------
+let pendingEx=null,lfEffort=null;
+function syncExSel(){$('#exSel').innerHTML=exOptions(T.ex,{noTrainer:true,noSub:true});}
+let lastExEvt;
+function renderPractice(){
+  const tt=dayTotals(),today=tt[dkey()]||0,goal=+D.settings.goal||0,st=streaks();
+  let wk=0;for(const k in tt)if(k>=weekStart())wk+=tt[k];
+  const total=D.entries.reduce((s,e)=>s+(+e.min||0),0);
+  $('#todayTiles').innerHTML=
+    '<div class="tile"><div class="k">Today</div><div class="v">'+Math.round(today)+' <small>'+(goal?'of '+goal+' min':'min')+'</small></div>'+(goal?'<div class="meter"><i style="width:'+Math.min(100,100*today/goal)+'%"></i></div>':'')+'</div>'+
+    '<div class="tile"><div class="k">Streak</div><div class="v">'+st.cur+' <small>day'+(st.cur==1?'':'s')+'</small></div></div>'+
+    '<div class="tile"><div class="k">This week</div><div class="v">'+fmtMin(wk)+'</div></div>'+
+    '<div class="tile"><div class="k">All time</div><div class="v">'+fmtH(total)+' <small>· '+st.days+' days</small></div></div>';
+  syncExSel();
+  const ex=exById(T.ex),s=exStats(T.ex),m=metricOf(ex);
+  $('#exSub').innerHTML=ex?'<span>'+esc([ex.technique,ex.sub].filter(Boolean).join(' · '))+'</span>'+(ex.trainer?'':'<label class="sw'+(usesMet(ex)?' on':'')+'" id="swMet" title="Off: Play starts only the practice timer"><i></i>Metronome</label>'):'';
+  const sm=$('#swMet');if(sm)sm.onclick=e=>{e.preventDefault();ex.metronome=!usesMet(ex);if(!ex.metronome&&(CURVE.on||CURVE.hold))curveCancel();save();render()};
+  $('#exInfo').innerHTML=ex?[
+    ['Goal',ex.goal?trim(ex.goal)+' <small class="sub">'+esc(m)+'</small>':'—'],
+    ['Best',s.best!=null?trim(s.best):'—'],
+    ['Last time',s.last?(s.last.bpm!=null?trim(s.last.bpm)+' · ':'')+fmtDate(s.last.date):'—'],
+    ['Total',fmtMin(s.tot)]
+  ].map(([k,v])=>'<div><span>'+k+'</span><b>'+v+'</b></div>').join('')+(s.last&&s.last.effort?'<div><span>Last effort</span><b style="font-size:15px">'+effHtml(s.last.effort)+'</b></div>':'')+(ex.notes?'<div style="grid-column:1/-1"><span>Notes</span><div>'+esc(ex.notes)+'</div></div>':''):(hasPracticeEx()?'<div>No exercise selected</div>':'<div class="firstex" style="grid-column:1/-1"><b>No exercises yet</b><p class="sub">Add the things you practice — a lick, a scale, a song — with a goal tempo if it has one. The Fretboard tab is ready to use any time.</p><button class="primary" id="exFirst">+ Add your first exercise</button></div>');
+  $('#exSel').hidden=!hasPracticeEx();$('#editEx').hidden=!ex;const fx=$('#exFirst');if(fx)fx.onclick=()=>editEx(null);
+  const ls=$('#ladSec');ls.hidden=!ex||ex.trainer||!usesMet(ex);
+  if(ex&&!ex.trainer){if(ls.open!=(D.settings.ladOpen!==false))ls.open=D.settings.ladOpen!==false;
+    if(document.activeElement!=$('#exLen'))$('#exLen').value=ex.lenBars||1;
+    if(document.activeElement!=$('#exMax')){$('#exMax').value=ex.curveMax??'';$('#exMax').placeholder=ex.goal?Math.round(ex.goal*1.1):'—'}}
+  if(T.ex!==lastExEvt){lastExEvt=T.ex;dispatchEvent(new CustomEvent('gp:exercise',{detail:{id:T.ex??null,name:ex?ex.name:''}}))}
+  renderLadder();
+  renderCurve();
+  // today list
+  const te=D.entries.filter(e=>e.date==dkey()).sort(cmpEntry);
+  $('#todayList').innerHTML=te.length?te.map(entRow).join(''):'<p class="sub" style="margin:4px 0">Nothing logged yet today.</p>';
+  bindEnt($('#todayList'));
+  if(!$('#presets').children.length)buildPresets();
+}
+function entRow(e){const x=exById(e.ex);return'<div class="ent" data-id="'+e.id+'"><div class="nm">'+esc(exName(x))+'<small>'+esc([x&&x.technique,x&&x.sub,e.note].filter(Boolean).join(' · '))+'</small></div><div class="n">'+(e.bpm!=null?trim(e.bpm)+' <span class="sub">'+esc(metricOf(x))+'</span>':'<span class="sub">—</span>')+'</div><div class="n">'+trim(e.min)+' <span class="sub">min</span></div><div class="eff">'+effHtml(e.effort)+'</div></div>'}
+function bindEnt(root){root.querySelectorAll('.ent').forEach(r=>r.onclick=()=>editEntry(r.dataset.id))}
+function chooseEx(id){
+  if(id==T.ex)return;
+  if(T.acc>0||running()){pause();pendingEx=id;toast('Log the time for '+exName(exById(T.ex))+' first');openLog();syncExSel();return}
+  T.ex=id;saveT();onExChanged()}
+$('#exSel').onchange=e=>{const id=+e.target.value;chooseEx(id);if(pendingEx!=null)e.target.value=T.ex};
+function onExChanged(){curveCancel();const s=exStats(T.ex);$('#bpm').value=s.lastB?trim(s.lastB.bpm):'';followEx();renderMetTempo();renderPractice();renderTimer();}
+$('#bpm').oninput=()=>{curveCancel();$$('#ladder .chip').forEach(c=>c.classList.toggle('on',+c.dataset.v==num($('#bpm').value)))};
+$('#bm5').onclick=()=>{const v=num($('#bpm').value)||0;$('#bpm').value=Math.max(0,v-5);$('#bpm').oninput()};
+$('#bp5').onclick=()=>{const v=num($('#bpm').value)||0;$('#bpm').value=v+5;$('#bpm').oninput()};
+$('#bm1').onclick=()=>{const v=num($('#bpm').value)||0;$('#bpm').value=Math.max(0,v-1);$('#bpm').oninput()};
+$('#bp1').onclick=()=>{const v=num($('#bpm').value)||0;$('#bpm').value=v+1;$('#bpm').oninput()};
+$('#editEx').onclick=()=>{if(T.ex!=null)editEx(T.ex)};
+
+function openLog(){
+  if(view!='practice')show('practice');
+  const ex=exById(T.ex);
+  $('#lfEx').textContent=exName(ex);
+  $('#lfMin').value=Math.max(1,Math.round(elapsed()/60000));
+  $('#lfBpm').value=metricOf(ex)=='BPM'?$('#bpm').value:'';$('#lfBpmL').textContent=metricOf(ex);
+  if(ex&&ex.trainer){const n=trainerScore();$('#lfBpm').value=n||''}
+  $('#lfNote').value='';lfEffort=null;LOGLAD=null;
+  {const L=CURVE.on?{ex:CURVE.ex,t:CURVE.t0,top:CURVE.top}:CURVE.last;
+   if(L&&L.ex==T.ex&&T.seg0&&L.t>=T.seg0-60000&&L.top){
+     LOGLAD={top:L.top,met:$('#lfBpm').value};
+     // still the ladder's run if it is running/holding, or the tempo hasn't been changed since it ended
+     const still=CURVE.on||CURVE.hold||num($('#bpm').value)==L.endTempo;
+     $('#lfLadInfo').textContent='Reached '+L.top+' BPM. Doesn’t count toward the best tempo or goal progress, and doesn’t change the metronome.';
+     $('#lfLad').checked=still;lfLadApply()}}
+  $('#lfLadRow').hidden=!LOGLAD;
+  renderEffBtns();
+  $('#lfHint').textContent=ex&&ex.trainer?trainerSummary():'';
+  $('#logForm').hidden=false;
+  setTimeout(()=>{$('#logForm').scrollIntoView({block:'nearest',behavior:'smooth'});$('#lfMin').focus();$('#lfMin').select()},50);
+}
+let LOGLAD=null;
+function lfLadApply(){if(!LOGLAD)return;const on=$('#lfLad').checked,f=D.efforts.find(x=>LADRE.test(x.name));
+  $('#lfBpm').value=on?LOGLAD.top:LOGLAD.met;
+  if(f){if(on)lfEffort=f.id;else if(lfEffort==f.id)lfEffort=null}renderEffBtns()}
+$('#lfLad').onchange=lfLadApply;
+function renderEffBtns(){$('#lfEff').innerHTML=D.efforts.map(f=>'<button data-id="'+f.id+'" title="'+esc(f.desc||'')+'" class="'+(f.id==lfEffort?'on':'')+'"><span class="ed ed'+f.id+'"></span>'+esc(f.name)+'</button>').join('');
+  $$('#lfEff button').forEach(b=>{b.onclick=()=>{lfEffort=lfEffort==+b.dataset.id?null:+b.dataset.id;renderEffBtns()};
+    b.onmouseenter=b.onfocus=()=>feelHint(+b.dataset.id);b.onmouseleave=b.onblur=()=>feelHint(lfEffort)});feelHint(lfEffort)}
+function feelHint(id){const f=effById(id),el=$('#lfFeel');if(!el)return;
+  if(!f){el.textContent='Hover over a level to see what it means.';return}
+  el.innerHTML='<span class="ed ed'+f.id+'"></span><b>'+esc(f.name)+'</b> — '+(f.desc?esc(f.desc):'<i>no description yet (add one in Settings → Effort levels)</i>')}
+// the trainer's Score = notes right on the first try; total them over this timer session (all runs)
+function trainerScore(){let h=[];try{h=JSON.parse(localStorage.getItem('fbhist')||'[]')}catch(e){}
+  const from=T.seg0||Date.now();return h.filter(x=>x.d>=from&&x.ok&&x.c&&x.m!='tune').length}
+function trainerSummary(){
+  let h=[];try{h=JSON.parse(localStorage.getItem('fbhist')||'[]')}catch(e){}
+  const from=T.seg0||Date.now(),mine=h.filter(x=>x.d>=from);
+  if(!mine.length)return'No trainer answers recorded during this session.';
+  const ok=mine.filter(x=>x.c),first=mine.filter(x=>x.ok).length,avg=ok.length?ok.reduce((s,x)=>s+x.ms,0)/ok.length/1000:null;
+  return'Trainer during this session: '+ok.length+' notes found'+(avg!=null?' · '+avg.toFixed(1)+' s average per note':'');
+}
+function saveLog(){
+  const min=num($('#lfMin').value);if(!(min>0)){toast('Enter the minutes');$('#lfMin').focus();return}
+  const bpm=num($('#lfBpm').value);
+  const lad=!!(LOGLAD&&$('#lfLad').checked);
+  D.entries.push(Object.assign({id:uid(),date:dkey(new Date(T.seg0||Date.now())),ex:T.ex,bpm,min,effort:lfEffort,note:$('#lfNote').value.trim(),t:Date.now()},lad?{ladder:true}:{}));
+  save();$('#logForm').hidden=true;LOGLAD=null;
+  if(bpm!=null&&!lad)$('#bpm').value=trim(bpm);
+  resetTimer();
+  if(pendingEx!=null){T.ex=pendingEx;pendingEx=null;saveT();onExChanged()}
+  render();toast('Logged '+trim(min)+' min of '+exName(exById(T.ex)));
+}
+$('#lfSave').onclick=saveLog;
+['lfMin','lfBpm','lfNote'].forEach(id=>$('#'+id).onkeydown=e=>{if(e.key=='Enter'){e.preventDefault();saveLog()}});
+$('#lfCancel').onclick=()=>{$('#logForm').hidden=true;pendingEx=null;syncExSel();renderTimer()};
+$('#addToday').onclick=()=>editEntry(null,{date:dkey(),ex:T.ex});
+
+// ---------- trainer ----------
+let trRO=null;
+function loadTrainer(){const f=$('#trFrame');if(!f.dataset.on){f.dataset.on='1';f.src='trainer.html?embed=1'}}
+function openTrainer(){show('trainer')}
+$('#trFrame').addEventListener('load',()=>{
+  const f=$('#trFrame');if(!f.dataset.on)return;
+  try{const d=f.contentDocument,m=d.querySelector('main');if(!m)return;if(trRO)trRO.disconnect();
+    const fit=()=>{const hgt=m.getBoundingClientRect().height;if(hgt>0)f.style.height=Math.ceil(hgt+4)+'px'};trRO=new ResizeObserver(fit);trRO.observe(m);fit()}catch(e){}
+});
+addEventListener('message',ev=>{
+  if(ev.origin!==location.origin)return;const m=ev.data;if(!m||m.gp!='trainer')return;
+  if(m.running){TR.running=true;if(TR.t0==null&&!document.hidden)TR.t0=Date.now();
+    if(running()){pause();toast('Practice timer paused — the Fretboard Trainer keeps its own time')}}
+  else{TR.running=false;trainerFlush(true)}
+});
+// ---------- the Fretboard Trainer tracks its own time ----------
+// Time counts while the trainer is running. It goes into one log entry per day (auto:true), which is
+// updated when you stop, leave the Fretboard tab or close the app, and added to when you come back.
+const TR={t0:null,running:false,pend:0};
+function trainerEx(){return D.exercises.find(e=>e.trainer)}
+function trainerDayScore(day){let h=[];try{h=JSON.parse(localStorage.getItem('fbhist')||'[]')}catch(e){}
+  return h.filter(x=>x.ok&&x.c&&x.m!='tune'&&dkey(new Date(x.d))==day).length}
+function trainerFlush(stopClock){const tx=trainerEx();
+  if(TR.t0!=null){TR.pend+=Date.now()-TR.t0;TR.t0=stopClock?null:Date.now()}
+  if(!tx||TR.pend<6000)return null;   // ignore a few seconds
+  const day=dkey();let e=D.entries.find(x=>x.ex==tx.id&&x.date==day&&x.auto);
+  if(!e){e={id:uid(),date:day,ex:tx.id,bpm:null,min:0,effort:null,note:'',t:Date.now(),auto:true,ms:0};D.entries.push(e)}
+  e.ms=(e.ms||Math.round((+e.min||0)*60000))+TR.pend;TR.pend=0;e.min=Math.round(e.ms/6000)/10;
+  const sc=trainerDayScore(day);e.bpm=sc||null;save();if(view=='practice'||view=='log')render();return e}
+function trainerLeave(){const f=$('#trFrame');try{f.contentWindow&&f.contentWindow.postMessage({gp:'stop'},location.origin)}catch(x){}
+  const e=trainerFlush(true);TR.running=false;if(e)toast('Fretboard Trainer: '+trim(e.min)+' min logged today'+(e.bpm?' · score '+e.bpm:''))}
+document.addEventListener('visibilitychange',()=>{if(document.hidden)trainerFlush(true);else if(TR.running&&view=='trainer'&&TR.t0==null)TR.t0=Date.now()});
+addEventListener('pagehide',()=>trainerFlush(true));
+
+// ---------- entry dialog ----------
+let editingId=null;
+function editEntry(id,defaults){
+  const e=id?D.entries.find(x=>x.id==id):Object.assign({date:dkey(),ex:T.ex,bpm:null,min:'',effort:null,note:''},defaults||{});
+  if(!e)return;editingId=id;
+  $('#deTitle').textContent=id?'Edit entry':'Add entry';
+  $('#deDate').value=e.date;$('#deMin').value=e.min??'';$('#deEx').innerHTML=exOptions(e.ex,{includeArchived:true});
+  $('#deBpm').value=e.bpm??'';$('#deNote').value=e.note||'';$('#deLad').checked=id?isLadder(e):false;
+  $('#deEff').innerHTML='<option value="">—</option>'+D.efforts.map(f=>'<option value="'+f.id+'"'+(f.id==e.effort?' selected':'')+'>'+esc(f.name)+'</option>').join('');
+  $('#deBpmL').textContent=metricOf(exById(e.ex));$('#deDel').hidden=!id;
+  $('#dlgEntry').showModal();
+}
+$('#deEx').onchange=()=>{$('#deBpmL').textContent=metricOf(exById(+$('#deEx').value))};
+$('#dlgEntry').addEventListener('close',async()=>{
+  const r=$('#dlgEntry').returnValue;
+  if(r=='delete'&&editingId){const e=D.entries.find(x=>x.id==editingId);if(!await ask('','Delete this entry?',{ok:'Delete',danger:true}))return;const i=D.entries.indexOf(e);D.entries.splice(i,1);save();render();
+    toast('Entry deleted','Undo',()=>{D.entries.splice(i,0,e);save();render()});return}
+  if(r!='save')return;
+  const min=num($('#deMin').value),date=$('#deDate').value;if(!(min>0)||!date){toast('Need a date and minutes');return}
+  const v={date,min,ex:+$('#deEx').value,bpm:num($('#deBpm').value),effort:$('#deEff').value?+$('#deEff').value:null,note:$('#deNote').value.trim(),ladder:$('#deLad').checked};
+  if(editingId)Object.assign(D.entries.find(x=>x.id==editingId),v);else D.entries.push(Object.assign({id:uid(),t:Date.now()},v));
+  save();render();toast(editingId?'Entry updated':'Entry added');
+});
+
+// ---------- log view ----------
+function renderLog(){
+  const fe=$('#fEx').value,ft=$('#fTech').value;
+  $('#fEx').innerHTML=exOptions(fe?+fe:null,{all:true,includeArchived:true});if(fe)$('#fEx').value=fe;
+  const techs=[...new Set(D.exercises.map(e=>e.technique).filter(Boolean))].sort();
+  $('#fTech').innerHTML='<option value="">All techniques</option>'+techs.map(t=>'<option'+(t==ft?' selected':'')+'>'+esc(t)+'</option>').join('');
+  const list=filteredEntries();
+  const by={};list.forEach(e=>(by[e.date]=by[e.date]||[]).push(e));
+  const days=Object.keys(by).sort().reverse();
+  const tot=list.reduce((s,e)=>s+(+e.min||0),0);
+  $('#logSum').textContent=list.length+' entries · '+days.length+' days · '+fmtMin(tot)+' ('+fmtH(tot)+')';
+  $('#logList').innerHTML=days.length?days.map(k=>{const es=by[k].sort(cmpEntry),s=es.reduce((a,e)=>a+(+e.min||0),0);
+    return'<div class="day"><div class="dayh"><b>'+fmtDate(k,{weekday:'short',month:'short',day:'numeric',year:'numeric'})+'</b><span class="sub">'+fmtMin(s)+'</span></div>'+es.map(entRow).join('')+'</div>'}).join(''):'<p class="sub">No entries match.</p>';
+  bindEnt($('#logList'));
+}
+function filteredEntries(){
+  const fe=$('#fEx').value,ft=$('#fTech').value,r=$('#fRange').value,from=r=='all'?'':addDays(dkey(),-(+r-1));
+  return D.entries.filter(e=>(!fe||e.ex==fe)&&(!ft||(exById(e.ex)||{}).technique==ft)&&e.date>=from)}
+['fEx','fTech','fRange'].forEach(id=>$('#'+id).onchange=renderLog);
+$('#addEntry').onclick=()=>editEntry(null,{ex:$('#fEx').value?+$('#fEx').value:T.ex});
+function csv(list){
+  const q=v=>{v=v==null?'':String(v);return/[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v};
+  const rows=[['Date','Exercise','Technique','Subdivision','Tempo/Score','Measure','Minutes','Effort','Note']];
+  list.slice().sort(cmpEntry).forEach(e=>{const x=exById(e.ex)||{};rows.push([e.date,x.id?exName(x):'',x.technique,x.sub,e.bpm,metricOf(x),e.min,(effById(e.effort)||{}).name,e.note])});
+  download('guitar-practice-'+dkey()+'.csv',rows.map(r=>r.map(q).join(',')).join('\n'),'text/csv')}
+function download(name,text,type){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([text],{type}));a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500)}
+$('#csvBtn').onclick=()=>csv(filteredEntries());
+
+// ---------- exercises view ----------
+const SUBS=[['Quarter notes',1],['8ths',2],['8th triplets',3],['16ths',4],['16th triplets',6],['32nds',8]];
+function renderExercises(){
+  const arch=$('#showArch').checked;
+  const rows=D.exercises.filter(e=>arch||!e.archived);
+  $('#exTable').innerHTML='<thead><tr><th>Exercise</th><th>Technique</th><th>Subdivision</th><th class="n">Best / Goal</th><th>Progress</th><th>Last practiced</th><th class="n">Total</th></tr></thead><tbody>'+
+    rows.map(e=>{const s=exStats(e.id),p=e.goal&&s.best!=null?Math.min(1,s.best/e.goal):null;
+      return'<tr class="click" data-id="'+e.id+'"><td>'+esc(e.name)+(e.trainer?' <span title="Uses the fretboard trainer">🎸</span>':'')+(e.archived?' <span class="sub">(archived)</span>':'')+'</td><td>'+esc(e.technique||'')+'</td><td class="nw">'+esc(e.sub||'')+'</td><td class="n">'+(s.best!=null?trim(s.best):'—')+(e.goal?' / '+trim(e.goal):'')+(metricOf(e)!='BPM'?' <span class="sub">'+esc(metricOf(e))+'</span>':'')+'</td><td class="nw">'+(p!=null?'<span class="pct"><i style="width:'+(100*p)+'%"></i></span>'+Math.round(100*p)+'%':'<span class="sub">—</span>')+'</td><td class="nw">'+(s.last?fmtDate(s.last.date,{month:'short',day:'numeric',year:'numeric'})+' '+(s.last.effort?effHtml(s.last.effort):''):'<span class="sub">never</span>')+'</td><td class="n">'+fmtMin(s.tot)+'</td></tr>'}).join('')+'</tbody>';
+  $$('#exTable tr.click').forEach(r=>r.onclick=()=>editEx(+r.dataset.id));
+  if(!$('#cvFrom').options.length){const o=SUBS.map(([n,v])=>'<option value="'+v+'">'+n+'</option>').join('');$('#cvFrom').innerHTML=o;$('#cvTo').innerHTML=o;$('#cvFrom').value='4';$('#cvTo').value='3'}
+  convert();
+  $('#effKey').innerHTML='<table>'+D.efforts.map(f=>'<tr><td style="white-space:nowrap">'+effHtml(f.id)+'</td><td class="sub">'+esc(f.desc||'')+'</td></tr>').join('')+'</table>';
+}
+function convert(){const b=num($('#cvBpm').value),f=+$('#cvFrom').value,t=+$('#cvTo').value;if(!(b>0)){$('#cvOut').textContent='';$('#cvNps').textContent='';return}
+  const r=b*f/t,fn=$('#cvFrom').selectedOptions[0].text,tn=$('#cvTo').selectedOptions[0].text;
+  $('#cvOut').innerHTML=trim(b)+' BPM in '+esc(fn)+' = <b>'+trim(r)+' BPM</b> in '+esc(tn);
+  $('#cvNps').textContent='Same speed: '+trim(b*f/60)+' notes per second.'}
+['cvBpm','cvFrom','cvTo'].forEach(id=>$('#'+id).oninput=convert);
+$('#showArch').onchange=renderExercises;
+let editingEx=null;
+function editEx(id){
+  const e=id!=null?exById(id):{name:'',technique:'',sub:'',goal:null,metric:'BPM',trainer:false,archived:false,notes:''};
+  editingEx=id;$('#dxTitle').textContent=id!=null?'Edit exercise':'New exercise';
+  $('#dxName').value=e.name;$('#dxSub').value=e.sub||'';$('#dxGoal').value=e.goal??'';$('#dxMax').value=e.curveMax??'';$('#dxLen').value=e.lenBars??'';$('#dxReps').value=e.curveBars??'';$('#dxMetric').value=e.metric||'BPM';
+  const techs=[...new Set([...D.techniques,e.technique].filter(Boolean))];
+  $('#dxTech').innerHTML='<option value="">— None —</option>'+techs.map(t=>'<option'+(t==e.technique?' selected':'')+'>'+esc(t)+'</option>').join('');
+  $('#dxNotes').value=e.notes||'';$('#dxArch').checked=!!e.archived;$('#dxMet').checked=e.metronome!==false;
+  $('#dxDel').hidden=id==null;$('#dlgEx').showModal()}
+$('#addEx').onclick=()=>editEx(null);
+$('#dlgEx').addEventListener('close',async()=>{
+  const r=$('#dlgEx').returnValue;
+  if(r=='delete'&&editingEx!=null){const exId=editingEx,n=D.entries.filter(x=>x.ex==exId).length;
+    if(n){tell('This exercise has '+n+' log entries, so it can’t be deleted. Tick “Archived” to hide it instead.');return}
+    if(!await ask('','Delete this exercise?',{ok:'Delete',danger:true}))return;D.exercises=D.exercises.filter(x=>x.id!=exId);save();render();return}
+  if(r!='save')return;
+  const v={name:$('#dxName').value.trim(),technique:$('#dxTech').value,sub:$('#dxSub').value.trim(),goal:num($('#dxGoal').value),curveMax:num($('#dxMax').value),lenBars:(v=>v>0?Math.min(64,Math.round(v)):null)(num($('#dxLen').value)),curveBars:(v=>v>0?Math.min(64,Math.round(v)):null)(num($('#dxReps').value)),metric:$('#dxMetric').value.trim()||'BPM',notes:$('#dxNotes').value.trim(),archived:$('#dxArch').checked,metronome:$('#dxMet').checked};
+  if(!v.name){toast('The exercise needs a name');return}
+  if(editingEx!=null)Object.assign(exById(editingEx),v);
+  if(editingEx!=null&&editingEx==T.ex&&!v.metronome&&(CURVE.on||CURVE.hold))curveCancel();
+  else{const id=Math.max(0,...D.exercises.map(x=>x.id))+1;D.exercises.push(Object.assign({id},v));if(!running()&&T.acc==0){T.ex=id;saveT()}}
+  save();render();
+});
+
+// ---------- charts ----------
+const tip=$('#tip');
+function bindTips(root){
+  root.onpointermove=e=>{const t=e.target.closest('[data-tip]');if(!t){tip.hidden=true;return}tip.innerHTML=t.getAttribute('data-tip');tip.hidden=false;
+    const r=tip.getBoundingClientRect();let x=e.clientX+14,y=e.clientY+14;if(x+r.width>innerWidth-8)x=e.clientX-r.width-14;if(y+r.height>innerHeight-8)y=e.clientY-r.height-14;tip.style.left=x+'px';tip.style.top=y+'px'};
+  root.onpointerleave=()=>{tip.hidden=true}}
+function niceStep(max,n=4){const raw=max/n,p=10**Math.floor(Math.log10(raw||1)),m=raw/p;return(m<=1?1:m<=2?2:m<=2.5?2.5:m<=5?5:10)*p}
+function barPath(x,y,w,h,r){r=Math.min(r,w/2,h);return'M'+x+','+(y+h)+'V'+(y+r)+'Q'+x+','+y+' '+(x+r)+','+y+'H'+(x+w-r)+'Q'+(x+w)+','+y+' '+(x+w)+','+(y+r)+'V'+(y+h)+'Z'}
+function chartDaily(el,days,goal){
+  const W=860,H=230,L=38,R=10,Tp=12,B=26,n=days.length,iw=W-L-R,ih=H-Tp-B;
+  const mx=Math.max(goal||0,10,...days.map(d=>d.v)),step=niceStep(mx),ymax=Math.ceil(mx/step)*step,y=v=>Tp+ih-ih*v/ymax,bw=iw/n,gap=bw>6?2:bw>3?1:0;
+  let s='<svg class="chart" viewBox="0 0 '+W+' '+H+'" role="img" aria-label="Minutes practiced per day">';
+  for(let v=0;v<=ymax+1e-9;v+=step)s+='<line x1="'+L+'" x2="'+(W-R)+'" y1="'+y(v)+'" y2="'+y(v)+'" stroke="var(--grid)"/><text x="'+(L-6)+'" y="'+(y(v)+4)+'" text-anchor="end">'+trim(v)+'</text>';
+  days.forEach((d,i)=>{const x=L+i*bw;if(d.v>0)s+='<path d="'+barPath(x+gap/2,y(d.v),Math.max(1,bw-gap),Tp+ih-y(d.v),bw>8?4:1)+'" fill="var(--bar)"/>';
+    s+='<rect x="'+x+'" y="'+Tp+'" width="'+bw+'" height="'+ih+'" fill="transparent" data-tip="'+esc(d.tip)+'"/>'});
+  if(goal)s+='<line x1="'+L+'" x2="'+(W-R)+'" y1="'+y(goal)+'" y2="'+y(goal)+'" stroke="var(--fg)" stroke-width="1.5" stroke-dasharray="5 4" opacity=".55" pointer-events="none"/><text x="'+(W-R)+'" y="'+(y(goal)-5)+'" text-anchor="end" style="paint-order:stroke;stroke:var(--card);stroke-width:4px">goal '+goal+' min</text>';
+  const lab=Math.max(1,Math.round(n/7));
+  for(let i=0;i<n;i+=lab)s+='<text x="'+(L+i*bw+bw/2)+'" y="'+(H-6)+'" text-anchor="middle">'+fmtDate(days[i].k)+'</text>';
+  el.innerHTML=s+'</svg>';bindTips(el)}
+function chartH(el,rows,unit){
+  if(!rows.length){el.innerHTML='<p class="sub">No practice in this range.</p>';return}
+  const mx=Math.max(...rows.map(r=>r.v));
+  el.innerHTML=rows.map(r=>'<div class="hb" data-tip="'+esc(r.tip)+'"><span class="l" title="'+esc(r.l)+'">'+esc(r.l)+'</span><span class="b"><i style="width:'+(100*r.v/mx)+'%"></i></span><span class="v">'+r.vs+'</span></div>').join('');bindTips(el)}
+function chartTempo(el,ex){
+  const es=D.entries.filter(e=>e.ex==ex.id&&e.bpm!=null).sort(cmpEntry),m=metricOf(ex);
+  if(!es.length){el.innerHTML='<p class="sub">No '+esc(m)+' values logged for this exercise yet.</p>';return}
+  const W=860,H=260,L=44,R=14,Tp=16,B=28,iw=W-L-R,ih=H-Tp-B;
+  const t0=parseD(es[0].date).getTime(),t1=Math.max(parseD(es[es.length-1].date).getTime(),t0+6*864e5);
+  const vals=es.map(e=>e.bpm).concat(ex.goal?[ex.goal]:[]),lo0=Math.min(...vals),hi0=Math.max(...vals),step=niceStep(Math.max(hi0-lo0,10)*1.1,4);
+  const lo=Math.floor(lo0*.97/step)*step,hi=Math.ceil(hi0*1.02/step)*step;
+  const X=k=>L+iw*(parseD(k).getTime()-t0)/(t1-t0),Y=v=>Tp+ih-ih*(v-lo)/((hi-lo)||1);
+  let s='<svg class="chart" viewBox="0 0 '+W+' '+H+'" role="img" aria-label="'+esc(m)+' over time">';
+  for(let v=lo;v<=hi+1e-9;v+=step)s+='<line x1="'+L+'" x2="'+(W-R)+'" y1="'+Y(v)+'" y2="'+Y(v)+'" stroke="var(--grid)"/><text x="'+(L-6)+'" y="'+(Y(v)+4)+'" text-anchor="end">'+trim(v)+'</text>';
+  if(ex.goal)s+='<line x1="'+L+'" x2="'+(W-R)+'" y1="'+Y(ex.goal)+'" y2="'+Y(ex.goal)+'" stroke="var(--fg)" stroke-width="1.5" stroke-dasharray="5 4" opacity=".55"/><text x="'+(W-R)+'" y="'+(Y(ex.goal)-6)+'" text-anchor="end">goal '+trim(ex.goal)+'</text>';
+  const best={};es.filter(e=>!isLadder(e)).forEach(e=>{best[e.date]=Math.max(best[e.date]??-1e9,e.bpm)});
+  const pts=Object.keys(best).sort().map(k=>X(k)+','+Y(best[k]));
+  s+='<polyline points="'+pts.join(' ')+'" fill="none" stroke="var(--bar)" stroke-width="2" stroke-linejoin="round" opacity=".7"/>';
+  es.forEach(e=>{const f=effById(e.effort),tipx='<b>'+fmtDate(e.date,{month:'short',day:'numeric',year:'numeric'})+'</b><br>'+trim(e.bpm)+' '+esc(m)+' · '+trim(e.min)+' min'+(f?'<br>Effort: '+esc(f.name):'')+(e.note?'<br>'+esc(e.note):'')+(isLadder(e)?'<br><i>Tempo ladder run (not counted as a best)</i>':'');
+    s+=(isLadder(e)?'<circle cx="'+X(e.date)+'" cy="'+Y(e.bpm)+'" r="4.5" fill="var(--card)" stroke="var(--bar)" stroke-width="2"/>':'<circle cx="'+X(e.date)+'" cy="'+Y(e.bpm)+'" r="5" fill="var(--bar)" stroke="var(--card)" stroke-width="2"/>')+'<circle cx="'+X(e.date)+'" cy="'+Y(e.bpm)+'" r="11" fill="transparent" data-tip="'+esc(tipx)+'"/>'});
+  const span=(t1-t0)/864e5,ticks=Math.min(7,Math.max(2,Math.round(span/7)+1));
+  for(let i=0;i<ticks;i++){const t=new Date(t0+(t1-t0)*i/(ticks-1));s+='<text x="'+(L+iw*i/(ticks-1))+'" y="'+(H-6)+'" text-anchor="'+(i==0?'start':i==ticks-1?'end':'middle')+'">'+t.toLocaleDateString(undefined,{month:'short',day:'numeric'})+'</text>'}
+  el.innerHTML=s+'</svg>';bindTips(el)}
+
+// ---------- stats view ----------
+function renderStats(){
+  const r=$('#sRange').value,today=dkey();
+  let from=r=='all'?(D.entries.map(e=>e.date).sort()[0]||today):addDays(today,-(+r-1));
+  const list=D.entries.filter(e=>e.date>=from&&e.date<=today),tt=dayTotals(list);
+  const days=[];for(let k=from;k<=today;k=addDays(k,1)){const es=list.filter(e=>e.date==k);days.push({k,v:tt[k]||0,tip:'<b>'+fmtDate(k,{weekday:'short',month:'short',day:'numeric'})+'</b><br>'+(tt[k]?fmtMin(tt[k])+es.map(e=>'<br>· '+esc(exName(exById(e.ex)))+' — '+trim(e.min)+' min').join(''):'No practice')})}
+  const tot=list.reduce((s,e)=>s+(+e.min||0),0),pd=Object.keys(tt).filter(k=>tt[k]>0).length,st=streaks();
+  $('#sRangeNote').textContent=fmtDate(from,{month:'short',day:'numeric',year:'numeric'})+' – today';
+  $('#sTiles').innerHTML=[['Total time',fmtH(tot)],['Days practiced',pd+' <small>of '+days.length+'</small>'],['Avg per practice day',pd?fmtMin(tot/pd):'—'],['Current streak',st.cur+' <small>days</small>'],['Longest streak',st.longest+' <small>days</small>'],['Sessions logged',list.length]].map(([k,v])=>'<div class="tile"><div class="k">'+k+'</div><div class="v">'+v+'</div></div>').join('');
+  chartDaily($('#chDaily'),days,+D.settings.goal||0);
+  const bt={},bx={};list.forEach(e=>{const x=exById(e.ex)||{technique:'?'};bt[x.technique||'No technique']=(bt[x.technique||'No technique']||0)+(+e.min||0);bx[e.ex]=(bx[e.ex]||0)+(+e.min||0)});
+  chartH($('#chTech'),Object.entries(bt).sort((a,b)=>b[1]-a[1]).map(([l,v])=>({l,v,vs:fmtH(v),tip:'<b>'+esc(l)+'</b><br>'+fmtMin(v)+' · '+Math.round(100*v/tot)+'% of time'})));
+  const xr=Object.entries(bx).sort((a,b)=>b[1]-a[1]);
+  chartH($('#chEx'),xr.slice(0,12).map(([id,v])=>{const x=exById(id);return{l:exShort(x,22),v,vs:fmtH(v),tip:'<b>'+esc(exName(x))+'</b><br>'+esc(x?x.technique:'')+'<br>'+fmtMin(v)}}));
+  if(xr.length>12)$('#chEx').insertAdjacentHTML('beforeend','<p class="sub">+ '+(xr.length-12)+' more</p>');
+  const sel=$('#sEx').value||T.ex,withB=D.exercises.filter(e=>!e.trainer&&D.entries.some(x=>x.ex==e.id&&x.bpm!=null)),tr=D.exercises.find(e=>e.trainer);
+  $('#sEx').innerHTML=(withB.length?'<optgroup label="Tempo">'+withB.map(e=>'<option value="'+e.id+'">'+esc(exName(e))+'</option>').join('')+'</optgroup>':'')+(tr?'<optgroup label="Fretboard"><option value="'+tr.id+'">'+esc(exName(tr))+'</option></optgroup>':'');
+  if([...withB,tr].some(e=>e&&e.id==sel))$('#sEx').value=sel;
+  renderProgress();
+}
+function renderProgress(){const ex=exById(+$('#sEx').value),el=$('#chTempo');
+  if(!ex){el.innerHTML='<p class="sub">Nothing to show yet.</p>';return}
+  if(ex.trainer)return chartTrainer(el,ex);
+  chartTempo(el,ex)}
+// fretboard trainer progress: its logged scores, plus per-day results from the trainer's own answer history (fbhist)
+function chartTrainer(el,ex){
+  let hist=[];try{hist=JSON.parse(localStorage.getItem('fbhist')||'[]')}catch(e){}
+  const byDay={};hist.forEach(x=>{const k=dkey(new Date(x.d));(byDay[k]=byDay[k]||[]).push(x)});
+  const days=Object.keys(byDay).sort();
+  const acc=days.map(k=>{const g=byDay[k];return{k,v:100*g.filter(x=>x.ok).length/g.length,n:g.length}});
+  const spd=days.map(k=>{const g=byDay[k].filter(x=>x.c);return{k,v:g.length?g.reduce((s,x)=>s+x.ms,0)/g.length/1000:null,n:g.length}}).filter(x=>x.v!=null);
+  const scores=D.entries.filter(e=>e.ex==ex.id&&e.bpm!=null).sort(cmpEntry).map(e=>({k:e.date,v:+e.bpm,n:1,note:e.note}));
+  let h='';
+  h+='<h3 class="pch">'+esc(metricOf(ex))+' by day</h3>'+(scores.length?'<div id="pcScore"></div>':'<p class="sub">No scores logged yet.</p>');
+  h+=spd.length?'<h3 class="pch">Average time per note, by day</h3><div id="pcSpd"></div>':'<p class="sub" style="margin-top:10px">No trainer answers recorded on this computer yet.</p>';
+  el.innerHTML=h;
+  if(scores.length)chartLine($('#pcScore'),scores,{fmt:v=>trim(Math.round(v*10)/10),unit:metricOf(ex)});
+  if(spd.length)chartLine($('#pcSpd'),spd,{fmt:v=>v.toFixed(1)+' s',unit:'per note',lo:0})}
+function chartLine(el,pts,o){
+  const W=860,H=200,L=44,R=14,Tp=14,B=26,iw=W-L-R,ih=H-Tp-B;
+  const t0=parseD(pts[0].k).getTime(),t1=Math.max(parseD(pts[pts.length-1].k).getTime(),t0+6*864e5);
+  const vs=pts.map(p=>p.v);let lo=o.lo??Math.min(...vs),hi=o.hi??Math.max(...vs);if(hi-lo<1e-9){hi+=1;lo=Math.max(o.lo??-1e9,lo-1)}
+  const step=niceStep((hi-lo)*1.1,4);lo=o.lo??Math.floor(lo/step)*step;hi=o.hi??Math.ceil(hi*1.02/step)*step;
+  const X=k=>L+iw*(parseD(k).getTime()-t0)/(t1-t0),Y=v=>Tp+ih-ih*(v-lo)/((hi-lo)||1);
+  let s='<svg class="chart" viewBox="0 0 '+W+' '+H+'" role="img" aria-label="'+esc(o.unit)+' over time">';
+  for(let v=lo;v<=hi+1e-9;v+=step)s+='<line x1="'+L+'" x2="'+(W-R)+'" y1="'+Y(v)+'" y2="'+Y(v)+'" stroke="var(--grid)"/><text x="'+(L-6)+'" y="'+(Y(v)+4)+'" text-anchor="end">'+o.fmt(v)+'</text>';
+  s+='<polyline points="'+pts.map(p=>X(p.k)+','+Y(p.v)).join(' ')+'" fill="none" stroke="var(--bar)" stroke-width="2" stroke-linejoin="round" opacity=".7"/>';
+  pts.forEach(p=>{const tip='<b>'+fmtDate(p.k,{month:'short',day:'numeric',year:'numeric'})+'</b><br>'+o.fmt(p.v)+' '+esc(o.unit)+(p.n>1?'<br>'+p.n+' answers':'')+(p.note?'<br>'+esc(p.note):'');
+    s+='<circle cx="'+X(p.k)+'" cy="'+Y(p.v)+'" r="5" fill="var(--bar)" stroke="var(--card)" stroke-width="2"/><circle cx="'+X(p.k)+'" cy="'+Y(p.v)+'" r="11" fill="transparent" data-tip="'+esc(tip)+'"/>'});
+  const ticks=Math.min(6,Math.max(2,Math.round((t1-t0)/864e5/7)+1));
+  for(let i=0;i<ticks;i++){const t=new Date(t0+(t1-t0)*i/(ticks-1));s+='<text x="'+(L+iw*i/(ticks-1))+'" y="'+(H-6)+'" text-anchor="'+(i==0?'start':i==ticks-1?'end':'middle')+'">'+t.toLocaleDateString(undefined,{month:'short',day:'numeric'})+'</text>'}
+  el.innerHTML=s+'</svg>';bindTips(el)}
+$('#sRange').onchange=renderStats;$('#sEx').onchange=renderProgress;
+
+// ---------- settings ----------
+function renderSettings(){
+  const s=D.settings;
+  renderSkins();
+  $('#stGoal').value=s.goal;$('#stPresets').value=s.presets.join(', ');$('#stVol').value=s.chimeVol;
+  $('#stNotify').checked=!!s.notify;
+  $('#bkInfo').innerHTML=D.entries.length+' entries, '+D.exercises.length+' exercises. Last backup: '+(s.lastBackup?new Date(s.lastBackup).toLocaleDateString():'never')+'. <span id="persist"></span>';
+  try{navigator.storage&&navigator.storage.persisted&&navigator.storage.persisted().then(p=>{const e=$('#persist');if(e)e.textContent=p?'Storage is marked persistent.':''})}catch(e){}
+  $('#effEdit').innerHTML=D.efforts.map(f=>'<div class="erow" data-id="'+f.id+'"><span class="ed ed'+f.id+'" style="margin:0 auto"></span><input class="en" value="'+esc(f.name)+'" aria-label="Name"><input class="ex" value="'+esc(f.desc||'')+'" aria-label="Description"><button class="ex-del" title="Remove">✕</button></div>').join('');
+  $$('#effEdit .erow').forEach(r=>{const f=effById(+r.dataset.id);
+    r.querySelector('.en').onchange=e=>{f.name=e.target.value.trim()||f.name;save()};
+    r.querySelector('.ex').onchange=e=>{f.desc=e.target.value.trim();save()};
+    r.querySelector('.ex-del').onclick=()=>{const n=D.entries.filter(x=>x.effort==f.id).length;if(n){tell(n+' entries use “'+f.name+'”, so it can’t be removed. You can rename it.');return}D.efforts=D.efforts.filter(x=>x!==f);save();renderSettings()}});
+  $('#techEdit').innerHTML=D.techniques.map((t,i)=>'<div class="row" style="margin-bottom:6px" data-i="'+i+'"><input type="text" value="'+esc(t)+'" style="flex:1" aria-label="Technique"><button title="Remove">✕</button></div>').join('');
+  $$('#techEdit .row').forEach(r=>{const i=+r.dataset.i,old=D.techniques[i];
+    r.querySelector('input').onchange=e=>{const v=e.target.value.trim();if(!v)return;D.techniques[i]=v;D.exercises.forEach(x=>{if(x.technique==old)x.technique=v});save();renderSettings()};
+    r.querySelector('button').onclick=()=>{const n=D.exercises.filter(x=>x.technique==old).length;if(n){tell(n+' exercise(s) use “'+old+'”. Change them first.');return}D.techniques.splice(i,1);save();renderSettings()}});
+}
+$('#stGoal').onchange=e=>{D.settings.goal=Math.max(0,num(e.target.value)||0);save()};
+$('#stPresets').onchange=e=>{const a=e.target.value.split(/[,\s]+/).map(num).filter(v=>v>0).slice(0,12);if(a.length){D.settings.presets=a;save();buildPresets()}e.target.value=D.settings.presets.join(', ')};
+$('#stVol').oninput=e=>{D.settings.chimeVol=+e.target.value;save()};
+$('#stTest').onclick=()=>chime(0);
+$('#stNotify').onchange=async e=>{D.settings.notify=e.target.checked;save();if(e.target.checked&&'Notification' in window&&Notification.permission=='default'){try{await Notification.requestPermission()}catch(x){}}};
+$('#effAdd').onclick=()=>{const id=Math.max(0,...D.efforts.map(f=>f.id))+1;D.efforts.push({id,name:'New level',desc:''});save();renderSettings()};
+$('#techAdd').onclick=()=>{const v=$('#techNew').value.trim();if(v&&!D.techniques.includes(v)){D.techniques.push(v);save();$('#techNew').value='';renderSettings()}};
+function backup(){D.settings.lastBackup=Date.now();save();download('guitar-practice-backup-'+dkey()+'.json',JSON.stringify(D,null,1),'application/json');renderSettings()}
+$('#bkExport').onclick=backup;
+$('#bkCsv').onclick=()=>csv(D.entries);
+$('#bkImport').onclick=()=>$('#bkFile').click();
+$('#bkFile').onchange=async e=>{const f=e.target.files[0];e.target.value='';if(!f)return;
+  try{const o=JSON.parse(await f.text());if(!Array.isArray(o.entries)||!Array.isArray(o.exercises))throw 0;
+    if(!await ask('Restore backup?','Replace all current data with this backup ('+o.entries.length+' entries, '+o.exercises.length+' exercises)?',{ok:'Replace',danger:true}))return;
+    const keepMet=D.settings.metro;D=o;D.settings=Object.assign({},DEFSET,D.settings||{});D.settings.metro=Object.assign(clone(MDEF),D.settings.metro||keepMet||{});D.efforts=D.efforts||clone(SEED.efforts);D.techniques=D.techniques||clone(SEED.techniques);fixTrainerEx();save();resetTimer();T.ex=(activeExercises().find(e=>!e.trainer)||{}).id;saveT();buildPresets();render();toast('Backup restored')}
+  catch(x){tell('That file doesn’t look like a Guitar Practice backup.')}};
+
+// ---------- metronome ----------
+const SUBS_M=[[1,'Quarter notes'],[2,'8ths'],[3,'Triplets'],[4,'16ths'],[6,'16th triplets'],[8,'32nds']];
+const VOICES=[['p','Primary','kick','high click'],['s','Secondary','snare','middle click'],['m','Minor','hi-hat','low click']];
+const MDEF={readyBars:1,repReady:0,beats:4,sub:1,pat:null,kit:'drums',vol:{p:1,s:.8,m:.5},master:.8,withTimer:false,follow:true,samples:{}};
+D.settings.metro=Object.assign(clone(MDEF),D.settings.metro||{});
+const MC=()=>D.settings.metro||(D.settings.metro=clone(MDEF));
+function defPattern(beats,sub,kind){const n=beats*sub,r={p:[],s:[],m:[]};
+  for(let i=0;i<n;i++){const b=i%sub==0,bi=Math.floor(i/sub);
+    if(kind=='rock'){r.p.push(b&&bi%2==0);r.s.push(b&&bi%2==1);r.m.push(true)}
+    else if(kind=='beats'){r.p.push(i==0);r.s.push(b&&i!=0);r.m.push(false)}
+    else if(kind=='clear'){r.p.push(false);r.s.push(false);r.m.push(false)}
+    else{r.p.push(i==0);r.s.push(b&&i!=0);r.m.push(!b)}}
+  return r}
+function resizePattern(old,ob,os,nb,ns){
+  if(!old)return defPattern(nb,ns,'basic');
+  const n=nb*ns,r={p:[],s:[],m:[]},anyM=old.m.some(Boolean),fillM=anyM||(os==1&&ns>1);
+  for(let i=0;i<n;i++){const b=i%ns==0,bi=Math.floor(i/ns);
+    if(b&&bi<ob){const oi=bi*os;r.p.push(!!old.p[oi]);r.s.push(!!old.s[oi]);r.m.push(anyM?!!old.m[oi]:false)}
+    else if(b){r.p.push(false);r.s.push(true);r.m.push(false)}
+    else{r.p.push(false);r.s.push(false);r.m.push(fillM)}}
+  return r}
+{const M=MC();if(!M.pat||M.pat.p.length!=M.beats*M.sub)M.pat=defPattern(M.beats,M.sub,'basic')}
+function setMeter(beats,sub){const M=MC();if(beats==M.beats&&sub==M.sub)return;M.pat=resizePattern(M.pat,M.beats,M.sub,beats,sub);M.beats=beats;M.sub=sub;save();renderMet()}
+function subFromText(t){t=(t||'').toLowerCase();if(!t.trim())return 0;const tri=/trip/.test(t);
+  if(/32/.test(t))return 8;if(/16/.test(t))return tri?6:4;if(/\b8|eighth/.test(t))return tri?3:2;if(/quarter|\b4/.test(t))return tri?3:1;return 0}
+const MET={on:false,step:0,next:0,w:null,iv:null,q:[],taps:[],lit:[]};
+function metTempo(){const v=num($('#bpm').value);return Math.min(400,Math.max(20,v>0?v:100))}
+let noiseBuf=null;
+function noise(a){if(!noiseBuf||noiseBuf.sampleRate!=a.sampleRate){noiseBuf=a.createBuffer(1,Math.floor(a.sampleRate*.5),a.sampleRate);const d=noiseBuf.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1}return noiseBuf}
+const SAMP={};
+function env(a,node,t,peak,dur){const e=a.createGain();e.gain.setValueAtTime(.0001,t);e.gain.exponentialRampToValueAtTime(Math.max(.0002,peak),t+.003);e.gain.exponentialRampToValueAtTime(.0001,t+dur);node.connect(e);return e}
+function readyClick(t,accent){const a=actx;if(!a)return;const M=MC(),g=a.createGain();g.gain.value=(accent?.9:.65)*(+M.master);g.connect(a.destination);
+  const o=a.createOscillator();o.type='sine';o.frequency.value=accent?2000:1500;env(a,o,t,1,.035).connect(g);o.start(t);o.stop(t+.05)}
+function voice(v,t){
+  const a=actx;if(!a||!usesMet(exById(T.ex)))return;const M=MC(),g=a.createGain();g.gain.value=(M.vol[v]??1)*(+M.master);g.connect(a.destination);
+  if(SAMP[v]){const s=a.createBufferSource();s.buffer=SAMP[v];s.connect(g);s.start(t);return}
+  if(M.kit=='click'){const o=a.createOscillator();o.frequency.value={p:1600,s:1100,m:800}[v];env(a,o,t,v=='m'?.35:.6,v=='m'?.03:.05).connect(g);o.start(t);o.stop(t+.08);return}
+  if(v=='p'){const o=a.createOscillator();o.type='sine';o.frequency.setValueAtTime(150,t);o.frequency.exponentialRampToValueAtTime(45,t+.12);env(a,o,t,1,.35).connect(g);o.start(t);o.stop(t+.4);return}
+  const n=a.createBufferSource();n.buffer=noise(a);const f=a.createBiquadFilter();f.type='highpass';n.connect(f);
+  if(v=='s'){f.frequency.value=1200;env(a,f,t,.7,.18).connect(g);const o=a.createOscillator();o.type='triangle';o.frequency.value=190;env(a,o,t,.4,.1).connect(g);o.start(t);o.stop(t+.12);n.start(t);n.stop(t+.2)}
+  else{f.frequency.value=7000;env(a,f,t,.35,.045).connect(g);n.start(t);n.stop(t+.06)}
+}
+function metPump(){
+  if(!MET.on||!actx)return;const a=actx,M=MC(),n=M.beats*M.sub;
+  if(MET.next<a.currentTime-.2)MET.next=a.currentTime+.05;
+  while(MET.next<a.currentTime+.12){const i=MET.step%n,P=M.pat;if(i==0&&CURVE.on&&!CURVE.paused)curveBar();const dur=60/metTempo()/M.sub;
+    const gr=CURVE.on&&CURVE.counting;
+    if(CURVE.on&&(CURVE.counting||CURVE.first)){if(CURVE.counting&&i%M.sub==0)readyClick(MET.next,i==0)}
+    else for(const v of['p','s','m'])if(P[v][i])voice(v,MET.next);
+    MET.q.push({i,t:MET.next,g:gr});MET.next+=dur;MET.step=(i+1)%n}
+}
+function metDraw(){
+  if(!MET.on)return;const now=actx.currentTime;let cur=null;
+  while(MET.q.length&&MET.q[0].t<=now+.005)cur=MET.q.shift();
+  if(cur){lightStep(cur.i);$('#metCard').classList.toggle('gr',!!cur.g)}
+  requestAnimationFrame(metDraw)}
+function lightStep(i){MET.lit.forEach(e=>e.classList.remove('now'));MET.lit=[...document.querySelectorAll('#metGrid [data-i="'+i+'"]')];
+  const M=MC();if(i%M.sub==0){const d=$('#metDots').children[i/M.sub];if(d)MET.lit.push(d)}MET.lit.forEach(e=>e.classList.add('now'))}
+function metStart(){
+  const a=audio();if(!a)return;loadSamples();MET.on=true;MET.step=0;MET.next=a.currentTime+.08;MET.q=[];
+  if(!MET.w){try{MET.w=new Worker(URL.createObjectURL(new Blob(["let t=null;onmessage=e=>{clearInterval(t);if(e.data=='start')t=setInterval(()=>postMessage(0),25)}"],{type:'text/javascript'})));MET.w.onmessage=metPump}catch(e){MET.w=null}}
+  if(MET.w)MET.w.postMessage('start');else MET.iv=setInterval(metPump,25);
+  metPump();requestAnimationFrame(metDraw);renderMetBtn()}
+function metStop(){curveCancel();metHalt()}
+function metHalt(){$('#metCard').classList.remove('gr');MET.on=false;if(MET.w)MET.w.postMessage('stop');clearInterval(MET.iv);MET.q=[];MET.lit.forEach(e=>e.classList.remove('now'));MET.lit=[];renderMetBtn()}
+const PCTS=[70,75,80,85,90,95,100,105,110];
+const CURVE={on:false,hold:false,counting:false,steps:[],pcts:[],idx:0,bar:0,bars:4,ready:1,readyBar:0,first:true,ref:0,max:0,last:null,top:0};
+function curveMaxOf(ex){if(!ex)return null;return ex.curveMax||(ex.goal?ex.goal*1.1:null)}
+function curveSteps(ex){const max=curveMaxOf(ex);if(!max)return null;const ref=max/1.1;
+  const pcts=PCTS.concat([105,100,95,90]);return{steps:pcts.map(p=>Math.round(ref*p/100)),pcts,ref,max:Math.round(max)}}
+function ladderRef(ex){if((CURVE.on||CURVE.hold)&&CURVE.ex==T.ex)return CURVE.ref;return ex&&ex.goal}
+function renderLadder(){} // the ladder's step buttons were removed in 2.1
+function exReady(ex){return +((ex&&ex.readyBars)??MC().readyBars??1)}
+function exRepReady(ex){return +((ex&&ex.repReady)??MC().repReady??0)}
+function curveBarsVal(){const ex=exById(T.ex),v=Math.round(num($('#curveBars').value)||0);return v>0?Math.min(64,v):((ex&&ex.curveBars)||4)}
+function curveLenVal(){const ex=exById(T.ex);return(ex&&ex.lenBars)||1}
+function ladderMinutes(c){const M=MC(),ex=exById(T.ex),len=curveLenVal(),reps=curveBarsVal(),rd=exReady(ex),rr=exRepReady(ex),bars=rd+reps*len+(reps-1)*rr;
+  return c.steps.reduce((s,b)=>s+bars*M.beats*60/b,0)/60}
+function renderCurve(){const ex=exById(T.ex),c=curveSteps(ex),b=$('#curveGo'),act=CURVE.on||CURVE.hold;
+  if(document.activeElement!=$('#curveBars'))$('#curveBars').value=(ex&&ex.curveBars)||4;$('#curveReady').value=String(exReady(ex));$('#curveRepReady').value=String(exRepReady(ex));
+  b.textContent=CURVE.on?(CURVE.paused?'■ End ladder':'■ Stop ladder'):CURVE.hold?'■ End ladder':'▶ Tempo ladder';b.classList.toggle('primary',act);b.disabled=!c&&!act;
+  renderMetBtn();if(act)return curveInfo();
+  $('#curveCtl').hidden=true;
+  if(!c){$('#curveInfo').textContent='Needs a goal (Edit exercise) or a Ladder max.';$('#ladSum').textContent='needs a goal or a ladder max';return}
+  $('#curveInfo').textContent='';
+  const mn=ladderMinutes(c);$('#ladSum').textContent='70% → 110% ('+c.max+' BPM'+(ex.curveMax?'':', goal + 10%')+') → 90% · about '+(mn<1?'1':Math.round(mn))+' min'}
+function curveInfo(){const C=CURVE;let t;
+  if(C.hold)t='Finished — holding at 90% ('+C.steps[C.steps.length-1]+' BPM). Press End ladder to stop.';
+  else if(C.first)t='Starting…';
+  else if(C.paused)t='Paused · '+C.pcts[C.idx]+'% · '+C.steps[C.idx]+' BPM · repeat '+C.rep+' of '+C.bars;
+  else if(C.jump){const k=Math.max(0,Math.min(C.steps.length-1,C.idx+C.jump));t=C.pcts[C.idx]+'% · '+C.steps[C.idx]+' BPM · going to '+C.pcts[k]+'% at the next measure'}
+  else t=C.pcts[C.idx]+'% · '+C.steps[C.idx]+' BPM · '+(C.counting?(C.kind=='rep'?'count-in for repeat '+(C.rep)+' ('+C.readyBar+' of '+C.readyN+')':'count-in ('+C.readyBar+' of '+C.readyN+')'):(C.stay?'repeat '+C.rep+' · staying at this tempo':'repeat '+C.rep+' of '+C.bars)+(C.len>1?' · measure '+C.bar+' of '+C.len:''));
+  $('#curveInfo').textContent=t;renderLadPanel();
+  $('#curveCtl').hidden=!C.on;$('#curveStay').classList.toggle('on',!!C.stay);$('#curveStay').textContent=C.stay?'▶ Move on':'⏸ Stay at this tempo';
+  $('#curvePrev').disabled=C.idx+(C.jump||0)<=0&&!C.paused}
+function setTempo(v){$('#bpm').value=v;renderLadPanel()}
+function curveStart(){const ex=exById(T.ex),c=curveSteps(ex);if(!c)return;
+  Object.assign(CURVE,{on:true,hold:false,counting:false,steps:c.steps,pcts:c.pcts,ref:c.ref,max:c.max,idx:0,bar:0,bars:curveBarsVal(),len:curveLenVal(),rep:1,paused:false,resume:false,stay:false,jump:0,repReady:exRepReady(ex),kind:'tempo',readyN:0,ready:exReady(ex),readyBar:0,first:true,top:0,ex:T.ex,t0:Date.now()});
+  setTempo(c.steps[0]);renderLadder();
+  if(MET.on){MET.step=0;MET.q=[];MET.next=actx.currentTime+.08}else metStart();
+  if(!running())startPause();
+  renderCurve()}
+function curvePause(){const C=CURVE;if(!C.on||C.paused)return;C.paused=true;C.counting=false;metHalt();renderCurve()}
+function curveResume(){const C=CURVE;if(!C.on||!C.paused)return;C.paused=false;C.resume=true;C.bar=0;metStart();renderCurve()}
+function curveSkip(d){const C=CURVE;if(!C.on)return;
+  if(C.paused){C.idx=Math.max(0,C.idx+d);C.rep=1;C.stay=false;if(C.idx>=C.steps.length){C.idx=C.steps.length-1}setTempo(C.steps[C.idx]);C.top=Math.max(C.top,C.steps[C.idx]);renderCurve();return}
+  C.jump+=d;if(C.idx+C.jump<0)C.jump=-C.idx;renderCurve()}
+function stepStart(){const C=CURVE;setTempo(C.steps[C.idx]);C.top=Math.max(C.top,C.steps[C.idx]);C.rep=1;
+  if(C.ready>0){C.counting=true;C.kind='tempo';C.readyN=C.ready;C.readyBar=1}else{C.counting=false;C.bar=1}}
+// called at the start of every measure: count-in measures (beats only), then `bars` repeats of `len` measures, with optional count-in measures between repeats
+function curveBar(){const C=CURVE;
+  if(C.first){C.first=false;C.idx=0;stepStart()}
+  else if(C.resume){C.resume=false;setTempo(C.steps[C.idx]);C.counting=true;C.kind='resume';C.readyN=Math.max(1,C.ready);C.readyBar=1}
+  else if(C.jump){const j=C.jump;C.jump=0;C.idx=Math.max(0,C.idx+j);C.stay=false;if(C.idx>=C.steps.length){curveDone();return}stepStart()}
+  else if(C.counting){if(++C.readyBar>C.readyN){C.counting=false;C.bar=1}}
+  else if(++C.bar>C.len){
+    if(C.rep<C.bars||C.stay){C.rep++;if(C.repReady>0){C.counting=true;C.kind='rep';C.readyN=C.repReady;C.readyBar=1}else C.bar=1}
+    else{C.idx++;if(C.idx>=C.steps.length){curveDone();return}stepStart()}}
+  curveInfo()}
+function curveDone(){const C=CURVE;C.on=false;C.hold=true;setTempo(C.steps[C.steps.length-1]);C.last={ex:C.ex,t:C.t0,top:C.top,done:true,endTempo:C.steps[C.steps.length-1]};renderCurve()}
+function curveEnd(){const C=CURVE,was=C.on;C.on=false;C.hold=false;C.counting=false;C.paused=false;if(was)C.last={ex:C.ex,t:C.t0,top:C.top,done:false,endTempo:num($('#bpm').value)};
+  if(MET.on)metStop();if(running())pause();renderTimer();const ex=exById(T.ex);renderLadder();renderCurve()}
+function curveCancel(){const C=CURVE;if(!C.on&&!C.hold)return;const was=C.on;C.on=false;C.hold=false;C.counting=false;C.paused=false;
+  if(was)C.last={ex:C.ex,t:C.t0,top:C.top,done:false,endTempo:num($('#bpm').value)};renderLadder();renderCurve();if(was)toast('Tempo ladder stopped')}
+// ---- one transport: Play/Pause and Stop run the metronome, the tempo ladder and the practice timer ----
+function usesMet(ex){return !ex||ex.metronome!==false}
+function ladderOn(ex){return !!(ex&&ex.ladderOn&&usesMet(ex))}
+function playing(){return (MET.on||running())&&!(CURVE.on&&CURVE.paused)}
+function transportPlay(){audio();const ex=exById(T.ex);if(!ex){toast('Pick an exercise first');return}
+  if(ladderOn(ex)&&curveSteps(ex)){
+    if(CURVE.on&&CURVE.paused){if(!running())startPause();else curveResume()}
+    else if(!CURVE.on){if(CURVE.hold)curveCancel();curveStart()}
+    else{if(!MET.on)metStart();if(!running())startPause()}}
+  else{if(!MET.on)metStart();if(!running())startPause()}
+  renderMetBtn()}
+function transportPause(){if(running())pause();if(CURVE.on&&!CURVE.paused)curvePause();if(MET.on&&!CURVE.on)metHalt();renderMetBtn()}
+function transportStop(){if(CURVE.on||CURVE.hold)curveEnd();else{if(MET.on)metStop();if(running())pause()}renderTimer();renderMetBtn()}
+function renderMetBtn(){const pl=playing();$('#metGo').textContent=pl?'⏸ Pause':'▶ Play';
+  $('#metStop').disabled=!(MET.on||running()||CURVE.on||CURVE.hold);renderLadPanel()}
+function renderLadPanel(){const ex=exById(T.ex),pn=$('#ladPanel');if(!pn)return;
+  const on=ladderOn(ex);$('#swLad').classList.toggle('on',on);$('#swLad').hidden=!usesMet(ex);
+  if(!ex||ex.trainer){pn.hidden=true;return}pn.hidden=false;
+  const big=$('#lpBig'),sub=$('#lpSub'),reps=$('#lpReps'),bars=$('#lpBars');reps.innerHTML='';const bpm=num($('#bpm').value);
+  if(!on){const g=+ex.goal;
+    if(!g){big.textContent='—';sub.textContent='Set a goal (Edit exercise) for quick picks';bars.innerHTML='';return}
+    big.textContent=bpm?Math.round(bpm/g*100)+'%':'—';sub.textContent='of goal ('+trim(g)+' BPM)';
+    bars.innerHTML=PCTS.map(p=>{const v=Math.round(g*p/100);return'<span class="col" data-v="'+v+'" title="'+p+'% · '+v+' BPM"><i class="'+(v==bpm?'cur':'')+'" style="height:'+Math.round(p/110*58)+'px"></i><b>'+p+'</b></span>'}).join('');
+    bars.querySelectorAll('.col').forEach(b=>b.onclick=()=>{setTempo(+b.dataset.v);renderLadPanel()});return}
+  const c=curveSteps(ex);if(!c){big.textContent='—';sub.textContent='Set a goal or a ladder max';bars.innerHTML='';return}
+  const C=CURVE,act=(C.on||C.hold)&&C.ex==T.ex,idx=act?(C.hold?c.steps.length:C.idx):-1;
+  bars.innerHTML=c.pcts.map((p,i)=>'<span class="col" data-i="'+i+'" title="'+p+'% · '+c.steps[i]+' BPM"><i class="'+(!act?'':i<idx?'done':i==idx?(C.stay?'hold':'cur'):'')+'" style="height:'+Math.round(p/110*58)+'px"></i></span>').join('');
+  if(!act){big.textContent='70%';sub.textContent='first tempo · top '+c.max+' BPM'}
+  else if(C.hold){big.textContent='90%';sub.textContent='ladder done · Stop to end'}
+  else{big.textContent=(C.paused?'Paused · ':'')+C.pcts[C.idx]+'%';sub.textContent='ladder step · top '+c.max+' BPM';
+    if(C.stay)reps.innerHTML='<span class="holdtag">Holding · click the bar to go on</span>';
+    else reps.innerHTML=Array.from({length:C.bars},(_,k)=>'<i class="'+(k<C.rep-(C.counting&&C.kind!='rep'?1:0)&&!(C.counting&&C.kind=='tempo')?'f':'')+'"></i>').join('')}
+  bars.querySelectorAll('.col').forEach(b=>b.onclick=()=>{if(!CURVE.on)return;const i=+b.dataset.i;
+    if(i==CURVE.idx+(CURVE.jump||0)&&!CURVE.paused){CURVE.stay=!CURVE.stay;renderLadPanel();return}
+    curveSkip(i-(CURVE.idx+(CURVE.jump||0)));renderLadPanel()})}
+function renderMetTempo(){renderLadPanel()}
+function renderMet(){
+  const M=MC();
+  $('#metBeats').innerHTML=Array.from({length:12},(_,i)=>'<option'+(i+1==M.beats?' selected':'')+'>'+(i+1)+'</option>').join('');
+  $('#metSub').innerHTML=SUBS_M.map(([v,n])=>'<option value="'+v+'"'+(v==M.sub?' selected':'')+'>'+n+'</option>').join('');
+  $('#metDots').innerHTML=Array.from({length:M.beats},(_,b)=>'<i class="'+(M.pat.p[b*M.sub]?'pb':'')+'">'+(b+1)+'</i>').join('');
+  const lab=['1','e','&','a'],tl=['1','trip','let'];
+  let h='';for(let b=0;b<M.beats;b++){
+    h+='<div class="mbeat" style="--n:'+M.sub+'">';
+    for(let k=0;k<M.sub;k++){const t=M.sub==4?(k==0?b+1:lab[k]):M.sub==3?(k==0?b+1:tl[k]):M.sub==2?(k==0?b+1:'&'):(k==0?b+1:'');h+='<span class="mh">'+t+'</span>'}
+    for(const v of['p','s','m'])for(let k=0;k<M.sub;k++){const i=b*M.sub+k;h+='<button class="mc '+v+(M.pat[v][i]?' on':'')+'" data-v="'+v+'" data-i="'+i+'" aria-label="'+v+' step '+(i+1)+'"></button>'}
+    h+='</div>'}
+  $('#metGrid').innerHTML=h;
+  // keyboard (Enter/Space) still toggles one cell; mouse/touch use the drag painter below
+  $$('#metGrid .mc').forEach(c=>c.onclick=e=>{if(e.detail!==0)return;const v=c.dataset.v,i=+c.dataset.i;M.pat[v][i]=!M.pat[v][i];c.classList.toggle('on',M.pat[v][i]);if(v=='p'&&i%M.sub==0)renderMet();save()});
+  $('#metKit').value=M.kit;$('#metMaster').value=M.master;$('#metWithTimer').checked=!!M.withTimer;$('#metFollow').checked=!!M.follow;
+  $('#metVoices').innerHTML=VOICES.map(([v,n,dk,ck])=>{const sm=M.samples&&M.samples[v];
+    return'<div class="vrow"><span class="vname"><b>'+n+'</b><small>'+(sm?'Your sample: '+esc(sm):'Built-in '+(M.kit=='click'?ck:dk))+'</small></span>'+
+    '<input type="range" min="0" max="1" step="0.05" value="'+(M.vol[v]??1)+'" data-v="'+v+'" class="vvol" aria-label="'+n+' volume">'+
+    '<button data-v="'+v+'" class="vtest" title="Play this sound">▶</button>'+
+    '<button data-v="'+v+'" class="vup">'+(sm?'Replace…':'Use my sample…')+'</button>'+(sm?'<button data-v="'+v+'" class="vdel" title="Go back to the built-in sound">Remove</button>':'')+'</div>'}).join('');
+  $$('#metVoices .vvol').forEach(r=>r.oninput=()=>{M.vol[r.dataset.v]=+r.value;save()});
+  $$('#metVoices .vtest').forEach(b=>b.onclick=async()=>{const a=audio();await loadSamples();voice(b.dataset.v,a.currentTime+.02)});
+  $$('#metVoices .vup').forEach(b=>b.onclick=()=>{upVoice=b.dataset.v;$('#metFile').click()});
+  $$('#metVoices .vdel').forEach(b=>b.onclick=async()=>{const v=b.dataset.v;try{await IDB.del(v)}catch(e){}delete SAMP[v];delete M.samples[v];save();renderMet()});
+  renderMetTempo();renderMetBtn();
+}
+$('#metBeats').onchange=e=>setMeter(+e.target.value,MC().sub);
+$('#metSub').onchange=e=>setMeter(MC().beats,+e.target.value);
+$$('#metCard [data-pre]').forEach(b=>b.onclick=()=>{const M=MC();M.pat=defPattern(M.beats,M.sub,b.dataset.pre);save();renderMet()});
+// click or drag across the pattern: the first cell decides on/off, every cell you pass gets the same
+let GD=null;
+function gridPaint(c){const M=MC(),v=c.dataset.v,i=+c.dataset.i,k=v+i;if(GD.done.has(k))return;GD.done.add(k);
+  M.pat[v][i]=GD.on;c.classList.toggle('on',GD.on);if(v=='p'&&i%M.sub==0)GD.dots=true}
+$('#metGrid').addEventListener('pointerdown',e=>{const c=e.target.closest('.mc');if(!c||e.button>0)return;e.preventDefault();
+  const M=MC();GD={on:!M.pat[c.dataset.v][+c.dataset.i],done:new Set(),dots:false};gridPaint(c)});
+addEventListener('pointermove',e=>{if(!GD)return;const el=document.elementFromPoint(e.clientX,e.clientY),c=el&&el.closest('#metGrid .mc');if(c)gridPaint(c)});
+const gridEnd=()=>{if(!GD)return;const d=GD.dots;GD=null;save();if(d)renderMet()};
+addEventListener('pointerup',gridEnd);addEventListener('pointercancel',gridEnd);
+$('#metGo').onclick=()=>playing()?transportPause():transportPlay();
+$('#metStop').onclick=transportStop;
+$('#swLad').onclick=e=>{e.preventDefault();const ex=exById(T.ex);if(!ex)return;ex.ladderOn=!ex.ladderOn;save();
+  if(!ex.ladderOn&&(CURVE.on||CURVE.hold))curveCancel();renderLadPanel();renderMetBtn()};
+selAll($('#bpm'));selAll($('#curveBars'));selAll($('#exLen'));selAll($('#exMax'));
+$('#ladSec').addEventListener('toggle',()=>{const o=$('#ladSec').open;if((D.settings.ladOpen!==false)!=o){D.settings.ladOpen=o;save()}});
+$('#exLen').oninput=e=>{const ex=exById(T.ex),v=Math.round(num(e.target.value)||0);if(ex&&v>0){ex.lenBars=Math.min(64,v);save();if(CURVE.on)CURVE.len=ex.lenBars}};
+$('#exLen').onchange=e=>{const ex=exById(T.ex);if(!ex)return;e.target.value=ex.lenBars||1;renderCurve()};
+$('#exMax').onchange=e=>{const ex=exById(T.ex);if(!ex)return;const v=num(e.target.value);ex.curveMax=v>0?Math.round(v*100)/100:null;save();renderCurve();toast(ex.curveMax?'Ladder max set to '+trim(ex.curveMax)+' BPM':'Ladder max cleared — the ladder will top out at the goal + 10%')};
+for(const id of ['exLen','exMax','curveBars'])$('#'+id).addEventListener('keydown',e=>{if(e.key=='Enter'){e.preventDefault();e.target.blur()}});
+$('#curveGo').onclick=()=>{audio();(CURVE.on||CURVE.hold)?curveEnd():curveStart()};
+$('#curveReady').onchange=e=>{const ex=exById(T.ex);if(!ex)return;ex.readyBars=+e.target.value;save();if(CURVE.on)CURVE.ready=ex.readyBars;renderCurve()};
+$('#curvePrev').onclick=()=>curveSkip(-1);$('#curveNext').onclick=()=>curveSkip(1);
+$('#curveStay').onclick=()=>{CURVE.stay=!CURVE.stay;curveInfo()};
+$('#curveRepReady').onchange=e=>{const ex=exById(T.ex);if(!ex)return;ex.repReady=+e.target.value;save();if(CURVE.on)CURVE.repReady=ex.repReady;renderCurve()};
+$('#curveBars').oninput=e=>{const ex=exById(T.ex),v=Math.round(num(e.target.value)||0);if(ex&&v>0){ex.curveBars=Math.min(64,v);save();if(CURVE.on)CURVE.bars=ex.curveBars}};
+$('#curveBars').onchange=e=>{const ex=exById(T.ex),v=Math.round(num(e.target.value)||0);if(ex&&v>0){ex.curveBars=Math.min(64,v);save();if(CURVE.on)CURVE.bars=ex.curveBars}renderCurve()};
+$('#metKit').onchange=e=>{MC().kit=e.target.value;save();renderMet()};
+$('#metMaster').oninput=e=>{MC().master=+e.target.value;save()};
+$('#metWithTimer').onchange=e=>{MC().withTimer=e.target.checked;save()};
+$('#metFollow').onchange=e=>{MC().follow=e.target.checked;save();if(e.target.checked)followEx()};
+$('#metTap').onclick=()=>{const t=performance.now();MET.taps=MET.taps.filter(x=>t-x<2500);MET.taps.push(t);
+  if(MET.taps.length>=2){const ts=MET.taps.slice(-5),iv=(ts[ts.length-1]-ts[0])/(ts.length-1);$('#bpm').value=Math.round(60000/iv);$('#bpm').oninput()}};
+function followEx(){const M=MC(),ex=exById(T.ex);if(!M.follow||!ex)return;const s=subFromText(ex.sub);if(s)setMeter(M.beats,s)}
+addEventListener('keydown',e=>{if(e.key.toLowerCase()!='m'||e.ctrlKey||e.metaKey||e.altKey||view!='practice')return;
+  if(['INPUT','SELECT','TEXTAREA'].includes(e.target.tagName)||$('dialog[open]'))return;e.preventDefault();$('#metGo').click()});
+// custom samples (kept in IndexedDB, not in backups)
+const IDB={db:null,open(){return new Promise((res,rej)=>{if(this.db)return res(this.db);const r=indexedDB.open('gp-samples',1);r.onupgradeneeded=()=>r.result.createObjectStore('s');r.onsuccess=()=>{this.db=r.result;res(this.db)};r.onerror=()=>rej(r.error)})},
+  async tx(mode,fn){const db=await this.open();return new Promise((res,rej)=>{const t=db.transaction('s',mode),q=fn(t.objectStore('s'));t.oncomplete=()=>res(q&&q.result);t.onerror=()=>rej(t.error)})},
+  get(k){return this.tx('readonly',s=>s.get(k))},put(k,v){return this.tx('readwrite',s=>s.put(v,k))},del(k){return this.tx('readwrite',s=>s.delete(k))}};
+let upVoice=null,samplesLoading=null;
+function loadSamples(){if(samplesLoading)return samplesLoading;const M=MC(),a=actx;if(!a)return Promise.resolve();
+  samplesLoading=Promise.all(Object.keys(M.samples||{}).filter(v=>!SAMP[v]).map(async v=>{try{const buf=await IDB.get(v);if(buf)SAMP[v]=await a.decodeAudioData(buf.slice(0))}catch(e){}})).finally(()=>{samplesLoading=null});
+  return samplesLoading}
+$('#metFile').onchange=async e=>{const f=e.target.files[0],v=upVoice;e.target.value='';if(!f||!v)return;
+  try{const buf=await f.arrayBuffer();const a=audio();const dec=await a.decodeAudioData(buf.slice(0));
+    if(dec.duration>5){toast('That sample is '+dec.duration.toFixed(1)+' s long — use something under 5 s');return}
+    await IDB.put(v,buf);SAMP[v]=dec;MC().samples[v]=f.name;save();renderMet();voice(v,a.currentTime+.02);toast('Using '+f.name+' for '+VOICES.find(x=>x[0]==v)[1].toLowerCase()+' beats')}
+  catch(x){tell('Couldn’t use that file as a sound. Try a WAV, AIFF or MP3 file.')}};
+$('#bpm').addEventListener('input',renderMetTempo);
+addEventListener('pagehide',()=>{metStop();tunStop()});
+
+// ---------- tuner ----------
+const TN=['C','C♯','D','D♯','E','F','F♯','G','G♯','A','A♯','B'];
+const TPRE={
+ 'guitar-6':[['Standard','E2 A2 D3 G3 B3 E4'],['Drop D','D2 A2 D3 G3 B3 E4'],['Half step down (E♭)','E♭2 A♭2 D♭3 G♭3 B♭3 E♭4'],['Whole step down (D standard)','D2 G2 C3 F3 A3 D4'],['Drop C♯','C♯2 G♯2 C♯3 F♯3 A♯3 D♯4'],['Drop C','C2 G2 C3 F3 A3 D4'],['Drop B','B1 F♯2 B2 E3 G♯3 C♯4'],['Open G','D2 G2 D3 G3 B3 D4'],['Open D','D2 A2 D3 F♯3 A3 D4'],['Open E','E2 B2 E3 G♯3 B3 E4'],['DADGAD','D2 A2 D3 G3 A3 D4']],
+ 'guitar-7':[['Standard','B1 E2 A2 D3 G3 B3 E4'],['Drop A','A1 E2 A2 D3 G3 B3 E4'],['Half step down','B♭1 E♭2 A♭2 D♭3 G♭3 B♭3 E♭4']],
+ 'guitar-8':[['Standard','F♯1 B1 E2 A2 D3 G3 B3 E4'],['Drop E','E1 B1 E2 A2 D3 G3 B3 E4']],
+ 'bass-4':[['Standard','E1 A1 D2 G2'],['Drop D','D1 A1 D2 G2'],['Half step down (E♭)','E♭1 A♭1 D♭2 G♭2'],['Whole step down (D standard)','D1 G1 C2 F2']],
+ 'bass-5':[['Standard (low B)','B0 E1 A1 D2 G2'],['High C','E1 A1 D2 G2 C3'],['Drop A','A0 E1 A1 D2 G2']],
+ 'bass-6':[['Standard','B0 E1 A1 D2 G2 C3']]};
+const TSTR={guitar:[6,7,8],bass:[4,5,6]};
+function nMidi(n){const m=/^([A-G])([♯♭]?)(-?\d)$/.exec(n);if(!m)return null;return 12*(+m[3]+1)+{C:0,D:2,E:4,F:5,G:7,A:9,B:11}[m[1]]+(m[2]=='♯'?1:m[2]=='♭'?-1:0)}
+function mName(m){return TN[((m%12)+12)%12]+(Math.floor(m/12)-1)}
+let TUN=Object.assign({inst:'guitar',n:6,pre:'Standard',notes:TPRE['guitar-6'][0][1].split(' ')},LS.get('gp.tuning',{}));
+let TS=[],TSN=[];
+function applyTuning(){TSN=TUN.notes.slice();TS=TSN.map(nMidi);LS.set('gp.tuning',TUN);
+  $('#tunStr').innerHTML=TSN.map(n=>'<div>'+n+'</div>').join('');
+  $('#tunWhich').textContent=(TUN.inst=='bass'?'Bass':'Guitar')+' · '+TUN.n+' strings · '+(TUN.pre||'Custom');
+  $('#tunInst').value=TUN.inst;
+  $('#tunNStr').innerHTML=TSTR[TUN.inst].map(k=>'<option'+(k==TUN.n?' selected':'')+'>'+k+'</option>').join('');
+  const ps=TPRE[TUN.inst+'-'+TUN.n]||[];
+  $('#tunPre').innerHTML=ps.map(([nm,ns])=>'<option'+(nm==TUN.pre?' selected':'')+'>'+esc(nm)+' — '+ns+'</option>').join('')+'<option value=""'+(TUN.pre?'':' selected')+'>Custom</option>';
+  [...$('#tunPre').options].forEach((o,i)=>{if(i<ps.length)o.value=ps[i][0]});
+  const lo=TUN.inst=='bass'?nMidi('A0'):nMidi('C1'),hi=TUN.inst=='bass'?nMidi('C4'):nMidi('G4');
+  $('#tunNotes').innerHTML=TS.map((m,i)=>'<select data-i="'+i+'" aria-label="String '+(TS.length-i)+'">'+Array.from({length:hi-lo+1},(_,k)=>lo+k).map(v=>'<option value="'+v+'"'+(v==m?' selected':'')+'>'+(v==m?TSN[i]:mName(v))+'</option>').join('')+'</select>').join('');
+  $$('#tunNotes select').forEach(s=>s.onchange=()=>{TUN.notes[+s.dataset.i]=mName(+s.value);TUN.pre='';
+    const hit=(TPRE[TUN.inst+'-'+TUN.n]||[]).find(([,ns])=>ns.split(' ').map(nMidi).join()==TUN.notes.map(nMidi).join());if(hit){TUN.pre=hit[0];TUN.notes=hit[1].split(' ')}applyTuning()});
+  if(typeof setTune=='function'&&TU&&!TU.stream)setTune(null)}
+function pickPreset(inst,n,pre){const ps=TPRE[inst+'-'+n]||[];const p=ps.find(x=>x[0]==pre)||ps[0];TUN={inst,n,pre:p[0],notes:p[1].split(' ')};applyTuning()}
+const FS=Object.assign({devId:'',chan:'mix',boost:1,gate:8,a4:440},LS.get('fbset',{}));
+function saveFS(){const cur=LS.get('fbset',{});Object.assign(cur,{devId:FS.devId,chan:FS.chan,boost:FS.boost,gate:FS.gate,a4:FS.a4});LS.set('fbset',cur)}
+const TU={ctx:null,stream:null,src:null,gain:null,split:null,an:null,buf:null,dbuf:null,timer:null,fr:[],nd:null,tok:0};
+const NSV='http://www.w3.org/2000/svg';
+function sv(t,a,p){const e=document.createElementNS(NSV,t);for(const k in a)e.setAttribute(k,a[k]);p.appendChild(e);return e}
+(function(){const m=$('#tunMeter');
+  sv('rect',{x:182,y:10,width:36,height:38,rx:4,fill:'var(--ok)',opacity:.22},m);
+  for(let c=-50;c<=50;c+=10){const x=200+3.6*c;sv('line',{x1:x,x2:x,y1:c==0?14:24,y2:44,stroke:'var(--mut)','stroke-width':c==0?3:2},m)}
+  sv('text',{x:20,y:66,'text-anchor':'middle','font-size':16,fill:'var(--mut)'},m).textContent='♭';
+  sv('text',{x:380,y:66,'text-anchor':'middle','font-size':16,fill:'var(--mut)'},m).textContent='♯';
+  TU.nd=sv('line',{x1:200,x2:200,y1:8,y2:50,stroke:'var(--acc)','stroke-width':4,'stroke-linecap':'round'},m);
+})();
+applyTuning();
+function tunRoute(){if(!TU.src||!TU.gain)return;try{TU.src.disconnect()}catch(e){}try{TU.split&&TU.split.disconnect()}catch(e){}
+  const chs=TU.stream.getAudioTracks()[0].getSettings().channelCount;
+  if(FS.chan=='mix'||chs==1)TU.src.connect(TU.gain);else{TU.split=TU.ctx.createChannelSplitter(2);TU.src.connect(TU.split);TU.split.connect(TU.gain,+FS.chan)}}
+async function tunOpen(id){const base={channelCount:{ideal:2},echoCancellation:false,noiseSuppression:false,autoGainControl:false};
+  try{return await navigator.mediaDevices.getUserMedia({audio:id?Object.assign({deviceId:{exact:id}},base):base})}
+  catch(e){if(id&&(e.name=='OverconstrainedError'||e.name=='NotFoundError')){FS.devId='';saveFS();return await navigator.mediaDevices.getUserMedia({audio:base})}throw e}}
+function tunAuto(){if(view=='tuner'&&!TU.stream&&!document.hidden)tunStart()}
+document.addEventListener('visibilitychange',()=>{if(document.hidden){if(TU.stream)tunStop()}else tunAuto()});
+async function tunStart(){tunStop();const tok=++TU.tok;let st;
+  try{st=await tunOpen(FS.devId)}catch(e){if(tok!=TU.tok)return;$('#tunMsg').innerHTML='Can’t use the microphone ('+esc(e.name||'error')+'). Allow microphone access for this app, then <button class="linkish" id="tunRetry">try again</button>.';$('#tunRetry').onclick=tunStart;return}
+  if(tok!=TU.tok||view!='tuner'||document.hidden){st.getTracks().forEach(t=>t.stop());return}
+  TU.stream=st;$('#tunMsg').textContent='';
+  TU.ctx=new(window.AudioContext||window.webkitAudioContext)();try{await TU.ctx.resume()}catch(e){}
+  TU.src=TU.ctx.createMediaStreamSource(TU.stream);TU.gain=TU.ctx.createGain();TU.gain.gain.value=FS.boost;TU.an=TU.ctx.createAnalyser();TU.an.fftSize=8192;TU.gain.connect(TU.an);TU.buf=new Float32Array(TU.an.fftSize);tunRoute();
+  if(TU.ctx.state!='running'){const r=()=>{TU.ctx&&TU.ctx.resume();removeEventListener('pointerdown',r)};addEventListener('pointerdown',r)}
+  TU.timer=setInterval(tunTick,50)}
+function tunStop(){TU.tok++;clearInterval(TU.timer);TU.timer=null;if(TU.stream)TU.stream.getTracks().forEach(t=>t.stop());TU.stream=null;if(TU.ctx){try{TU.ctx.close()}catch(e){}}TU.ctx=TU.an=TU.src=TU.gain=TU.split=null;TU.fr=[];
+  $('#tunLvl').style.width='0';setTune(null)}
+function yin(b,sr,fmin){const W=b.length>>1,maxT=Math.min(W-1,Math.floor(sr/(fmin||70))),minT=Math.max(2,Math.floor(sr/1400)),d=new Float32Array(maxT+1),c=new Float32Array(maxT+1);
+  for(let t=1;t<=maxT;t++){let s=0;for(let i=0;i<W;i++){const x=b[i]-b[i+t];s+=x*x}d[t]=s}
+  let run=0;c[0]=1;for(let t=1;t<=maxT;t++){run+=d[t];c[t]=run?d[t]*t/run:1}
+  for(let t=minT;t<maxT;t++){if(c[t]<.12){while(t+1<maxT&&c[t+1]<c[t])t++;const a=c[t-1],m=c[t],z=c[t+1],den=a-2*m+z,sh=den?.5*(a-z)/den:0;return sr/(t+sh)}}return -1}
+function tunTick(){if(!TU.an)return;TU.an.getFloatTimeDomainData(TU.buf);let r=0;for(let i=0;i<TU.buf.length;i++)r+=TU.buf[i]*TU.buf[i];r=Math.sqrt(r/TU.buf.length);
+  $('#tunLvl').style.width=Math.min(100,r*500)+'%';
+  if(r<FS.gate/1000){TU.fr=[];setTune(null);return}
+  // floor ~a fourth below the lowest string; low tunings use a 2:1 decimated (half-rate) copy to keep it fast
+  const fmin=Math.max(20,FS.a4*Math.pow(2,(Math.min(...TS)-69)/12)*.75),sr=TU.ctx.sampleRate;let f;
+  if(fmin<55){const n=TU.buf.length>>1;if(!TU.dbuf||TU.dbuf.length!=n)TU.dbuf=new Float32Array(n);for(let i=0;i<n;i++)TU.dbuf[i]=.5*(TU.buf[2*i]+TU.buf[2*i+1]);f=yin(TU.dbuf,sr/2,fmin)}
+  else f=yin(TU.buf.subarray(TU.buf.length-4096),sr,fmin);if(f<0)return;TU.fr.push(f);if(TU.fr.length>5)TU.fr.shift();
+  const s=[...TU.fr].sort((a,b)=>a-b),fm=s[s.length>>1];setTune(12*Math.log2(fm/FS.a4)+69,fm)}
+function setTune(mm,f){const ch=$('#tunStr').children,nd=TU.nd;
+  if(mm==null){$('#tunNote').textContent='–';$('#tunFreq').innerHTML='&nbsp;';nd.setAttribute('x1',200);nd.setAttribute('x2',200);nd.setAttribute('stroke','var(--acc)');
+    for(const c of ch)c.className='';$('#tunNote').className='tnote';return}
+  const nr=Math.round(mm);let tgt=-1,bd=1e9;TS.forEach((m,i)=>{const d=Math.abs(mm-m);if(d<bd){bd=d;tgt=i}});
+  const near=bd<=2.5,ref=near?TS[tgt]:nr,c=(mm-ref)*100,ci=Math.round(c),ok=Math.abs(c)<=5,x=200+3.6*Math.max(-50,Math.min(50,c));
+  nd.setAttribute('x1',x);nd.setAttribute('x2',x);nd.setAttribute('stroke',ok?'var(--ok)':'var(--acc)');
+  $('#tunNote').textContent=TN[((nr%12)+12)%12]+(Math.floor(nr/12)-1);$('#tunNote').className='tnote'+(ok?' ok':'');
+  $('#tunFreq').textContent=f.toFixed(1)+' Hz · '+(ci>0?'+':'')+ci+'¢'+(near?' vs '+TSN[tgt]:'');
+  TS.forEach((m,i)=>{ch[i].className=near&&i==tgt?(ok?'hit':'near'):''})}
+$('#tunWhich').onclick=()=>{$('#tunSet').open=true;$('#tunSet').scrollIntoView({block:'nearest',behavior:'smooth'})};
+$('#tunInst').onchange=e=>pickPreset(e.target.value,TSTR[e.target.value][e.target.value=='bass'?0:0],'');
+$('#tunNStr').onchange=e=>pickPreset(TUN.inst,+e.target.value,'');
+$('#tunPre').onchange=e=>{if(e.target.value)pickPreset(TUN.inst,TUN.n,e.target.value);else{TUN.pre='';applyTuning()}};
+renderMet();followEx();
+
+// ---------- Settings → Audio input (shared with the tuner and the trainer via fbset) ----------
+const IN={stream:null,ctx:null,an:null,buf:null,timer:null,gain:null,src:null,split:null};
+function syncInUI(){$('#inChan').value=FS.chan;$('#inA4').value=FS.a4;$('#inA4v').textContent=FS.a4;$('#inBoost').value=FS.boost;$('#inBoostv').textContent=FS.boost+'×';
+  $('#inGate').value=FS.gate;$('#inGatev').textContent=(FS.gate/1000).toFixed(3);$('#inGateMark').style.left=Math.min(100,FS.gate/1000*500)+'%'}
+async function inList(){try{const ds=(await navigator.mediaDevices.enumerateDevices()).filter(d=>d.kind=='audioinput');
+  const named=ds.some(d=>d.label);
+  $('#inDev').innerHTML='<option value="">Default input</option>'+ds.filter(d=>d.deviceId&&d.deviceId!='default').map((d,i)=>'<option value="'+esc(d.deviceId)+'">'+esc(d.label||'Audio input '+(i+1))+'</option>').join('');
+  $('#inDev').value=ds.some(d=>d.deviceId==FS.devId)?FS.devId:'';
+  if(!named&&!IN.stream)$('#inMsg').textContent='— press Test input to see your devices’ names';}catch(e){}}
+function inRoute(){if(!IN.src)return;try{IN.src.disconnect()}catch(e){}try{IN.split&&IN.split.disconnect()}catch(e){}
+  const chs=IN.stream.getAudioTracks()[0].getSettings().channelCount;
+  if(FS.chan=='mix'||chs==1)IN.src.connect(IN.gain);else{IN.split=IN.ctx.createChannelSplitter(2);IN.src.connect(IN.split);IN.split.connect(IN.gain,+FS.chan)}}
+async function inStart(){inStop();
+  try{IN.stream=await tunOpen(FS.devId)}catch(e){$('#inMsg').textContent='— can’t use the microphone ('+(e.name||'error')+')';return}
+  if(view!='settings'){inStop();return}
+  IN.ctx=new(window.AudioContext||window.webkitAudioContext)();try{await IN.ctx.resume()}catch(e){}
+  IN.src=IN.ctx.createMediaStreamSource(IN.stream);IN.gain=IN.ctx.createGain();IN.gain.gain.value=FS.boost;IN.an=IN.ctx.createAnalyser();IN.an.fftSize=2048;IN.gain.connect(IN.an);IN.buf=new Float32Array(2048);inRoute();
+  $('#inTest').textContent='■ Stop test';$('#inMsg').textContent='— play something; the bar should pass the line';await inList();
+  IN.timer=setInterval(()=>{IN.an.getFloatTimeDomainData(IN.buf);let r=0;for(const x of IN.buf)r+=x*x;r=Math.sqrt(r/IN.buf.length);$('#inLvl').style.width=Math.min(100,r*500)+'%';$('#inLvl').style.opacity=r>=FS.gate/1000?1:.4},50)}
+function inStop(){clearInterval(IN.timer);if(IN.stream)IN.stream.getTracks().forEach(t=>t.stop());if(IN.ctx){try{IN.ctx.close()}catch(e){}}
+  Object.assign(IN,{stream:null,ctx:null,an:null,gain:null,src:null,split:null,timer:null});$('#inTest').textContent='🎤 Test input';$('#inLvl').style.width='0';$('#inMsg').textContent=''}
+$('#inTest').onclick=()=>IN.stream?inStop():inStart();
+$('#inDev').onchange=e=>{FS.devId=e.target.value;saveFS();if(IN.stream)inStart()};
+$('#inChan').onchange=e=>{FS.chan=e.target.value;saveFS();inRoute()};
+$('#inA4').oninput=e=>{FS.a4=+e.target.value;saveFS();syncInUI()};
+$('#inBoost').oninput=e=>{FS.boost=+e.target.value;if(IN.gain)IN.gain.gain.value=FS.boost;saveFS();syncInUI()};
+$('#inGate').oninput=e=>{FS.gate=+e.target.value;saveFS();syncInUI()};
+$('#tunToSet').onclick=e=>{e.preventDefault();show('settings');setTimeout(()=>$('#audioCard').scrollIntoView({behavior:'smooth',block:'start'}),60)};
+syncInUI();
+
+// ---------- color scheme ----------
+const SKINS=[{"k": "green", "n": "Green & Black", "bg": "#0a0c0a", "card": "#121612", "a": "#22c55e", "fg": "#e6efe6"}, {"k": "greenlight", "n": "Green & White", "bg": "#f6faf6", "card": "#ffffff", "a": "#15803d", "fg": "#142014"}, {"k": "blue", "n": "Blue & Black", "bg": "#090b0f", "card": "#11151c", "a": "#38bdf8", "fg": "#e6ecf5"}, {"k": "red", "n": "Red & Black", "bg": "#0d0909", "card": "#171010", "a": "#ef4444", "fg": "#f2e8e8"}, {"k": "purple", "n": "Purple & Black", "bg": "#0b0a0f", "card": "#15121c", "a": "#a78bfa", "fg": "#ece8f5"}, {"k": "orange", "n": "Original orange", "bg": "#faf8f4", "card": "#17150f", "a": "#c2410c", "fg": "#1f1d1a", "note": "Light or dark to match your computer"}];
+function curSkin(){return document.documentElement.getAttribute('data-skin')||'green'}
+function applySkin(k){
+  if(!SKINS.some(s=>s.k==k))k='green';
+  document.documentElement.setAttribute('data-skin',k);
+  try{localStorage.setItem('gp.skin',k)}catch(e){}
+  const ic='icons/icon-'+k+'.svg';$('#logo').src=ic;$('#favsvg').href=ic;
+  const s=SKINS.find(x=>x.k==k);$('#themecolor').content=k=='orange'?'#1c1410':s.bg;
+  try{const d=$('#trFrame').contentDocument;if(d&&d.documentElement)d.documentElement.setAttribute('data-skin',k)}catch(e){}
+  if(view=='stats')renderStats();
+}
+function renderSkins(){const c=curSkin();
+  $('#skinPick').innerHTML=SKINS.map(s=>'<button class="skin'+(s.k==c?' on':'')+'" data-k="'+s.k+'"><div class="pv" style="background:'+s.bg+'"><i style="background:'+s.a+';width:70%"></i><i style="background:'+s.fg+';opacity:.25;width:45%"></i><b style="background:'+s.a+'"></b></div><div class="nm">'+esc(s.n)+(s.note?'<small>'+esc(s.note)+'</small>':'')+'</div></button>').join('');
+  $$('#skinPick .skin').forEach(b=>b.onclick=()=>{applySkin(b.dataset.k);renderSkins()})}
+applySkin(curSkin());
+addEventListener('storage',e=>{if(e.key=='gp.skin'&&e.newValue)applySkin(e.newValue)});
+
+// ---------- version ----------
+$('#verTag').textContent='v'+APP_VERSION;
+$('#verTag').onclick=()=>{show('settings');setTimeout(()=>$('#about').scrollIntoView({behavior:'smooth',block:'start'}),60)};
+function renderChanges(){$('#verNow').textContent='· you have version '+APP_VERSION;
+  $('#chlog').innerHTML=CHANGES.map(([v,d,items])=>'<h3>Version '+v+'<small>'+esc(d)+'</small></h3><ul>'+items.map(i=>'<li>'+esc(i)+'</li>').join('')+'</ul>').join('')}
+renderChanges();
+{let seen=null;try{seen=localStorage.getItem('gp.ver')}catch(e){}
+ try{localStorage.setItem('gp.ver',APP_VERSION)}catch(e){}
+ if(seen&&seen!==APP_VERSION)setTimeout(()=>toast('Updated to version '+APP_VERSION,'What’s new',()=>$('#verTag').click()),400);}
+
+// ---------- install / offline ----------
+let deferredPrompt=null;
+addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredPrompt=e;$('#installBtn').hidden=false});
+$('#installBtn').onclick=async()=>{if(!deferredPrompt)return;deferredPrompt.prompt();try{await deferredPrompt.userChoice}catch(e){}deferredPrompt=null;$('#installBtn').hidden=true};
+addEventListener('appinstalled',()=>{$('#installBtn').hidden=true;toast('Installed — find “Guitar Practice” with your apps')});
+if(location.protocol=='file:')$('#fileBanner').hidden=false;
+if('serviceWorker' in navigator&&/^https?:$/.test(location.protocol)){
+  const had=!!navigator.serviceWorker.controller;
+  navigator.serviceWorker.register('sw.js').catch(()=>{});
+  navigator.serviceWorker.addEventListener('controllerchange',()=>{if(had)toast('A new version is ready','Reload',()=>location.reload())});
+}
+try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}
+addEventListener('storage',e=>{if(e.key=='fbset'){try{Object.assign(FS,JSON.parse(e.newValue||'{}'))}catch(x){}if(typeof syncInUI=='function')syncInUI()}if(e.key=='gp.data'){D=LS.get('gp.data',D);render()}});
+
+// ---------- start ----------
+buildPresets();
+if(T.mode=='down'&&running()&&elapsed()<T.target){/* reloaded mid-countdown: chime fires from tick */}
+{const s=exStats(T.ex);if(s.lastB)$('#bpm').value=trim(s.lastB.bpm)}
+show((location.hash||'').slice(1)||'practice');
+if(T.done)openLog();
+</script>
+</body>
+</html>

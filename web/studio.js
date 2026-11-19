@@ -1,0 +1,244 @@
+// Studio additions to its practice screens (web/index.html).
+
+// Studio's own "What's new" list (newest first). Keep the top entry's version
+// the same as the VERSION in CMakeLists.txt.
+window.STUDIO_CHANGES = [
+  ['0.3.0', 'Nov 18, 2026', [
+    'One Play/Pause and Stop in the Metronome card run the metronome, the tempo ladder and the practice timer. Space plays and pauses.',
+    'The Tempo ladder is a switch. The ladder graph is always shown: with the switch off, click a bar to pick a percentage of your goal; with it on, it shows your place in the ladder, click a bar to jump there, and click the current bar to hold that tempo (blue).',
+    'A Click switch turns the metronome sound off while Play still runs the timer.',
+    'Switching Stopwatch/Countdown with time on the clock asks to discard it first. Studio\u2019s own dialogs replace the pop-ups its window couldn\u2019t show.'
+  ]],
+  ['0.2.0', 'Nov 18, 2026', [
+    'Each exercise has its own effect slot at the bottom of the Exercise card. Click the plugin name to open the plugin, or the ▾ to pick another one, with search and your recent plugins.',
+    'Each exercise remembers its plugin and that plugin’s settings. Only one plugin runs at a time; switching exercises switches it.',
+    'An empty slot plays your raw guitar. Mute silences Studio’s output; it turns red while muted.',
+    'Settings → Audio has the audio interface and Scan for plugins.'
+  ]],
+  ['0.1.0', 'Nov 18, 2026', [
+    'First test build of Guitar Practice Studio: the practice app in its own window, plus playing your guitar through an amp-sim or effect plugin (VST3 or AudioUnit).'
+  ]]
+];
+
+(function () {
+  var backend = window.__JUCE__ && window.__JUCE__.backend;
+  function send(action, extra) {
+    if (!backend) return;
+    var msg = { action: action };
+    for (var k in (extra || {})) msg[k] = extra[k];
+    backend.emitEvent('studio', msg);
+  }
+
+  // The page announces the selected exercise; Studio loads that exercise's plugin.
+  addEventListener('gp:exercise', function (e) {
+    send('exercise', { id: e.detail && e.detail.id != null ? String(e.detail.id) : '' });
+  });
+
+  var CSS =
+    '.fxrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:12px;padding-top:12px;border-top:1px solid var(--line);position:relative}' +
+    '.fxsplit{display:inline-flex}.fxsplit button{border-radius:0}' +
+    '.fxsplit .fxmain{border-radius:9px 0 0 9px;font-weight:600;min-width:200px;text-align:left}' +
+    '.fxsplit .fxmain.empty{font-weight:400;color:var(--mut)}' +
+    '.fxsplit .fxcar{border-radius:0 9px 9px 0;border-left:0;padding-left:10px;padding-right:10px}' +
+    '.fxmute{font-weight:600}.fxmute.on{background:var(--bad);border-color:var(--bad);color:#fff}' +
+    '.fxmeter{flex:1;min-width:60px;max-width:150px;height:8px;border-radius:4px;background:var(--soft);overflow:hidden;border:1px solid var(--line)}' +
+    '.fxmeter i{display:block;height:100%;width:0;background:var(--ok)}' +
+    '.fxmsg{flex-basis:100%;color:var(--mut);font-size:13px}.fxmsg:empty{display:none}' +
+    '.fxpop{position:absolute;top:100%;left:0;margin-top:6px;width:min(440px,100%);background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px;box-shadow:0 18px 50px rgba(0,0,0,.45);z-index:60}' +
+    '.fxpop input{width:100%;box-sizing:border-box;font-size:15px;padding:8px 10px}' +
+    '.fxlist{max-height:320px;overflow:auto;margin-top:6px}' +
+    '.fxhd{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--mut);margin:8px 6px 4px}' +
+    '.fxit{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:7px 10px;border-radius:8px;cursor:pointer}' +
+    '.fxit:hover{background:var(--soft)}.fxit.sel{background:var(--soft);outline:2px solid var(--acc);outline-offset:-2px}' +
+    '.fxit small{color:var(--mut)}.fxbadge{font-size:11px;border:1px solid var(--line);border-radius:6px;padding:1px 6px;color:var(--mut);white-space:nowrap}' +
+    '.fxfoot{display:flex;justify-content:space-between;align-items:center;border-top:1px solid var(--line);margin-top:8px;padding-top:8px;color:var(--mut);font-size:13px}' +
+    '.fxfoot button{font-size:13px}';
+
+  var st = { plugin: '', muted: true, message: '', device: '' };
+  // Lets the Fretboard Trainer (an iframe on this page) show and use the same guitar mute.
+  var studioMuteListeners = [];
+  window.studioGuitarMute = {
+    get: function () { return !!st.muted; },
+    set: function (on) { send('mute', { on: !!on }); },
+    onChange: function (f) { studioMuteListeners.push(f); }
+  };
+  // Lets the Fretboard Trainer hear the guitar through Studio's audio interface (Settings → Audio interface).
+  var inputListener = null;
+  window.studioGuitarInput = {
+    start: function (f) { inputListener = f; send('listen', { on: true }); },
+    stop: function () { inputListener = null; send('listen', { on: false }); }
+  };
+  var plugins = [], recent = [];
+
+  function el(id) { return document.getElementById(id); }
+  function esc(t) { return String(t).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+
+  // One entry per plugin: prefer the VST3 when the same plugin is also an AudioUnit.
+  function uniquePlugins() {
+    var by = {};
+    plugins.forEach(function (p) {
+      var key = (p.name + '|' + p.maker).toLowerCase();
+      if (!by[key] || (p.format === 'VST3' && by[key].format !== 'VST3')) by[key] = p;
+    });
+    return Object.keys(by).map(function (k) { return by[k]; })
+      .sort(function (a, b) { return a.name.localeCompare(b.name); });
+  }
+
+  function renderSlot() {
+    var main = el('fxMain'); if (!main) return;
+    main.textContent = st.plugin || 'Empty';
+    main.classList.toggle('empty', !st.plugin);
+    main.title = st.plugin ? 'Open ' + st.plugin : 'Pick a VST effect for this exercise';
+    var m = el('fxMute');
+    m.classList.toggle('on', !!st.muted);
+    m.textContent = st.muted ? 'Muted' : 'Mute';
+    m.title = st.muted ? 'Studio is silent. Click to hear your guitar.' : 'Silence Studio’s output';
+    el('fxMsg').textContent = st.message || '';
+    var d = el('stDev'); if (d) d.textContent = st.device || '';
+  }
+
+  // ---- picker ----
+  var pick = { open: false, items: [], idx: 0 };
+
+  function openPicker() {
+    if (pick.open) return closePicker();
+    pick.open = true;
+    var pop = document.createElement('div');
+    pop.className = 'fxpop'; pop.id = 'fxPop';
+    pop.innerHTML = '<input type="search" id="fxSearch" placeholder="Search plugins…" autocomplete="off">' +
+      '<div class="fxlist" id="fxList"></div>' +
+      '<div class="fxfoot"><span>↑↓ to move · Enter to load · Esc to close</span>' +
+      '<button id="fxRemove">Remove plugin</button></div>';
+    el('fxRow').appendChild(pop);
+    el('fxRemove').disabled = !st.plugin;
+    el('fxRemove').onclick = function () { send('unload'); closePicker(); };
+    var q = el('fxSearch');
+    q.oninput = function () { pick.idx = 0; renderList(); };
+    q.onkeydown = function (e) {
+      if (e.key === 'ArrowDown') { e.preventDefault(); pick.idx = Math.min(pick.items.length - 1, pick.idx + 1); renderList(); }
+      else if (e.key === 'ArrowUp') { e.preventDefault(); pick.idx = Math.max(0, pick.idx - 1); renderList(); }
+      else if (e.key === 'Enter') { e.preventDefault(); choose(pick.items[pick.idx]); }
+      else if (e.key === 'Escape') { e.preventDefault(); closePicker(); }
+    };
+    send('list');
+    renderList();
+    q.focus();
+    setTimeout(function () { document.addEventListener('mousedown', outside, true); }, 0);
+  }
+
+  function outside(e) {
+    var pop = el('fxPop');
+    if (pop && !pop.contains(e.target) && e.target !== el('fxCar') && e.target !== el('fxMain')) closePicker();
+  }
+
+  function closePicker() {
+    pick.open = false;
+    document.removeEventListener('mousedown', outside, true);
+    var pop = el('fxPop'); if (pop) pop.remove();
+  }
+
+  function choose(p) {
+    if (!p) return;
+    closePicker();
+    send('load', { id: p.id });
+  }
+
+  function renderList() {
+    var list = el('fxList'); if (!list) return;
+    var all = uniquePlugins();
+    var words = (el('fxSearch').value || '').toLowerCase().split(/\s+/).filter(Boolean);
+    var html = '', items = [];
+    function row(p) {
+      var i = items.length; items.push(p);
+      var loaded = st.plugin && p.name === st.plugin;
+      return '<div class="fxit' + (i === pick.idx ? ' sel' : '') + '" data-i="' + i + '"><span><b>' + esc(p.name) + '</b>' +
+        (p.maker ? ' <small>· ' + esc(p.maker) + '</small>' : '') + '</span><span class="fxbadge">' +
+        (loaded ? '✓ loaded' : esc(p.format)) + '</span></div>';
+    }
+    if (!plugins.length) {
+      html = '<p class="sub" style="margin:10px 6px">No plugins found yet. Go to Settings → Audio → Scan for plugins.</p>';
+    } else if (!words.length) {
+      var rec = recent.map(function (id) { return plugins.filter(function (p) { return p.id === id; })[0]; }).filter(Boolean);
+      if (rec.length) { html += '<div class="fxhd">Recent</div>' + rec.map(row).join(''); }
+      html += '<div class="fxhd">All plugins (' + all.length + ')</div>' + all.map(row).join('');
+    } else {
+      var hits = all.filter(function (p) {
+        var t = (p.name + ' ' + p.maker).toLowerCase();
+        return words.every(function (w) { return t.indexOf(w) >= 0; });
+      });
+      html = hits.length ? '<div class="fxhd">' + hits.length + ' match' + (hits.length === 1 ? '' : 'es') + '</div>' + hits.map(row).join('')
+                         : '<p class="sub" style="margin:10px 6px">No plugins match.</p>';
+    }
+    pick.items = items;
+    if (pick.idx >= items.length) pick.idx = Math.max(0, items.length - 1);
+    list.innerHTML = html;
+    list.querySelectorAll('.fxit').forEach(function (d) {
+      d.onclick = function () { choose(pick.items[+d.dataset.i]); };
+    });
+    var sel = list.querySelector('.fxit.sel'); if (sel) sel.scrollIntoView({ block: 'nearest' });
+  }
+
+  document.addEventListener('DOMContentLoaded', function () {
+    var style = document.createElement('style');
+    style.textContent = CSS;
+    document.head.appendChild(style);
+
+    // The web app's "Installing" instructions don't apply to Studio.
+    document.querySelectorAll('.card h2').forEach(function (h) {
+      if (h.textContent.trim() === 'Installing') h.closest('.card').hidden = true;
+    });
+
+    // Effect slot, at the bottom of the Exercise card.
+    var slot = el('fxSlot');
+    if (slot) {
+      slot.innerHTML = '<div class="fxrow" id="fxRow">' +
+        '<span class="fxsplit"><button class="fxmain empty" id="fxMain">Empty</button>' +
+        '<button class="fxcar" id="fxCar" title="Pick a VST effect" aria-label="Pick a VST effect">▾</button></span>' +
+        '<button class="fxmute" id="fxMute">Mute</button>' +
+        '<span class="sub">Input</span><span class="fxmeter" title="Input level"><i id="fxLvl"></i></span>' +
+        '<div class="fxmsg" id="fxMsg"></div></div>';
+      el('fxMain').onclick = function () { if (st.plugin) send('show'); else openPicker(); };
+      el('fxCar').onclick = openPicker;
+      el('fxMute').onclick = function () { send('mute', { on: !st.muted }); };
+    }
+
+    // Settings: Studio's audio setup replaces the web app's audio input card.
+    var audio = el('audioCard');
+    if (audio) {
+      audio.hidden = true;
+      var card = document.createElement('div');
+      card.className = 'card';
+      card.style.marginTop = '16px';
+      card.innerHTML = '<h2 style="margin:0 0 6px">Audio</h2>' +
+        '<div class="row" style="gap:8px;flex-wrap:wrap"><button id="stAudio">Audio interface…</button>' +
+        '<button id="stScan">Scan for plugins…</button></div>' +
+        '<p class="sub" id="stDev" style="margin:10px 0 0"></p>';
+      audio.parentNode.insertBefore(card, audio);
+      el('stAudio').onclick = function () { send('audio'); };
+      el('stScan').onclick = function () { send('scan'); };
+    }
+
+    if (backend) {
+      backend.addEventListener('studioStatus', function (s) {
+        st = { plugin: s.plugin || '', muted: !!s.muted, message: s.message || '', device: s.device || '' };
+        renderSlot();
+        studioMuteListeners.forEach(function (f) { try { f(st.muted); } catch (e) {} });
+        if (pick.open) { el('fxRemove').disabled = !st.plugin; renderList(); }
+      });
+      backend.addEventListener('studioPlugins', function (p) {
+        plugins = p.plugins || []; recent = p.recent || [];
+        if (pick.open) renderList();
+      });
+      backend.addEventListener('studioInput', function (m) {
+        if (inputListener) { try { inputListener(m.sr, m.d); } catch (e) {} }
+      });
+      backend.addEventListener('studioLevel', function (l) {
+        var bar = el('fxLvl'); if (!bar) return;
+        var v = Math.max(0, Math.min(1, +l.level || 0));
+        bar.style.width = (v * 100) + '%';
+        bar.style.background = v > 0.9 ? 'var(--bad)' : 'var(--ok)';
+      });
+    }
+    renderSlot();
+  });
+})();

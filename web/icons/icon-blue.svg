@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0.9" y2="1">
+      <stop offset="0" stop-color="#0e1620"/>
+      <stop offset="1" stop-color="#05080c"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.5" cy="0.42" r="0.55">
+      <stop offset="0" stop-color="#0ea5e9" stop-opacity=".35"/>
+      <stop offset="1" stop-color="#0ea5e9" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="pick" x1="0.15" y1="0" x2="0.85" y2="1">
+      <stop offset="0" stop-color="#7dd3fc"/>
+      <stop offset=".45" stop-color="#0ea5e9"/>
+      <stop offset="1" stop-color="#0369a1"/>
+    </linearGradient>
+    <linearGradient id="sheen" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#fff" stop-opacity=".45"/>
+      <stop offset="1" stop-color="#fff" stop-opacity="0"/>
+    </linearGradient>
+    <clipPath id="pc"><path id="pickpath" d="M256 452 C214 424 120 302 112 214 C104 136 172 104 256 104 C340 104 408 136 400 214 C392 302 298 424 256 452 Z"/></clipPath>
+  </defs><clipPath id="rr"><rect x="50" y="50" width="412" height="412" rx="92"/></clipPath><g clip-path="url(#rr)"><g transform="translate(50 50) scale(0.804688)">
+  
+  <g id="bgrect"><rect width="512" height="512" fill="url(#bg)"/><rect width="512" height="512" fill="url(#glow)"/>  <g stroke="#e0f2fe" stroke-linecap="round" opacity=".16">
+    <line x1="146" y1="0" x2="146" y2="512" stroke-width="3"/>
+    <line x1="190" y1="0" x2="190" y2="512" stroke-width="3.6"/>
+    <line x1="234" y1="0" x2="234" y2="512" stroke-width="4.2"/>
+    <line x1="278" y1="0" x2="278" y2="512" stroke-width="4.8"/>
+    <line x1="322" y1="0" x2="322" y2="512" stroke-width="5.4"/>
+    <line x1="366" y1="0" x2="366" y2="512" stroke-width="6"/>
+  </g>
+</g>
+  <!-- stopwatch crown -->
+  <rect x="234" y="58" width="44" height="60" rx="8" fill="#7dd3fc"/>
+  <rect x="222" y="48" width="68" height="20" rx="10" fill="#bae6fd"/>
+  <rect x="334" y="104" width="34" height="34" rx="8" fill="#7dd3fc" transform="rotate(40 351 121)"/>
+  <!-- pick -->
+  <path d="M256 466 C214 438 120 316 112 228 C104 150 172 118 256 118 C340 118 408 150 400 228 C392 316 298 438 256 466 Z" fill="#000" opacity=".35" transform="translate(0 4)"/>
+  <use href="#pickpath" fill="url(#pick)"/>
+  <g clip-path="url(#pc)"><ellipse cx="210" cy="150" rx="150" ry="70" fill="url(#sheen)"/></g>
+  <g transform="translate(256 252) scale(1.12) translate(-256 -228)">
+  <!-- dial -->
+  <circle cx="256" cy="228" r="86" fill="#06101a"/>
+  <circle cx="256" cy="228" r="86" fill="none" stroke="#f0f9ff" stroke-opacity=".12" stroke-width="2"/>
+  <!-- progress arc 0..270deg -->
+  <path d="M256 160 A68 68 0 1 1 188 228" fill="none" stroke="#38bdf8" stroke-width="14" stroke-linecap="round"/>
+  <g stroke="#f0f9ff" stroke-width="5" stroke-linecap="round">
+    <line x1="256" y1="152" x2="256" y2="164"/>
+  </g>
+  <!-- hand -->
+  <line x1="256" y1="228" x2="300" y2="184" stroke="#f0f9ff" stroke-width="9" stroke-linecap="round"/>
+  <circle cx="256" cy="228" r="12" fill="#f0f9ff"/>
+  <circle cx="256" cy="228" r="5" fill="#0369a1"/>
+  </g>
+</g></g></svg>
