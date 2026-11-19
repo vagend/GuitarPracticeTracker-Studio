@@ -1570,6 +1570,8 @@ addEventListener('storage',e=>{if(e.key=='gp.skin'&&e.newValue)applySkin(e.newVa
 $('#verTag').textContent='v'+APP_VERSION;
 // Scroll a section to the top and keep it there while the page finishes laying out
 // (the trainer settings load late and change height). Stops as soon as you scroll yourself.
+// The header stays on screen, so jumps to a section land just below it, not under it.
+{const h=document.querySelector('header.top');if(h){const pad=()=>document.documentElement.style.scrollPaddingTop=(h.getBoundingClientRect().height+8)+'px';pad();new ResizeObserver(pad).observe(h)}}
 function pinTo(el){
   let stop=false,top=null,end=performance.now()+2500;const cap=end+8000,quit=()=>{stop=true};
   ['wheel','touchstart','keydown','pointerdown'].forEach(t=>addEventListener(t,quit,{once:true,capture:true}));
