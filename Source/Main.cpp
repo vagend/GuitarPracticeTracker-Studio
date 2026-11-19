@@ -639,7 +639,7 @@ private:
         if (listening)
         {
             // The newest guitar samples for the Fretboard Trainer's note finder and tuner.
-            constexpr int n = 1024;
+            constexpr int n = 2048;   // about 170 ms: enough for low notes in the tuner
             float data[n];
             engine.readTap (data, n);
             juce::Array<juce::var> arr;

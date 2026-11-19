@@ -8,6 +8,7 @@
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <script>if(/[?&]embed\b/.test(location.search))document.documentElement.classList.add('embed');(function(){var k="brass";try{k=localStorage.getItem("gp.skin")||"brass"}catch(e){}document.documentElement.setAttribute("data-skin",k)})()</script>
 <style>
+:root{accent-color:var(--acc)}a{color:var(--acc)}
 :root{--bg:#faf8f4;--fg:#1f1d1a;--mut:#7a746b;--card:#fff;--line:#ddd6ca;--wood:#e9d9bd;--str:#8a8478;--acc:#c2410c;--ok:#15803d;--bad:#b91c1c;
 box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
 @media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#17150f;--fg:#f1ece2;--mut:#a39b8c;--card:#221f17;--line:#3a352a;--wood:#2e2719;--str:#a39b8c;--acc:#fb923c;--ok:#4ade80;--bad:#f87171}}
@@ -110,7 +111,7 @@ svg{display:block;min-width:640px;width:100%;height:auto}
 <div class="msg" id="gres" style="white-space:pre-line"></div>
 <div class="row" style="justify-content:space-between;align-items:flex-start"><div class="prompt" id="prompt"></div><button id="replay" style="display:none" title="Shortcut: R">🔊 Hear it again</button></div>
 <div class="hear" id="hear"></div>
-<div class="scroll" id="boardwrap"><svg id="fb" viewBox="0 0 880 230" role="img" aria-label="Guitar fretboard"></svg></div>
+<div class="scroll" id="boardwrap"><svg id="fb" viewBox="0 0 880 244" role="img" aria-label="Guitar fretboard"></svg></div>
 <div id="tuner" style="display:none;text-align:center">
 <div id="tn" style="font:600 64px/1.1 Georgia,serif;min-height:70px">–</div>
 <div id="tf" class="sub" style="margin:0">&nbsp;</div>
@@ -377,12 +378,12 @@ $('maxf').value=String(maxF);$('acc').checked=acc;
 applyNames();syncUI();diag();
 let ctx=null,stream=null,an=null,buf=null,timer=null,stable=0,lastPc=-1,coolUntil=0,ignorePc=-1;
 // In Studio the guitar comes from Studio's audio interface (Settings → Audio interface), not a browser mic.
-let giData=new Float32Array(1024);
+let giData=new Float32Array(1024),giTok=0;
 function startStudioInput(){
   ctx={sampleRate:12000,close(){}};buf=new Float32Array(1024);
-  an={getFloatTimeDomainData(b){const g=+S.boost||1;for(let i=0;i<b.length;i++)b[i]=(giData[i]||0)*g}};
+  an={getFloatTimeDomainData(b){const g=+S.boost||1,o=giData.length-b.length;for(let i=0;i<b.length;i++)b[i]=(giData[o+i]||0)*g}};
   stream={getTracks:()=>[]};
-  GI.start((sr,d)=>{ctx.sampleRate=sr;if(d&&d.length){if(giData.length!=d.length)giData=new Float32Array(d.length);giData.set(d)}});
+  giTok=GI.start((sr,d)=>{ctx.sampleRate=sr;if(d&&d.length){if(giData.length!=d.length)giData=new Float32Array(d.length);giData.set(d)}});
   $('startmic').textContent='Stop listening';$('rd').textContent='Listening…';
   timer=setInterval(tick,50);
 }
@@ -411,7 +412,7 @@ async function startMic(devId){diag();
   timer=setInterval(tick,50);
 }
 function stopMic(){
-  if(GI&&stream){try{GI.stop()}catch(e){}}
+  if(GI&&giTok){try{GI.stop(giTok)}catch(e){}giTok=0}
   clearInterval(timer);timer=null;an=null;src=gainN=split=null;
   if(stream)stream.getTracks().forEach(t=>t.stop());stream=null;
   if(ctx){try{ctx.close()}catch(e){}}ctx=null;

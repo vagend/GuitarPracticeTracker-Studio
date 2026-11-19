@@ -3,6 +3,12 @@
 // Studio's own "What's new" list (newest first). Keep the top entry's version
 // the same as the VERSION in CMakeLists.txt.
 window.STUDIO_CHANGES = [
+  ['0.5.1', 'Nov 19, 2026', [
+    'Metronome patterns are Basic, Backbeat, Custom and Clear. Each exercise remembers its choice, and Custom is that exercise\u2019s own grid: tap the squares and it\u2019s kept with the exercise.',
+    'The Tuner tab listens through Studio\u2019s audio interface instead of the computer\u2019s microphone.',
+    'The tempo graph bars respond to every click.',
+    'Fixes for the Brass scheme: themed effort-level boxes, effort colors from easy to hard, and brass sliders, checkboxes and links. The Fretboard Trainer\u2019s fret numbers are no longer cut off.'
+  ]],
   ['0.5.0', 'Nov 19, 2026', [
     'New Studio icon: the practice pick as a tarnished brass pocket watch, with real gears behind the dial.',
     'New Brass color scheme with polished-brass buttons, now the default. Your old scheme is still in Settings \u2192 Color scheme.'
@@ -74,10 +80,19 @@ window.STUDIO_CHANGES = [
     onChange: function (f) { studioMuteListeners.push(f); }
   };
   // Lets the Fretboard Trainer hear the guitar through Studio's audio interface (Settings → Audio interface).
-  var inputListener = null;
+  // Several parts of the page (the Tuner tab, the Fretboard Trainer) can listen at once;
+  // Studio sends the guitar while at least one of them is listening.
+  var inputListeners = {}, inputNext = 1;
   window.studioGuitarInput = {
-    start: function (f) { inputListener = f; send('listen', { on: true }); },
-    stop: function () { inputListener = null; send('listen', { on: false }); }
+    start: function (f) {
+      var id = inputNext++; inputListeners[id] = f;
+      send('listen', { on: true });
+      return id;
+    },
+    stop: function (id) {
+      delete inputListeners[id];
+      if (!Object.keys(inputListeners).length) send('listen', { on: false });
+    }
   };
   var plugins = [], recent = [];
 
@@ -268,7 +283,7 @@ window.STUDIO_CHANGES = [
           window.toast('Studio build ' + upd.build + ' is available', 'Update', function () { send('update'); });
       });
       backend.addEventListener('studioInput', function (m) {
-        if (inputListener) { try { inputListener(m.sr, m.d); } catch (e) {} }
+        for (var k in inputListeners) { try { inputListeners[k](m.sr, m.d); } catch (e) {} }
       });
       backend.addEventListener('studioLevel', function (l) {
         var bar = el('fxLvl'); if (!bar) return;
