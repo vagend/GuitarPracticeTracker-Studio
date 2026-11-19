@@ -3,6 +3,12 @@
 // Studio's own "What's new" list (newest first). Keep the top entry's version
 // the same as the VERSION in CMakeLists.txt.
 window.STUDIO_CHANGES = [
+  ['0.7.1', 'Nov 19, 2026', [
+    'If your audio interface can\u2019t be opened when Studio starts (for example right after an update), Studio keeps trying and never replaces your saved choice; the exercise\u2019s plugin loads as soon as the interface opens.',
+    'Switching exercises with time on the clock asks in a dialog: Log it, Discard and switch, or Cancel.',
+    'Mute input sits just left of Tuner, and the mute buttons keep their words and size when on.',
+    'No scroll bar in the Fretboard Trainer settings.'
+  ]],
   ['0.7.0', 'Nov 19, 2026', [
     'Mute input, in the top bar next to Tuner, turns your audio interface\u2019s input off completely: no sound, no level, nothing listening.',
     'Mute guitar is in the Fretboard Trainer (top right): the trainer still hears you, you just don\u2019t hear yourself. It only applies in the trainer.',
@@ -143,7 +149,7 @@ window.STUDIO_CHANGES = [
     var nm = el('navMute');
     if (nm) {
       nm.classList.toggle('on', !!st.inputMuted);
-      nm.textContent = st.inputMuted ? 'Input muted' : 'Mute input';
+      nm.setAttribute('aria-pressed', st.inputMuted ? 'true' : 'false');
       nm.title = st.inputMuted ? 'Studio is ignoring your audio interface’s input. Click to turn it back on.'
                                : 'Turn off your audio interface’s input (no sound, no listening)';
     }
@@ -259,13 +265,13 @@ window.STUDIO_CHANGES = [
       if (h.textContent.trim() === 'Installing') h.closest('.card').hidden = true;
     });
 
-    // Guitar mute in the top bar, next to Tuner: always in reach, on every page.
+    // Input mute in the top bar, just left of Tuner: always in reach, on every page.
     var tunerTab = document.querySelector('#tabs button[data-v="tuner"]');
     if (tunerTab) {
       var nm = document.createElement('button');
       nm.className = 'navmute'; nm.id = 'navMute'; nm.textContent = 'Mute input';
       nm.onclick = function () { send('inputMute', { on: !st.inputMuted }); };
-      tunerTab.parentNode.insertBefore(nm, tunerTab.nextSibling);
+      tunerTab.parentNode.insertBefore(nm, tunerTab);
     }
 
     // Effect slot, at the bottom of the Exercise card.
@@ -373,14 +379,14 @@ window.STUDIO_CHANGES = [
       var fc = document.createElement('div');
       fc.className = 'card'; fc.style.marginTop = '16px';
       fc.innerHTML = '<h2 style="margin:0 0 6px">Fretboard Trainer</h2>' +
-        '<iframe id="trSetFrame" title="Fretboard Trainer settings" style="width:100%;border:0;display:block;height:600px;background:transparent"></iframe>';
+        '<iframe id="trSetFrame" scrolling="no" title="Fretboard Trainer settings" style="width:100%;border:0;display:block;height:600px;background:transparent;overflow:hidden"></iframe>';
       tt.parentNode.insertBefore(fc, tt.nextSibling);
       var fr = el('trSetFrame');
       fr.addEventListener('load', function () {
         try {
-          var m = fr.contentDocument.querySelector('main');
-          var fit = function () { var h = m.getBoundingClientRect().height; if (h > 0) fr.style.height = Math.ceil(h + 4) + 'px'; };
-          new ResizeObserver(fit).observe(m); fit();
+          var doc = fr.contentDocument, m = doc.querySelector('main');
+          var fit = function () { var r = m.getBoundingClientRect(); var h = r.bottom + (doc.defaultView.scrollY || 0); if (h > 0) fr.style.height = Math.ceil(h + 2) + 'px'; };
+          new ResizeObserver(fit).observe(m); new ResizeObserver(fit).observe(fr); fit();
         } catch (e) {}
       });
       fr.src = 'trainer.html?embed=1&settings=1';

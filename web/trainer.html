@@ -42,7 +42,7 @@ html.studio #gear,html.studio #set,html.studio #startmic{display:none!important}
 html.setonly main>h1,html.setonly main>.intro,html.setonly main>.card:not(:first-of-type),html.setonly #modes,html.setonly #strs,html.setonly .inp,html.setonly .embnote{display:none!important}
 html.setonly #set{display:block!important;border-top:0!important;margin-top:0!important;padding-top:0!important}
 html.setonly main>.card:first-of-type{border:0;padding:0;background:none;box-shadow:none}
-html.setonly body,html.setonly main{background:transparent;margin:0;padding:0}
+html.setonly,html.setonly body,html.setonly main{background:transparent;margin:0;padding:0;overflow:hidden}
 label{font-size:14px;color:var(--mut);display:flex;gap:6px;align-items:center}
 .scroll{overflow-x:auto}
 svg{display:block;min-width:640px;width:100%;height:auto}
@@ -538,7 +538,7 @@ if(GI&&!/[?&]settings=1/.test(location.search)){['boost','gate','a4'].forEach(id
 // Studio: mute the guitar in the output while the trainer still hears it
 (function(){let gm=null;try{gm=window.parent!==window&&window.parent.studioGuitarMute}catch(e){}
   const b=$('fbMute');if(!gm||!b)return;b.hidden=false;
-  const show=m=>{b.classList.toggle('on',!!m);b.textContent=m?'Guitar muted':'Mute guitar'};
+  const show=m=>{b.classList.toggle('on',!!m);b.setAttribute('aria-pressed',m?'true':'false')};
   show(gm.get());gm.onChange(show);b.onclick=()=>gm.set(!gm.get())})();
 // ---- spoken requested note ----
 let voices=[],spkTok=0,curU=null;

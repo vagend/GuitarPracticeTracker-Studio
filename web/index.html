@@ -621,6 +621,14 @@ function ask(title,msg,{ok='OK',cancel='Cancel',danger=false}={}){return new Pro
   d.addEventListener('close',()=>{d.remove();res(d.returnValue==='1')});
   document.body.appendChild(d);d.showModal();bs[0].focus()})}
 function tell(msg){return ask('',msg,{cancel:null})}
+// A dialog with several buttons: [{label,value,cls}], resolves to the value (or null if closed).
+function choose(title,msg,buttons){return new Promise(res=>{
+  const d=document.createElement('dialog');d.className='askdlg';
+  d.innerHTML='<h2></h2><p style="margin:0;white-space:pre-line"></p><div class="row" style="justify-content:flex-end;gap:8px;margin-top:18px"></div>';
+  d.querySelector('h2').textContent=title;d.querySelector('p').textContent=msg;const row=d.querySelector('.row');
+  buttons.forEach(b=>{const e=document.createElement('button');e.textContent=b.label;if(b.cls)e.className=b.cls;e.onclick=()=>{d.returnValue=b.value;d.close()};row.appendChild(e)});
+  d.addEventListener('close',()=>{d.remove();res(buttons.some(b=>b.value===d.returnValue)?d.returnValue:null)});
+  document.body.appendChild(d);d.showModal();row.lastChild.focus()})}
 const SEED={"v":1,"exercises":[{"archived":false,"notes":"Strict alternate picking, all six strings and back.","trainer":false,"goal":140,"sub":"16th","metric":"BPM","id":1,"technique":"Alternate Picking","name":"Chromatic 1-2-3-4","lenBars":1,"curveBars":4},{"archived":false,"notes":"","trainer":false,"goal":120,"sub":"16th","metric":"BPM","id":2,"technique":"Alternate Picking","name":"G major 3-note-per-string scale","lenBars":2,"curveBars":2},{"archived":false,"notes":"","trainer":false,"goal":110,"sub":"16th Triplets","metric":"BPM","id":3,"technique":"Legato","name":"Hammer-on and pull-off trills","lenBars":1,"curveBars":4},{"archived":false,"notes":"","trainer":false,"goal":90,"sub":"16th Triplets","metric":"BPM","id":4,"technique":"Sweep Picking","name":"Three-string arpeggios","lenBars":2,"curveBars":3},{"archived":false,"notes":"","trainer":false,"goal":130,"sub":"16th","metric":"BPM","id":5,"technique":"Economy Picking","name":"Pentatonic in fours","lenBars":2,"curveBars":2},{"archived":false,"notes":"","trainer":false,"goal":170,"sub":"16th","metric":"BPM","id":6,"technique":"Rhythm","name":"Palm-muted gallop","lenBars":4,"curveBars":2,"curveMax":180},{"archived":false,"notes":"","trainer":true,"goal":null,"sub":"","metric":"Score","id":7,"technique":"Fretboard Notes","name":"Fretboard Trainer"},{"archived":false,"notes":"Playing songs you already know.","trainer":false,"goal":null,"sub":"","metric":"BPM","id":8,"technique":"","name":"Jamming","metronome":false}],"efforts":[{"id":1,"name":"Effortless","desc":"Easy all day"},{"id":2,"name":"Easy","desc":"Can play it cleanly but must be careful"},{"id":3,"name":"Tiring","desc":"Can play it for a while but get tired and make mistakes"},{"id":4,"name":"Broken","desc":"Can play a few notes here and there"},{"id":5,"name":"Impossible","desc":"Can't play it at all yet"},{"id":6,"name":"Tempo Ladder","desc":"A tempo ladder run"}],"techniques":["Alternate Picking","Economy Picking","Sweep Picking","Legato","Tapping","Rhythm","Chords","Scales","Songs","Fretboard Notes"],"entries":[]};
 const DEFSET={goal:25,presets:[1,2,5,10,15,20,25,30],chimeVol:0.6,notify:false,lastBackup:null};
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
@@ -820,11 +828,17 @@ function renderPractice(){
 }
 function entRow(e){const x=exById(e.ex);return'<div class="ent" data-id="'+e.id+'"><div class="nm">'+esc(exName(x))+'<small>'+esc([x&&x.technique,x&&x.sub,e.note].filter(Boolean).join(' · '))+'</small></div><div class="n">'+(e.bpm!=null?trim(e.bpm)+' <span class="sub">'+esc(metricOf(x))+'</span>':'<span class="sub">—</span>')+'</div><div class="n">'+trim(e.min)+' <span class="sub">min</span></div><div class="eff">'+effHtml(e.effort)+'</div></div>'}
 function bindEnt(root){root.querySelectorAll('.ent').forEach(r=>r.onclick=()=>editEntry(r.dataset.id))}
-function chooseEx(id){
+// Switching exercises with time on the clock asks what to do with that time, in a dialog you can't miss.
+async function chooseEx(id){
   if(id==T.ex)return;
-  if(T.acc>0||running()){pause();pendingEx=id;toast('Log the time for '+exName(exById(T.ex))+' first');openLog();syncExSel();return}
+  if(T.acc>0||running()){syncExSel();
+    const c=await choose('Switch to '+exName(exById(id))+'?','You have '+clockStr(elapsed(),true)+' on the timer for '+exName(exById(T.ex))+'. Log it before switching, or discard it.',
+      [{label:'Cancel',value:'cancel'},{label:'Discard and switch',value:'discard',cls:'danger'},{label:'Log it',value:'log',cls:'primary'}]);
+    if(c=='log'){pause();pendingEx=id;openLog()}
+    else if(c=='discard'){resetTimer();T.ex=id;saveT();onExChanged();syncExSel()}
+    return}
   T.ex=id;saveT();onExChanged()}
-$('#exSel').onchange=e=>{const id=+e.target.value;chooseEx(id);if(pendingEx!=null)e.target.value=T.ex};
+$('#exSel').onchange=e=>{const id=+e.target.value;chooseEx(id);if(T.acc>0||running())e.target.value=T.ex};
 function onExChanged(){curveCancel();const s=exStats(T.ex);$('#bpm').value=s.lastB?trim(s.lastB.bpm):'';followEx();renderMetTempo();renderMet();renderPractice();renderTimer();}
 $('#bpm').oninput=()=>{curveCancel();$$('#ladder .chip').forEach(c=>c.classList.toggle('on',+c.dataset.v==num($('#bpm').value)))};
 $('#bm5').onclick=()=>{const v=num($('#bpm').value)||0;$('#bpm').value=Math.max(0,v-5);$('#bpm').oninput()};

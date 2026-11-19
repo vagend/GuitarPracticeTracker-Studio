@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.22)
 
 set(CMAKE_OSX_DEPLOYMENT_TARGET "11.0" CACHE STRING "Oldest macOS Studio runs on")
 
-project(GuitarPracticeStudio VERSION 0.7.0)
+project(GuitarPracticeStudio VERSION 0.7.1)
 
 # GitHub Actions passes its run number; builds made on your own computer are build 0.
 set(STUDIO_BUILD "0" CACHE STRING "Build number")

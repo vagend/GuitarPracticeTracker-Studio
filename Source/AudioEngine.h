@@ -19,9 +19,32 @@ public:
         toneOn = settings.getBoolValue ("toneOn", false);
         inputOn = settings.getBoolValue ("inputOn", true);
 
-        auto deviceXml = settings.getXmlValue ("audioDevice");
-        deviceManager.initialise (2, 2, deviceXml.get(), true);
+        wantedDevice = settings.getXmlValue ("audioDevice");
+        deviceManager.initialise (2, 2, wantedDevice.get(), true);
         deviceManager.addAudioCallback (this);
+        checkDevice();
+    }
+
+    //==============================================================================
+    // The audio interface you chose. If it can't be opened right away (for example the driver is
+    // still held by the copy of Studio that just closed for an update), Studio keeps trying for a
+    // while and never saves the stand-in device over your choice.
+    bool isWantedDeviceOpen() const noexcept { return deviceOk; }
+
+    void retryWantedDevice()
+    {
+        if (deviceOk || wantedDevice == nullptr)
+            return;
+        deviceManager.initialise (2, 2, wantedDevice.get(), true);
+        checkDevice();
+    }
+
+    // You picked a device in Audio settings: that's the new choice.
+    void deviceChosen()
+    {
+        wantedDevice = deviceManager.createStateXml();
+        deviceOk = true;
+        saveState();
     }
 
     ~AudioEngine() override
@@ -169,8 +192,9 @@ public:
     // Saves the audio device, plugin list and the plugin's current settings.
     void saveState()
     {
-        if (auto xml = deviceManager.createStateXml())
-            settings.setValue ("audioDevice", xml.get());
+        if (deviceOk)
+            if (auto xml = deviceManager.createStateXml())
+                settings.setValue ("audioDevice", xml.get());
 
         if (auto xml = knownPlugins.createXml())
             settings.setValue ("pluginList", xml.get());
@@ -323,6 +347,22 @@ private:
     int blockSize = 512;
     std::atomic<bool> toneOn { false };
     std::atomic<bool> inputOn { true };
+
+    std::unique_ptr<juce::XmlElement> wantedDevice;
+    bool deviceOk = true;
+
+    void checkDevice()
+    {
+        if (wantedDevice == nullptr) { deviceOk = true; return; }
+        auto* dev = deviceManager.getCurrentAudioDevice();
+        const auto type = wantedDevice->getStringAttribute ("deviceType");
+        const auto out  = wantedDevice->getStringAttribute ("audioOutputDeviceName");
+        const auto in   = wantedDevice->getStringAttribute ("audioInputDeviceName");
+        deviceOk = dev != nullptr
+                   && (type.isEmpty() || dev->getTypeName() == type)
+                   && (out.isEmpty() || dev->getName() == out || deviceManager.getAudioDeviceSetup().outputDeviceName == out)
+                   && (in.isEmpty()  || deviceManager.getAudioDeviceSetup().inputDeviceName == in);
+    }
     std::atomic<float> inputLevel { 0.0f };
 
     int tapDecim() const noexcept { return juce::jmax (1, juce::roundToInt (sampleRate / 12000.0)); }

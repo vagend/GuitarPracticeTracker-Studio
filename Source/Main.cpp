@@ -740,13 +740,40 @@ private:
         if (source == &engine.knownPlugins)
             sendPluginList();
         else
+        {
+            // a change while Audio settings is open is your choice of device
+            if (audioWindow != nullptr && ! retryingDevice)
+            {
+                engine.deviceChosen();
+                if (engine.getPlugin() == nullptr && loadingFor.isEmpty())
+                    applyExercise(); // a plugin that couldn't load without a device
+            }
             sendStatus();
+        }
     }
 
     void timerCallback() override
     {
         if (web == nullptr || ! web->ready)
             return;
+
+        // Your audio interface didn't open at start-up (maybe still busy): keep trying for 20 s.
+        if (! engine.isWantedDeviceOpen() && deviceRetries < 20 && ++deviceRetryTicks >= 20)
+        {
+            deviceRetryTicks = 0; ++deviceRetries;
+            retryingDevice = true;
+            engine.retryWantedDevice();
+            retryingDevice = false;
+            if (engine.isWantedDeviceOpen())
+            {
+                if (engine.getPlugin() == nullptr && loadingFor.isEmpty())
+                    applyExercise();
+                message = {};
+            }
+            else if (deviceRetries == 20)
+                message = "Couldn't open your audio interface. Check it's connected, then pick it in Settings > Audio interface.";
+            sendStatus();
+        }
 
         if (! sentFirstStatus)
         {
@@ -869,6 +896,8 @@ private:
     juce::var exercisePlugins;
     bool sentFirstStatus = false;
     bool listening = false;
+    bool retryingDevice = false;
+    int deviceRetries = 0, deviceRetryTicks = 0;
     bool updating = false;
 
     std::unique_ptr<StudioWebView> web;
