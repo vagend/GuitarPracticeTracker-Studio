@@ -69,7 +69,11 @@ jobs:
         shell: pwsh
         run: |
           $app = "$env:LOCALAPPDATA\Programs\Guitar Practice Studio"
-          Start-Process dist\GuitarPracticeStudio-setup.exe -ArgumentList "/VERYSILENT","/SUPPRESSMSGBOXES","/NORESTART" -Wait
+          # -Wait would also wait for Studio, which the installer opens at the end
+          $s = Start-Process dist\GuitarPracticeStudio-setup.exe -ArgumentList "/VERYSILENT","/SUPPRESSMSGBOXES","/NORESTART" -PassThru
+          if (!$s.WaitForExit(300000)) { throw "installer didn't finish within 5 minutes" }
+          Start-Sleep 5
+          if (!(Get-Process "Guitar Practice Studio" -ErrorAction SilentlyContinue)) { throw "installer didn't open Studio" }
           if (!(Test-Path "$app\Guitar Practice Studio.exe")) { throw "app not installed" }
           if (!(Test-Path "$app\web\index.html")) { throw "web files not installed" }
           Get-Process "Guitar Practice Studio" -ErrorAction SilentlyContinue | Stop-Process -Force
