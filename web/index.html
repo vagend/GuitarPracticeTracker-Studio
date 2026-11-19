@@ -365,7 +365,6 @@ iframe#trFrame{width:100%;border:0;height:900px;display:block;border-radius:10px
             <select id="metKit"><option value="drums">Drum kit (kick, snare, hi-hat)</option><option value="click">Classic click (high, middle, low)</option></select></label>
           <div id="metVoices"></div>
           <label class="row sub" style="gap:8px;margin-top:6px">Master volume <input type="range" id="metMaster" min="0" max="1" step="0.05" style="flex:1"></label>
-          <label class="chk"><input type="checkbox" id="metWithTimer"> Start and stop with the practice timer</label>
           <label class="chk"><input type="checkbox" id="metFollow"> Set the division from the exercise’s subdivision (e.g. 16th, 8th Triplets)</label>
           <input type="file" id="metFile" accept="audio/*,.wav,.aif,.aiff,.mp3,.m4a,.ogg,.flac" hidden>
         </div>
@@ -712,7 +711,7 @@ function cancelChime(){chimeNodes.forEach(o=>{try{o.stop()}catch(e){}});chimeNod
 async function wake(){try{if('wakeLock' in navigator&&!wl){wl=await navigator.wakeLock.request('screen');wl.addEventListener('release',()=>{wl=null})}}catch(e){}}
 function releaseWake(){try{if(wl)wl.release()}catch(e){}wl=null}
 function clockStr(ms,up){const s=up?Math.floor(ms/1000):Math.ceil(ms/1000),h=Math.floor(s/3600),m=Math.floor(s%3600/60),x=s%60;return(h?h+':'+pad(m):m)+':'+pad(x)}
-function pause(){if(!running())return;T.acc=elapsed();T.start=null;cancelChime();releaseWake();saveT();if(CURVE.on&&!CURVE.paused)curvePause();else if(MC().withTimer&&MET.on)metStop()}
+function pause(){if(!running())return;T.acc=elapsed();T.start=null;cancelChime();releaseWake();saveT();if(CURVE.on&&!CURVE.paused)curvePause()}
 function startPause(){
   audio();
   if(T.done)resetTimer();
@@ -724,15 +723,15 @@ function startPause(){
     if(T.mode=='down'){cancelChime();chimeNodes=chime((T.target-T.acc)/1000);chimeArmed=true}
     wake();saveT();
     // the metronome follows the timer for playing exercises only — never for the Fretboard Trainer
-    if(CURVE.on&&CURVE.paused)curveResume();else if(MC().withTimer&&!MET.on&&!(exById(T.ex)||{}).trainer)metStart();
+    if(CURVE.on&&CURVE.paused)curveResume();
   }
   renderTimer();
 }
-function resetTimer(){cancelChime();releaseWake();if(CURVE.paused)curveEnd();if(MC().withTimer&&MET.on)metStop();T.acc=0;T.start=null;T.seg0=null;T.done=false;saveT();renderTimer()}
+function resetTimer(){cancelChime();releaseWake();if(CURVE.paused)curveEnd();if(MET.on)metStop();T.acc=0;T.start=null;T.seg0=null;T.done=false;saveT();renderTimer()}
 function notifyDone(){if(D.settings.notify&&document.hidden&&'Notification' in window&&Notification.permission=='granted'){try{new Notification('Time’s up',{body:exName(exById(T.ex))+' — '+Math.round(T.target/60000)+' min done',icon:'icons/icon-192.png'})}catch(e){}}}
 function tick(){
   if(T.mode=='down'&&running()&&elapsed()>=T.target){
-    T.acc=T.target;T.start=null;T.done=true;saveT();if(MC().withTimer&&MET.on)metStop();
+    T.acc=T.target;T.start=null;T.done=true;saveT();if(MET.on){if(CURVE.on)curveEnd();metStop()}
     if(!chimeArmed)chimeNodes=chime(0);chimeArmed=false;
     releaseWake();notifyDone();try{navigator.vibrate&&navigator.vibrate([200,100,200])}catch(e){}
     openLog();
@@ -1340,7 +1339,7 @@ function renderMet(){
   $('#metGrid').innerHTML=h;
   // keyboard (Enter/Space) still toggles one cell; mouse/touch use the drag painter below
   $$('#metGrid .mc').forEach(c=>c.onclick=e=>{if(e.detail!==0)return;const v=c.dataset.v,i=+c.dataset.i;M.pat[v][i]=!M.pat[v][i];c.classList.toggle('on',M.pat[v][i]);keepCustom();renderMet()});
-  $('#metKit').value=M.kit;$('#metMaster').value=M.master;$('#metWithTimer').checked=!!M.withTimer;$('#metFollow').checked=!!M.follow;
+  $('#metKit').value=M.kit;$('#metMaster').value=M.master;$('#metFollow').checked=!!M.follow;
   $('#metVoices').innerHTML=VOICES.map(([v,n,dk,ck])=>{const sm=M.samples&&M.samples[v];
     return'<div class="vrow"><span class="vname"><b>'+n+'</b><small>'+(sm?'Your sample: '+esc(sm):'Built-in '+(M.kit=='click'?ck:dk))+'</small></span>'+
     '<input type="range" min="0" max="1" step="0.05" value="'+(M.vol[v]??1)+'" data-v="'+v+'" class="vvol" aria-label="'+n+' volume">'+
@@ -1383,7 +1382,6 @@ $('#curveBars').oninput=e=>{const ex=exById(T.ex),v=Math.round(num(e.target.valu
 $('#curveBars').onchange=e=>{const ex=exById(T.ex),v=Math.round(num(e.target.value)||0);if(ex&&v>0){ex.curveBars=Math.min(64,v);save();if(CURVE.on)CURVE.bars=ex.curveBars}renderCurve()};
 $('#metKit').onchange=e=>{MC().kit=e.target.value;save();renderMet()};
 $('#metMaster').oninput=e=>{MC().master=+e.target.value;save()};
-$('#metWithTimer').onchange=e=>{MC().withTimer=e.target.checked;save()};
 $('#metFollow').onchange=e=>{MC().follow=e.target.checked;save();if(e.target.checked)followEx()};
 $('#metTap').onclick=()=>{const t=performance.now();MET.taps=MET.taps.filter(x=>t-x<2500);MET.taps.push(t);
   if(MET.taps.length>=2){const ts=MET.taps.slice(-5),iv=(ts[ts.length-1]-ts[0])/(ts.length-1);$('#bpm').value=Math.round(60000/iv);$('#bpm').oninput()}};

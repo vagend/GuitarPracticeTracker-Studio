@@ -7,6 +7,7 @@ window.STUDIO_CHANGES = [
     'Metronome patterns are Basic, Backbeat, Custom and Clear. Each exercise remembers its choice, and Custom is that exercise\u2019s own grid: tap the squares and it\u2019s kept with the exercise.',
     'The Tuner tab listens through Studio\u2019s audio interface instead of the computer\u2019s microphone.',
     'The tempo graph bars respond to every click.',
+    'The metronome always stops when a countdown runs out or a session is discarded; the \u201cStart and stop with the practice timer\u201d setting is gone.',
     'Tempo ladder: click a bar before pressing Play to start the ladder from that step.',
     'Holding on a tempo ladder step just shows \u201cholding\u201d in blue; the bars no longer shift.',
     'Fixes for the Brass scheme: themed effort-level boxes, effort colors from easy to hard, and brass sliders, checkboxes and links. The Fretboard Trainer\u2019s fret numbers are no longer cut off.'
