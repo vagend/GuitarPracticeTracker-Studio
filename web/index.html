@@ -163,7 +163,7 @@ label.f>*{color:var(--fg)}
 .sw i::after{content:'';position:absolute;top:2px;left:2px;width:15px;height:15px;border-radius:50%;background:#fff;transition:left .15s}
 .sw.on i{background:var(--acc)}.sw.on i::after{left:17px}
 .ladrun{display:flex;align-items:center;gap:20px;margin-top:12px;padding:12px 16px 24px;border:1px solid var(--line);border-radius:12px;background:var(--soft);width:max-content;max-width:100%}
-.lpL{min-width:150px}.lpBig{font:700 26px/1 system-ui,sans-serif}.lpL .sub{margin-top:5px}
+.lpL{width:170px;flex:none}.lpL .sub{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.lpBig.hold{color:#60a5fa}.lpReps{min-height:9px}.lpBig{font:700 26px/1 system-ui,sans-serif}.lpL .sub{margin-top:5px}
 .lpReps{display:flex;gap:5px;margin-top:7px}.lpReps i{width:9px;height:9px;border-radius:50%;border:2px solid var(--acc)}.lpReps i.f{background:var(--acc)}
 .lpReps .holdtag{font:600 12px system-ui,sans-serif;color:#60a5fa}
 .stairs{display:flex;align-items:flex-end;gap:0;height:60px}
@@ -1304,6 +1304,7 @@ function renderLadPanel(){const ex=exById(T.ex),pn=$('#ladPanel');if(!pn)return;
   const on=ladderOn(ex);$('#swLad').classList.toggle('on',on);$('#swLad').hidden=!usesMet(ex);
   if(!ex||ex.trainer){pn.hidden=true;return}pn.hidden=false;
   const big=$('#lpBig'),sub=$('#lpSub'),reps=$('#lpReps'),bars=$('#lpBars');reps.innerHTML='';const bpm=num($('#bpm').value);
+  big.classList.remove('hold');
   if(!on){const g=+ex.goal;
     if(!g){big.textContent='—';sub.textContent='Set a goal (Edit exercise) for quick picks';setBars(bars,'');return}
     big.textContent=bpm?Math.round(bpm/g*100)+'%':'—';sub.textContent='of goal ('+trim(g)+' BPM)';
@@ -1312,11 +1313,10 @@ function renderLadPanel(){const ex=exById(T.ex),pn=$('#ladPanel');if(!pn)return;
   const c=curveSteps(ex);if(!c){big.textContent='—';sub.textContent='Set a goal or a ladder max';setBars(bars,'');return}
   const C=CURVE,act=(C.on||C.hold)&&C.ex==T.ex,idx=act?(C.hold?c.steps.length:C.idx):-1;
   setBars(bars,c.pcts.map((p,i)=>'<span class="col" data-i="'+i+'" title="'+p+'% · '+c.steps[i]+' BPM"><i class="'+(!act?'':i<idx?'done':i==idx?(C.stay?'hold':'cur'):'')+'" style="height:'+Math.round(p/110*58)+'px"></i></span>').join(''));
-  if(!act){big.textContent='70%';sub.textContent='first tempo · top '+c.max+' BPM'}
+  if(!act){big.textContent='70%';sub.textContent='first tempo · max '+c.max+' BPM'}
   else if(C.hold){big.textContent='90%';sub.textContent='ladder done · Stop to end'}
-  else{big.textContent=(C.paused?'Paused · ':'')+C.pcts[C.idx]+'%';sub.textContent='ladder step · top '+c.max+' BPM';
-    if(C.stay)reps.innerHTML='<span class="holdtag">Holding · click the bar to go on</span>';
-    else reps.innerHTML=Array.from({length:C.bars},(_,k)=>'<i class="'+(k<C.rep-(C.counting&&C.kind!='rep'?1:0)&&!(C.counting&&C.kind=='tempo')?'f':'')+'"></i>').join('')}
+  else{big.textContent=(C.paused?'Paused · ':'')+C.pcts[C.idx]+'%';sub.innerHTML=(C.stay?'<span style="color:#60a5fa;font-weight:600">holding</span>':'ladder step')+' · max '+c.max+' BPM';
+    reps.innerHTML=Array.from({length:C.bars},(_,k)=>'<i class="'+(k<C.rep-(C.counting&&C.kind!='rep'?1:0)&&!(C.counting&&C.kind=='tempo')?'f':'')+'"></i>').join('')}
   bars.onclick=e=>{const b=e.target.closest('.col');if(!b||!CURVE.on)return;const i=+b.dataset.i;
     if(i==CURVE.idx+(CURVE.jump||0)&&!CURVE.paused){CURVE.stay=!CURVE.stay;renderLadPanel();return}
     curveSkip(i-(CURVE.idx+(CURVE.jump||0)));renderLadPanel()}}
