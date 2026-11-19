@@ -4,6 +4,9 @@
 // the same as the VERSION in CMakeLists.txt.
 window.STUDIO_CHANGES = [
   ['0.7.1', 'Nov 19, 2026', [
+    'Mac: updating from inside Studio now works and reopens Studio (the update script was being written with Windows line endings). A log is kept in ~/Library/Logs.',
+    'Clicking the version number lands on What\u2019s new instead of partway down it.',
+    'The selected menu tab no longer has a line across its top.',
     'Fretboard Trainer voice spellings: press Enter in any box to hear it, tick flat or sharp to hear \u201cA flat\u201d and so on, and pick from suggested spellings (also listed under Spelling ideas).',
     'If your audio interface can\u2019t be opened when Studio starts (for example right after an update), Studio keeps trying and never replaces your saved choice; the exercise\u2019s plugin loads as soon as the interface opens.',
     'Switching exercises with time on the clock asks in a dialog: Log it, Discard and switch, or Cancel.',

@@ -4,6 +4,9 @@
 
 #if JUCE_MAC
  #include <unistd.h>   // getpid, for the updater
+ #include <spawn.h>
+ #include <fcntl.h>
+ extern char** environ;
 #endif
 
 #if JUCE_WINDOWS
@@ -79,14 +82,44 @@ juce::String downloadAndStartUpdate()
         return "The update didn't contain the app.";
 
     const auto q = [] (const juce::File& f) { return f.getFullPathName().quoted ('\'') ; };
+    const auto old = oldApp.getSiblingFile (".Guitar Practice Studio (previous).app");
+    const auto log = juce::File::getSpecialLocation (juce::File::userHomeDirectory)
+                         .getChildFile ("Library/Logs/Guitar Practice Studio update.log");
+    log.getParentDirectory().createDirectory();
     const auto script = temp.getChildFile ("install.sh");
+    // Move the old app aside, copy the new one in, put the old one back if that fails, then open it.
     script.replaceWithText ("#!/bin/bash\n"
+                            "echo \"$(date) updating " + oldApp.getFullPathName() + "\"\n"
                             "while kill -0 " + juce::String ((int) getpid()) + " 2>/dev/null; do sleep 0.5; done\n"
-                            "rm -rf " + q (oldApp) + " && /usr/bin/ditto " + q (newApp) + " " + q (oldApp) + "\n"
+                            "rm -rf " + q (old) + "\n"
+                            "if mv " + q (oldApp) + " " + q (old) + "; then\n"
+                            "  if /usr/bin/ditto " + q (newApp) + " " + q (oldApp) + "; then rm -rf " + q (old) + "; echo installed\n"
+                            "  else echo 'copy failed, keeping the old version'; rm -rf " + q (oldApp) + "; mv " + q (old) + " " + q (oldApp) + "; fi\n"
+                            "else echo \"couldn't move the old app, nothing changed\"; fi\n"
                             "/usr/bin/xattr -dr com.apple.quarantine " + q (oldApp) + " 2>/dev/null\n"
-                            "open " + q (oldApp) + "\n");
-    static juce::ChildProcess installer;   // kept alive; it finishes after Studio quits
-    if (! installer.start (juce::StringArray { "/bin/bash", script.getFullPathName() }, 0))
+                            "open " + q (oldApp) + " && echo reopened\n",
+                            false, false, "\n");   // Unix line endings: bash can't run a CRLF script
+
+    // The script must outlive Studio. macOS kills every process left in a quitting app's
+    // process group, so start it in a group of its own, with its output going to the log.
+    posix_spawnattr_t attr;
+    posix_spawnattr_init (&attr);
+    posix_spawnattr_setflags (&attr, POSIX_SPAWN_SETPGROUP);
+    posix_spawnattr_setpgroup (&attr, 0);
+    posix_spawn_file_actions_t io;
+    posix_spawn_file_actions_init (&io);
+    const auto logPath = log.getFullPathName().toStdString();
+    posix_spawn_file_actions_addopen (&io, 0, "/dev/null", O_RDONLY, 0);
+    posix_spawn_file_actions_addopen (&io, 1, logPath.c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0644);
+    posix_spawn_file_actions_adddup2 (&io, 1, 2);
+    auto scriptPath = script.getFullPathName().toStdString();
+    char bash[] = "/bin/bash";
+    char* args[] = { bash, scriptPath.data(), nullptr };
+    pid_t pid = 0;
+    const auto rc = posix_spawn (&pid, "/bin/bash", &io, &attr, args, environ);
+    posix_spawn_file_actions_destroy (&io);
+    posix_spawnattr_destroy (&attr);
+    if (rc != 0)
         return "Couldn't start the update.";
    #else
     // The installer closes Studio, installs over it and opens it again.

@@ -100,6 +100,7 @@ button.linkish{background:none;border:0;color:var(--mut);font-size:13px;padding:
 nav#tabs{display:flex;gap:2px;max-width:1100px;margin:6px auto 0;overflow-x:auto;scrollbar-width:none}
 nav#tabs button{border:0;background:none;padding:9px 14px;border-bottom:3px solid transparent;border-radius:0;color:var(--mut);font-weight:600;white-space:nowrap}
 nav#tabs button.on{color:var(--fg);border-bottom-color:var(--acc)}
+nav#tabs button,nav#tabs button.on{box-shadow:none;text-shadow:none}
 nav#tabs .tabgap{flex:1;min-width:12px}
 main{max-width:1100px;margin:0 auto;padding:16px}
 .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:16px}
@@ -1544,7 +1545,7 @@ $('#inChan').onchange=e=>{FS.chan=e.target.value;saveFS();inRoute()};
 $('#inA4').oninput=e=>{FS.a4=+e.target.value;saveFS();syncInUI()};
 $('#inBoost').oninput=e=>{FS.boost=+e.target.value;if(IN.gain)IN.gain.gain.value=FS.boost;saveFS();syncInUI()};
 $('#inGate').oninput=e=>{FS.gate=+e.target.value;saveFS();syncInUI()};
-$('#tunToSet').onclick=e=>{e.preventDefault();show('settings');setTimeout(()=>$('#audioCard').scrollIntoView({behavior:'smooth',block:'start'}),60)};
+$('#tunToSet').onclick=e=>{e.preventDefault();show('settings');setTimeout(()=>pinTo($('#audioCard')),30)};
 syncInUI();
 
 // ---------- color scheme ----------
@@ -1567,7 +1568,15 @@ addEventListener('storage',e=>{if(e.key=='gp.skin'&&e.newValue)applySkin(e.newVa
 
 // ---------- version ----------
 $('#verTag').textContent='v'+APP_VERSION;
-$('#verTag').onclick=()=>{show('settings');setTimeout(()=>$('#about').scrollIntoView({behavior:'smooth',block:'start'}),60)};
+// Scroll a section to the top and keep it there while the page finishes laying out
+// (the trainer settings load late and change height). Stops as soon as you scroll yourself.
+function pinTo(el){
+  let stop=false,top=null,end=performance.now()+2500;const cap=end+8000,quit=()=>{stop=true};
+  ['wheel','touchstart','keydown','pointerdown'].forEach(t=>addEventListener(t,quit,{once:true,capture:true}));
+  const go=()=>{el.scrollIntoView({block:'start'});top=el.getBoundingClientRect().top};
+  go();(function tick(){if(stop||performance.now()>end)return;if(Math.abs(el.getBoundingClientRect().top-top)>1){go();end=Math.min(cap,performance.now()+2500)}requestAnimationFrame(tick)})();
+}
+$('#verTag').onclick=()=>{show('settings');setTimeout(()=>pinTo($('#about')),30)};
 function renderChanges(){$('#verNow').textContent='· you have version '+APP_VERSION;
   $('#chlog').innerHTML=CHANGES.map(([v,d,items])=>'<h3>Version '+v+'<small>'+esc(d)+'</small></h3><ul>'+items.map(i=>'<li>'+esc(i)+'</li>').join('')+'</ul>').join('')}
 renderChanges();
