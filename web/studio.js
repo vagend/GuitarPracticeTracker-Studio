@@ -3,6 +3,14 @@
 // Studio's own "What's new" list (newest first). Keep the top entry's version
 // the same as the VERSION in CMakeLists.txt.
 window.STUDIO_CHANGES = [
+  ['0.6.0', 'Nov 19, 2026', [
+    'A Mute button for your guitar in the top bar, next to Tuner.',
+    'Settings has a Privacy section that lists what Studio uses, and a switch for checking for updates at startup.',
+    'Tuner and trainer settings (A4 reference, input boost, noise gate) are back in Settings.',
+    'Studio\u2019s own windows (Audio settings, Scan for plugins) and their title bars follow the color scheme.',
+    'Plugin windows always open with their title bar on screen.',
+    'Space always plays and pauses, even after clicking a button; and if the timer is running without the metronome, Play starts the metronome.'
+  ]],
   ['0.5.1', 'Nov 19, 2026', [
     'Metronome patterns are Basic, Backbeat, Custom and Clear. Each exercise remembers its choice, and Custom is that exercise\u2019s own grid: tap the squares and it\u2019s kept with the exercise.',
     'The Tuner tab listens through Studio\u2019s audio interface instead of the computer\u2019s microphone.',
@@ -60,6 +68,11 @@ window.STUDIO_CHANGES = [
     '.fxsplit .fxmain.empty{font-weight:400;color:var(--mut)}' +
     '.fxsplit .fxcar{border-radius:0 9px 9px 0;border-left:0;padding-left:10px;padding-right:10px}' +
     '.fxmute{font-weight:600}.fxmute.on{background:var(--bad);border-color:var(--bad);color:#fff}' +
+    'nav#tabs button.navmute{align-self:center;margin:0 6px;padding:5px 12px;border:1px solid var(--line);border-radius:999px;color:var(--fg);font-weight:600}' +
+    'nav#tabs button.navmute.on{background:var(--bad);border-color:var(--bad);color:#fff}' +
+    '.pvrow{display:grid;grid-template-columns:150px 1fr;gap:14px;padding:9px 0;border-top:1px solid var(--line)}' +
+    '.pvrow b{font-weight:600}.pvrow .sub{font-size:14px;line-height:1.45}' +
+    '@media (max-width:640px){.pvrow{grid-template-columns:1fr;gap:4px}}' +
     '.fxmeter{flex:1;min-width:60px;max-width:150px;height:8px;border-radius:4px;background:var(--soft);overflow:hidden;border:1px solid var(--line)}' +
     '.fxmeter i{display:block;height:100%;width:0;background:var(--ok)}' +
     '.fxmsg{flex-basis:100%;color:var(--mut);font-size:13px}.fxmsg:empty{display:none}' +
@@ -118,10 +131,13 @@ window.STUDIO_CHANGES = [
     main.textContent = st.plugin || 'Empty';
     main.classList.toggle('empty', !st.plugin);
     main.title = st.plugin ? 'Open ' + st.plugin : 'Pick a VST effect for this exercise';
-    var m = el('fxMute');
-    m.classList.toggle('on', !!st.muted);
-    m.textContent = st.muted ? 'Muted' : 'Mute';
-    m.title = st.muted ? 'Studio is silent. Click to hear your guitar.' : 'Silence Studio’s output';
+    ['fxMute', 'navMute'].forEach(function (id) {
+      var m = el(id); if (!m) return;
+      m.classList.toggle('on', !!st.muted);
+      m.textContent = st.muted ? 'Muted' : 'Mute';
+      m.title = st.muted ? 'Your guitar is muted. Click to hear it.' : 'Mute your guitar in Studio’s output';
+    });
+    var au = el('pvAuto'); if (au) au.checked = st.autoUpdate !== false;
     el('fxMsg').textContent = st.message || '';
     var d = el('stDev'); if (d) d.textContent = st.device || '';
   }
@@ -233,6 +249,15 @@ window.STUDIO_CHANGES = [
       if (h.textContent.trim() === 'Installing') h.closest('.card').hidden = true;
     });
 
+    // Guitar mute in the top bar, next to Tuner: always in reach, on every page.
+    var tunerTab = document.querySelector('#tabs button[data-v="tuner"]');
+    if (tunerTab) {
+      var nm = document.createElement('button');
+      nm.className = 'navmute'; nm.id = 'navMute'; nm.textContent = 'Mute';
+      nm.onclick = function () { send('mute', { on: !st.muted }); };
+      tunerTab.parentNode.insertBefore(nm, tunerTab.nextSibling);
+    }
+
     // Effect slot, at the bottom of the Exercise card.
     var slot = el('fxSlot');
     if (slot) {
@@ -250,7 +275,13 @@ window.STUDIO_CHANGES = [
     // Settings: Studio's audio setup replaces the web app's audio input card.
     var audio = el('audioCard');
     if (audio) {
-      audio.hidden = true;
+      // The web app's input card becomes "Tuner and trainer": Studio chooses the input, so only
+      // the tuning reference, boost and noise gate stay.
+      var ah = audio.querySelector('h2'); if (ah) ah.textContent = 'Tuner and trainer';
+      ['inTest'].forEach(function (id) { var x = el(id); if (x) x.remove(); });
+      ['inDev', 'inChan'].forEach(function (id) { var x = el(id); if (x && x.closest('label')) x.closest('label').remove(); });
+      var lv = el('inLvl'); if (lv && lv.closest('.f')) lv.closest('.f').remove();
+      var as = audio.querySelector('p.sub'); if (as) as.textContent = 'They hear your guitar through the audio interface above.';
       var card = document.createElement('div');
       card.className = 'card';
       card.style.marginTop = '16px';
@@ -262,6 +293,25 @@ window.STUDIO_CHANGES = [
         '<div class="row" style="gap:10px;flex-wrap:wrap;align-items:center"><button id="stUpdBtn">Check for updates</button>' +
         '<span class="sub" id="stUpd"></span></div>';
       audio.parentNode.insertBefore(card, audio);
+
+      // Privacy: what Studio uses, in plain words.
+      var row = function (t, d) { return '<div class="pvrow"><b>' + t + '</b><div class="sub">' + d + '</div></div>'; };
+      var pv = document.createElement('div');
+      pv.className = 'card'; pv.style.marginTop = '16px';
+      pv.innerHTML = '<h2 style="margin:0 0 4px">Privacy</h2>' +
+        '<p style="margin:0 0 10px">No account, no ads, no tracking. Your practice stays on this computer.</p>' +
+        row('Your data', 'Your practice log, exercises and settings are saved only on this computer. Backups and CSV exports go only where you save them.' +
+            '<div style="margin-top:8px"><button id="pvData">Show Studio’s folder</button></div>') +
+        row('Internet', 'Only to check GitHub for a newer Studio and, if you choose, download it. Nothing about you or your practice is sent.' +
+            '<label class="chk" style="margin-top:8px;color:var(--fg)"><input type="checkbox" id="pvAuto" checked> Check for updates when Studio starts</label>') +
+        row('Your guitar', 'Studio hears the audio interface you choose in Audio. The sound goes to your effect, the tuner and the trainer, and is never recorded or saved. macOS calls this “Microphone” access.') +
+        row('Plugins', 'Effect plugins you load are other companies’ software running inside Studio. They follow their makers’ own privacy rules.') +
+        row('Spoken notes', 'The Fretboard Trainer speaks with your computer’s voices. On Windows, voices marked “Online” are spoken by Microsoft’s service.') +
+        row('Open source', 'Anyone can read exactly what Studio does: <a href="#" id="pvSrc">github.com/vagend/GuitarPracticeTracker-Studio</a>');
+      audio.parentNode.insertBefore(pv, audio.nextSibling);
+      el('pvData').onclick = function () { send('showData'); };
+      el('pvSrc').onclick = function (e) { e.preventDefault(); send('openSource'); };
+      el('pvAuto').onchange = function (e) { st.autoUpdate = e.target.checked; send('autoUpdate', { on: e.target.checked }); };
       el('stAudio').onclick = function () { send('audio'); };
       el('stScan').onclick = function () { send('scan'); };
       el('stUpdBtn').onclick = function () { if (upd.state === 'available') send('update'); else send('checkUpdate'); };
@@ -269,7 +319,7 @@ window.STUDIO_CHANGES = [
 
     if (backend) {
       backend.addEventListener('studioStatus', function (s) {
-        st = { plugin: s.plugin || '', muted: !!s.muted, message: s.message || '', device: s.device || '', build: +s.build || 0 };
+        st = { plugin: s.plugin || '', muted: !!s.muted, message: s.message || '', device: s.device || '', build: +s.build || 0, autoUpdate: s.autoUpdate !== false };
         renderUpdate();
         renderSlot();
         studioMuteListeners.forEach(function (f) { try { f(st.muted); } catch (e) {} });
@@ -296,5 +346,19 @@ window.STUDIO_CHANGES = [
       });
     }
     renderSlot();
+
+    // Studio's own windows (Audio settings, Scan for plugins…) follow the colour scheme.
+    var probe = document.createElement('i'); probe.style.display = 'none'; document.body.appendChild(probe);
+    var hex = function (v) {
+      probe.style.color = 'var(' + v + ')';
+      var m = getComputedStyle(probe).color.match(/\d+(\.\d+)?/g) || [0, 0, 0];
+      return '#' + m.slice(0, 3).map(function (x) { return ('0' + Math.round(+x).toString(16)).slice(-2); }).join('');
+    };
+    var sendTheme = function () {
+      send('theme', { bg: hex('--bg'), card: hex('--card'), line: hex('--line'), fg: hex('--fg'),
+                      acc: hex('--acc'), accfg: hex('--accfg'), soft: hex('--soft') });
+    };
+    sendTheme();
+    new MutationObserver(sendTheme).observe(document.documentElement, { attributes: true, attributeFilter: ['data-skin', 'class', 'style'] });
   });
 })();

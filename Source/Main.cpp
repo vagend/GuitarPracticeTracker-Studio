@@ -6,6 +6,15 @@
  #include <unistd.h>   // getpid, for the updater
 #endif
 
+#if JUCE_WINDOWS
+ #ifndef NOMINMAX
+  #define NOMINMAX
+ #endif
+ #include <windows.h>
+ #include <dwmapi.h>   // dark title bars to match dark colour schemes
+ #pragma comment(lib, "dwmapi.lib")
+#endif
+
 #ifndef STUDIO_BUILD
  #define STUDIO_BUILD 0   // set by GitHub Actions; 0 means built on this computer
 #endif
@@ -167,13 +176,89 @@ std::optional<juce::WebBrowserComponent::Resource> serveWebFile (const juce::Str
 }
 
 //==============================================================================
+// Studio's own windows (Audio settings, Scan for plugins, plugin windows without their own
+// look) use the page's colour scheme; the page sends its colours whenever the scheme changes.
+struct StudioLookAndFeel final : public juce::LookAndFeel_V4
+{
+    juce::Colour bg { 0xff0d0a07 }, card { 0xff17120c }, line { 0xff3a2c1a }, fg { 0xfff1e6d2 },
+                 acc { 0xffd4a64a }, accFg { 0xff1a1205 }, soft { 0xff1f180f };
+
+    StudioLookAndFeel() { apply(); }
+
+    void apply()
+    {
+        setColourScheme ({ bg, card, card, line, fg, soft, accFg, acc, fg });
+        setColour (juce::ResizableWindow::backgroundColourId, bg);
+        setColour (juce::DocumentWindow::textColourId, fg);
+        setColour (juce::TextButton::buttonColourId, soft);
+        setColour (juce::TextButton::buttonOnColourId, acc);
+        setColour (juce::TextButton::textColourOffId, fg);
+        setColour (juce::TextButton::textColourOnId, accFg);
+        setColour (juce::ComboBox::backgroundColourId, card);
+        setColour (juce::ComboBox::outlineColourId, line);
+        setColour (juce::ListBox::backgroundColourId, card);
+        setColour (juce::ListBox::outlineColourId, line);
+        setColour (juce::TableHeaderComponent::backgroundColourId, soft);
+        setColour (juce::TableHeaderComponent::textColourId, fg);
+        setColour (juce::TableHeaderComponent::outlineColourId, line);
+        setColour (juce::Label::textColourId, fg);
+        setColour (juce::ToggleButton::textColourId, fg);
+        setColour (juce::ToggleButton::tickColourId, acc);
+        setColour (juce::Slider::thumbColourId, acc);
+        setColour (juce::Slider::trackColourId, acc.withAlpha (0.6f));
+        setColour (juce::PopupMenu::backgroundColourId, card);
+        setColour (juce::PopupMenu::highlightedBackgroundColourId, acc);
+        setColour (juce::PopupMenu::highlightedTextColourId, accFg);
+        setColour (juce::AlertWindow::backgroundColourId, card);
+        setColour (juce::AlertWindow::textColourId, fg);
+        setColour (juce::ScrollBar::thumbColourId, line);
+        setColour (juce::TextEditor::backgroundColourId, card);
+        setColour (juce::TextEditor::outlineColourId, line);
+        setColour (juce::TextEditor::textColourId, fg);
+    }
+
+    // colours arrive as "#rrggbb" strings from the page
+    void setFrom (const juce::var& t)
+    {
+        const auto get = [&t] (const char* key, juce::Colour fallback)
+        {
+            const auto v = t.getProperty (key, {}).toString().trim().trimCharactersAtStart ("#");
+            return v.length() == 6 ? juce::Colour (0xff000000 | (juce::uint32) v.getHexValue32()) : fallback;
+        };
+        bg = get ("bg", bg); card = get ("card", card); line = get ("line", line); fg = get ("fg", fg);
+        acc = get ("acc", acc); accFg = get ("accfg", accFg); soft = get ("soft", soft);
+        apply();
+    }
+};
+
+StudioLookAndFeel& studioLook()
+{
+    static StudioLookAndFeel lf;
+    return lf;
+}
+
+// Windows draws title bars light unless asked; match a dark colour scheme.
+void matchTitleBar (juce::Component& window)
+{
+   #if JUCE_WINDOWS
+    if (auto* hwnd = (HWND) window.getWindowHandle())
+    {
+        BOOL dark = studioLook().bg.getPerceivedBrightness() < 0.5f ? TRUE : FALSE;
+        DwmSetWindowAttribute (hwnd, 20 /* DWMWA_USE_IMMERSIVE_DARK_MODE */, &dark, sizeof (dark));
+    }
+   #else
+    juce::ignoreUnused (window);
+   #endif
+}
+
+//==============================================================================
 // A plain window that hides or deletes itself when its close button is clicked.
 class ToolWindow final : public juce::DocumentWindow
 {
 public:
     ToolWindow (const juce::String& title, juce::Component* content, bool ownsContent,
                 std::function<void()> onCloseIn)
-        : DocumentWindow (title, juce::Colour (0xff1e2328), DocumentWindow::allButtons),
+        : DocumentWindow (title, studioLook().bg, DocumentWindow::allButtons),
           onClose (std::move (onCloseIn))
     {
         setUsingNativeTitleBar (true);
@@ -181,8 +266,33 @@ public:
         else             setContentNonOwned (content, true);
         setResizable (true, false);
         centreWithSize (getWidth(), getHeight());
+        keepOnScreen();
         setVisible (true);
+        matchTitleBar (*this);
         toFront (true);
+    }
+
+    // A plugin can reopen bigger than the screen (it remembers its size). Keep the title bar
+    // on screen so the window can always be moved, and shrink it if it can be resized.
+    void keepOnScreen()
+    {
+        const auto& displays = juce::Desktop::getInstance().getDisplays();
+        const auto* d = displays.getDisplayForRect (getBounds());
+        if (d == nullptr) d = displays.getPrimaryDisplay();
+        if (d == nullptr) return;
+        const auto area = d->userBounds.toNearestInt();
+        auto b = getBounds();
+        if (isResizable())
+            b.setSize (juce::jmin (b.getWidth(), area.getWidth()), juce::jmin (b.getHeight(), area.getHeight()));
+        b.setX (juce::jlimit (area.getX(), juce::jmax (area.getX(), area.getRight() - b.getWidth()), b.getX()));
+        b.setY (juce::jlimit (area.getY(), juce::jmax (area.getY(), area.getBottom() - b.getHeight()), b.getY()));
+        setBounds (b);
+    }
+
+    void lookAndFeelChanged() override
+    {
+        DocumentWindow::lookAndFeelChanged();
+        setBackgroundColour (studioLook().bg);
     }
 
     void closeButtonPressed() override
@@ -322,6 +432,17 @@ private:
         else if (action == "exercise") switchExercise (msg.getProperty ("id", {}).toString());
         else if (action == "list")   sendPluginList();
         else if (action == "checkUpdate") checkForUpdate (true);
+        else if (action == "theme")
+        {
+            studioLook().setFrom (msg);
+            for (auto* w : { audioWindow.get(), chooserWindow.get(), editorWindow.get() })
+                if (w != nullptr) { w->sendLookAndFeelChange(); matchTitleBar (*w); w->repaint(); }
+            if (auto* top = getTopLevelComponent())
+                matchTitleBar (*top);
+        }
+        else if (action == "showData") appData.revealToUser();
+        else if (action == "openSource") juce::URL ("https://github.com/vagend/GuitarPracticeTracker-Studio").launchInDefaultBrowser();
+        else if (action == "autoUpdate") { settings.setValue ("autoUpdateCheck", (bool) msg.getProperty ("on", true)); settings.saveIfNeeded(); }
         else if (action == "update") startUpdate();
         else if (action == "load")
         {
@@ -503,6 +624,7 @@ private:
         obj->setProperty ("message", message);
         obj->setProperty ("device", deviceSummary());
         obj->setProperty ("build", STUDIO_BUILD);
+        obj->setProperty ("autoUpdate", settings.getBoolValue ("autoUpdateCheck", true));
         web->emitEventIfBrowserIsVisible ("studioStatus", juce::var (obj));
     }
 
@@ -629,7 +751,8 @@ private:
             sentFirstStatus = true;
             sendStatus();
             sendPluginList();
-            checkForUpdate (false);
+            if (settings.getBoolValue ("autoUpdateCheck", true))
+                checkForUpdate (false);
         }
 
         auto* obj = new juce::DynamicObject();
@@ -731,6 +854,7 @@ private:
             const bool canResize = dynamic_cast<juce::AudioProcessorEditor*> (content) != nullptr
                                    && static_cast<juce::AudioProcessorEditor*> (content)->isResizable();
             editorWindow->setResizable (canResize, false);
+            editorWindow->keepOnScreen();
         }
         editorWindow->toFront (true);
     }
@@ -760,6 +884,7 @@ public:
 
     void initialise (const juce::String&) override
     {
+        juce::LookAndFeel::setDefaultLookAndFeel (&studioLook());
         juce::PropertiesFile::Options opt;
         opt.applicationName     = "Guitar Practice Studio";
         opt.filenameSuffix      = ".settings";
@@ -782,6 +907,7 @@ public:
         if (mainWindow != nullptr)
             mainWindow->saveSize();
         mainWindow.reset();
+        juce::LookAndFeel::setDefaultLookAndFeel (nullptr);
         engine.reset();
         settings.reset();
     }

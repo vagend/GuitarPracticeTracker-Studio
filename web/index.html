@@ -117,7 +117,7 @@ button:hover{border-color:var(--mut)}
 button.primary{background:var(--acc);border-color:var(--acc);color:var(--accfg);font-weight:600}
 button.danger{color:var(--bad)}
 button:disabled{opacity:.45;cursor:default}
-select,input[type=text],input[type=number],input[type=date],textarea{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:7px 9px;min-width:0}
+select,input[type=text],input[type=search],input[type=number],input[type=date],textarea{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:7px 9px;min-width:0}
 input[type=number]{width:90px}
 label.f,div.f{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--mut)}
 label.f>*{color:var(--fg)}
@@ -689,7 +689,7 @@ function exOptions(sel,{all,includeArchived,noTrainer,noSub}={}){
 
 // ---------- tabs ----------
 let view='practice';
-function show(v){if(!$('#v-'+v))v='practice';if(view=='trainer'&&v!='trainer'&&typeof TR!='undefined')trainerLeave();if(v!='tuner'&&view=='tuner'&&typeof TU!='undefined'&&TU.stream)tunStop();if(v=='tuner')setTimeout(tunAuto,0);if(v!='settings'&&typeof IN!='undefined'&&IN.stream)inStop();if(v=='settings'&&typeof inList=='function')setTimeout(inList,0);view=v;$$('.view').forEach(s=>s.hidden=s.id!='v-'+v);$$('#tabs button').forEach(b=>b.classList.toggle('on',b.dataset.v==v));
+function show(v){if(!$('#v-'+v))v='practice';if(view=='trainer'&&v!='trainer'&&typeof TR!='undefined')trainerLeave();if(v!='tuner'&&view=='tuner'&&typeof TU!='undefined'&&(TU.stream||TU.sg))tunStop();if(v=='tuner')setTimeout(tunAuto,0);if(v!='settings'&&typeof IN!='undefined'&&IN.stream)inStop();if(v=='settings'&&typeof inList=='function')setTimeout(inList,0);view=v;$$('.view').forEach(s=>s.hidden=s.id!='v-'+v);$$('#tabs button').forEach(b=>b.classList.toggle('on',b.dataset.v==v));
   try{history.replaceState(null,'','#'+v)}catch(e){}render()}
 $$('#tabs button').forEach(b=>b.onclick=()=>show(b.dataset.v));
 function render(){({practice:renderPractice,tuner:()=>{},trainer:loadTrainer,log:renderLog,exercises:renderExercises,stats:renderStats,settings:renderSettings})[view]();renderTimer()}
@@ -776,8 +776,10 @@ function setTarget(m){const ms=Math.round(m*60000);if(T.done){resetTimer()}if(ms
   T.target=ms;if(running()){cancelChime();chimeNodes=chime((T.target-elapsed())/1000);chimeArmed=true}saveT();renderTimer()}
 addEventListener('keydown',e=>{
   if(e.code!='Space'||view!='practice'||e.ctrlKey||e.metaKey||e.altKey)return;
-  if(['INPUT','SELECT','TEXTAREA','BUTTON'].includes(e.target.tagName)||$('dialog[open]'))return;
-  e.preventDefault();$('#metGo').click()});
+  // Space is always Play/Pause on this page, even when a button has focus (a focused button would
+  // otherwise be pressed instead); typing in a field or an open dialog keeps the space.
+  const t=e.target;if(['SELECT','TEXTAREA'].includes(t.tagName)||(t.tagName=='INPUT'&&!['checkbox','radio','range','button'].includes(t.type))||t.isContentEditable||$('dialog[open]'))return;
+  e.preventDefault();if(e.repeat)return;audio();$('#metGo').click()});
 
 // ---------- practice view ----------
 let pendingEx=null,lfEffort=null;
@@ -1299,7 +1301,8 @@ function transportPlay(){audio();const ex=exById(T.ex);if(!ex){toast('Pick an ex
   renderMetBtn()}
 function transportPause(){if(running())pause();if(CURVE.on&&!CURVE.paused)curvePause();if(MET.on&&!CURVE.on)metHalt();renderMetBtn()}
 function transportStop(){if(CURVE.on||CURVE.hold)curveEnd();else{if(MET.on)metStop();if(running())pause()}renderTimer();renderMetBtn()}
-function renderMetBtn(){const pl=playing();$('#metGo').textContent=pl?'⏸ Pause':'▶ Play';
+function metMissing(){const ex=exById(T.ex);return running()&&!MET.on&&!!ex&&!ex.trainer&&usesMet(ex)&&!(CURVE.on&&CURVE.paused)}
+function renderMetBtn(){const pl=playing()&&!metMissing();$('#metGo').textContent=pl?'⏸ Pause':'▶ Play';
   $('#metStop').disabled=!(MET.on||running()||CURVE.on||CURVE.hold);renderLadPanel()}
 function setBars(el,html){if(el._h!==html){el._h=html;el.innerHTML=html}}
 function renderLadPanel(){const ex=exById(T.ex),pn=$('#ladPanel');if(!pn)return;
@@ -1363,7 +1366,11 @@ $('#metGrid').addEventListener('pointerdown',e=>{const c=e.target.closest('.mc')
 addEventListener('pointermove',e=>{if(!GD)return;const el=document.elementFromPoint(e.clientX,e.clientY),c=el&&el.closest('#metGrid .mc');if(c)gridPaint(c)});
 const gridEnd=()=>{if(!GD)return;GD=null;keepCustom();renderMet()};
 addEventListener('pointerup',gridEnd);addEventListener('pointercancel',gridEnd);
-$('#metGo').onclick=()=>playing()?transportPause():transportPlay();
+// If the timer is running but the metronome isn't (and this exercise uses it), Play starts the metronome
+// instead of pausing, so there's always a way to get the click going.
+$('#metGo').onclick=()=>{audio();const ex=exById(T.ex);
+  if(metMissing()){metStart();renderMetBtn();return}
+  playing()?transportPause():transportPlay()};
 $('#metStop').onclick=transportStop;
 $('#swLad').onclick=e=>{e.preventDefault();const ex=exById(T.ex);if(!ex)return;ex.ladderOn=!ex.ladderOn;save();
   if(!ex.ladderOn&&(CURVE.on||CURVE.hold))curveCancel();renderLadPanel();renderMetBtn()};
