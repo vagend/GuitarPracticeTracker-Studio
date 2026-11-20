@@ -1,0 +1,53 @@
+# Copies a pinned version of alphaTab (tab and notation display, MPL-2.0) into web/vendor/alphatab,
+# so Studio's builds never download it and keep working even if alphaTab disappears.
+# Run it by hand (Actions > Vendor alphaTab > Run workflow) only when deliberately changing versions;
+# it commits to the branch it's run on (use test, try it, then release).
+name: Vendor alphaTab
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: alphaTab version (npm @coderline/alphatab)
+        default: "1.9.0"
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  vendor:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fetch alphaTab ${{ inputs.version }}
+        run: |
+          set -e
+          V="${{ inputs.version }}"
+          npm pack "@coderline/alphatab@$V"
+          tar xzf coderline-alphatab-$V.tgz
+          echo "package contents:"; find package -maxdepth 2 | sort
+          D=web/vendor/alphatab
+          rm -rf "$D"; mkdir -p "$D"
+          # The runtime files only: scripts, fonts and the sound bank (no type definitions or source maps).
+          rsync -a --exclude '*.d.ts' --exclude '*.map' package/dist/ "$D/"
+          cp package/LICENSE* "$D/" 2>/dev/null || true
+          cat > "$D/SOURCE.md" <<NOTE
+          # alphaTab $V
+
+          Unmodified files from the npm package @coderline/alphatab@$V (dist folder), licensed under the
+          Mozilla Public License 2.0 (see LICENSE). Source code: https://github.com/CoderLine/alphaTab
+          (tag v$V). Copied here by .github/workflows/vendor-alphatab.yml on $(date -u '+%Y-%m-%d').
+          NOTE
+          sed -i 's/^          //' "$D/SOURCE.md"
+          du -sh "$D"; find "$D" -type f | sort
+
+      - name: Commit
+        run: |
+          git config user.name "vagend"
+          git config user.email "33006883+vagend@users.noreply.github.com"
+          git add web/vendor/alphatab
+          git diff --cached --quiet && { echo "no change"; exit 0; }
+          git commit -m "Vendor alphaTab ${{ inputs.version }} (MPL-2.0) into web/vendor/alphatab [skip ci]"
+          git push
