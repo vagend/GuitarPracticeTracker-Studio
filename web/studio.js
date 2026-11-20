@@ -8,6 +8,7 @@
 
 window.STUDIO_CHANGES = [
   ['0.7.1', 'Nov 19, 2026', [
+    'With an exercise\u2019s Metronome switch off, the metronome doesn\u2019t run at all (it used to keep flashing the beats silently). Switching it on or off while you practise starts or stops it.',
     'If your audio interface is switched off or unplugged, Studio turns audio off instead of switching to the computer\u2019s own microphone and speakers (which could howl through an amp plugin), says so, and reconnects on its own when the interface is back.',
     'Every dropdown list (metronome, exercises, log filters, dialogs, Fretboard Trainer settings, suggestion boxes) opens in your color scheme instead of the system\u2019s colors.',
     'Fretboard Trainer note scores use your color scheme\u2019s colors, so the text is always readable.',

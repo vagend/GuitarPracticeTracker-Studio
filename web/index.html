@@ -806,7 +806,10 @@ function renderPractice(){
   syncExSel();
   const ex=exById(T.ex),s=exStats(T.ex),m=metricOf(ex);
   $('#exSub').innerHTML=ex?'<span>'+esc([ex.technique,ex.sub].filter(Boolean).join(' · '))+'</span>'+(ex.trainer?'':'<label class="sw'+(usesMet(ex)?' on':'')+'" id="swMet" title="Off: Play starts only the practice timer"><i></i>Metronome</label>'):'';
-  const sm=$('#swMet');if(sm)sm.onclick=e=>{e.preventDefault();ex.metronome=!usesMet(ex);if(!ex.metronome&&(CURVE.on||CURVE.hold))curveCancel();save();render()};
+  const sm=$('#swMet');if(sm)sm.onclick=e=>{e.preventDefault();ex.metronome=!usesMet(ex);
+    if(!ex.metronome){if(CURVE.on||CURVE.hold)curveCancel();if(MET.on)metHalt()}   // off: stop it, not just its sound
+    else if(running()&&!MET.on)metStart();                                        // on while practising: start it
+    save();render();renderMetBtn()};
   $('#exInfo').innerHTML=ex?[
     ['Goal',ex.goal?trim(ex.goal)+' <small class="sub">'+esc(m)+'</small>':'—'],
     ['Best',s.best!=null?trim(s.best):'—'],
@@ -1235,6 +1238,7 @@ function metDraw(){
 function lightStep(i){MET.lit.forEach(e=>e.classList.remove('now'));MET.lit=[...document.querySelectorAll('#metGrid [data-i="'+i+'"]')];
   const M=MC();if(i%M.sub==0){const d=$('#metDots').children[i/M.sub];if(d)MET.lit.push(d)}MET.lit.forEach(e=>e.classList.add('now'))}
 function metStart(){
+  if(!usesMet(exById(T.ex)))return;   // metronome switched off for this exercise: no clicks and no beat lights
   const a=audio();if(!a)return;loadSamples();MET.on=true;MET.step=0;MET.next=a.currentTime+.08;MET.q=[];
   if(!MET.w){try{MET.w=new Worker(URL.createObjectURL(new Blob(["let t=null;onmessage=e=>{clearInterval(t);if(e.data=='start')t=setInterval(()=>postMessage(0),25)}"],{type:'text/javascript'})));MET.w.onmessage=metPump}catch(e){MET.w=null}}
   if(MET.w)MET.w.postMessage('start');else MET.iv=setInterval(metPump,25);
@@ -1312,7 +1316,7 @@ function transportPlay(){audio();const ex=exById(T.ex);if(!ex){toast('Pick an ex
     if(CURVE.on&&CURVE.paused){if(!running())startPause();else curveResume()}
     else if(!CURVE.on){if(CURVE.hold)curveCancel();curveStart()}
     else{if(!MET.on)metStart();if(!running())startPause()}}
-  else{if(!MET.on)metStart();if(!running())startPause()}
+  else{if(!MET.on&&usesMet(ex))metStart();if(!running())startPause()}
   renderMetBtn()}
 function transportPause(){if(running())pause();if(CURVE.on&&!CURVE.paused)curvePause();if(MET.on&&!CURVE.on)metHalt();renderMetBtn()}
 function transportStop(){if(CURVE.on||CURVE.hold)curveEnd();else{if(MET.on)metStop();if(running())pause()}renderTimer();renderMetBtn()}
