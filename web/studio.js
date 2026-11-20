@@ -92,8 +92,11 @@ window.STUDIO_CHANGES = [
     '.fxsplit .fxmain.empty{font-weight:400;color:var(--mut)}' +
     '.fxsplit .fxcar{border-radius:0 9px 9px 0;border-left:0;padding-left:10px;padding-right:10px}' +
     '.fxmute{font-weight:600}.fxmute.on{background:var(--bad);border-color:var(--bad);color:#fff}' +
-    'nav#tabs button.navmute{align-self:center;margin:0 6px;padding:5px 12px;border:1px solid var(--line);border-radius:999px;color:var(--fg);font-weight:600}' +
+    // Same look as the Stopwatch / Countdown buttons, including the brass finish when on.
+    'nav#tabs button.navmute{align-self:center;margin:0 6px;padding:7px 14px;background:var(--card);border:1px solid var(--line);border-radius:10px;color:var(--fg);font-weight:400}' +
     'nav#tabs button.navmute.on{background:var(--acc);border-color:var(--acc);color:var(--accfg)}' +
+    'html:root[data-skin="brass"] nav#tabs button.navmute.on{background:linear-gradient(180deg,#f3d98e 0%,#d4a64a 45%,#9a6c24 100%);border-color:#7a5418;color:#1a1205;' +
+      'text-shadow:0 1px 0 rgba(255,240,200,.5);box-shadow:inset 0 1px 0 rgba(255,250,220,.6),0 1px 2px rgba(0,0,0,.6)}' +
     '.pvrow{display:grid;grid-template-columns:150px 1fr;gap:14px;padding:9px 0;border-top:1px solid var(--line)}' +
     '.pvrow b{font-weight:600}.pvrow .sub{font-size:14px;line-height:1.45}' +
     '@media (max-width:640px){.pvrow{grid-template-columns:1fr;gap:4px}}' +
