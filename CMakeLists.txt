@@ -16,12 +16,14 @@ if(STUDIO_CHANNEL STREQUAL "test")
     set(STUDIO_FILES  "GuitarPracticeStudioTest")   # download file names
     set(STUDIO_RELEASE_URL "https://github.com/vagend/GuitarPracticeTracker-Studio/releases/download/test/")
     set(STUDIO_TEST 1)
+    set(STUDIO_ICON "${CMAKE_CURRENT_SOURCE_DIR}/web/icons/studio-test-1024.png")
 else()
     set(STUDIO_NAME   "Guitar Practice Studio")
     set(STUDIO_BUNDLE "com.vagend.guitarpracticestudio")
     set(STUDIO_FILES  "GuitarPracticeStudio")
     set(STUDIO_RELEASE_URL "https://github.com/vagend/GuitarPracticeTracker-Studio/releases/latest/download/")
     set(STUDIO_TEST 0)
+    set(STUDIO_ICON "${CMAKE_CURRENT_SOURCE_DIR}/web/icons/studio-1024.png")
 endif()
 
 # JUCE is downloaded into external/JUCE by the setup script (it is not kept in git).
@@ -35,7 +37,7 @@ juce_add_gui_app(GuitarPracticeStudio
     PRODUCT_NAME "${STUDIO_NAME}"
     COMPANY_NAME "vagend"
     BUNDLE_ID "${STUDIO_BUNDLE}"
-    ICON_BIG "${CMAKE_CURRENT_SOURCE_DIR}/web/icons/studio-1024.png"   # brass pocket-watch pick
+    ICON_BIG "${STUDIO_ICON}"   # brass pocket-watch pick (nickel for the test app)
     NEEDS_WEB_BROWSER TRUE
     NEEDS_CURL FALSE
     MICROPHONE_PERMISSION_ENABLED TRUE

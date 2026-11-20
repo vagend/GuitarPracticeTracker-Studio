@@ -676,6 +676,7 @@ private:
         obj->setProperty ("message", message);
         obj->setProperty ("device", deviceSummary());
         obj->setProperty ("build", STUDIO_BUILD);
+        obj->setProperty ("test", STUDIO_TEST != 0);   // Guitar Practice Studio Test
         obj->setProperty ("autoUpdate", settings.getBoolValue ("autoUpdateCheck", true));
         obj->setProperty ("inputMuted", ! engine.isInputOn());
         web->emitEventIfBrowserIsVisible ("studioStatus", juce::var (obj));

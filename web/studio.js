@@ -360,6 +360,12 @@ window.STUDIO_CHANGES = [
         st = { plugin: s.plugin || '', muted: !!s.muted, inputMuted: !!s.inputMuted, message: s.message || '', device: s.device || '', build: +s.build || 0, autoUpdate: s.autoUpdate !== false };
         renderUpdate();
         renderSlot();
+        // the test app shows it's the test app, and which build, next to the version
+        var vt = document.getElementById('verTag');
+        if (vt && s.test) {
+          if (!vt.dataset.v) vt.dataset.v = vt.textContent;
+          vt.innerHTML = vt.dataset.v + ' \u00b7 <b style="color:var(--acc)">TEST</b> build ' + (st.build || '?');
+        }
         studioMuteListeners.forEach(function (f) { try { f(st.muted); } catch (e) {} });
         if (pick.open) { el('fxRemove').disabled = !st.plugin; renderList(); }
       });
