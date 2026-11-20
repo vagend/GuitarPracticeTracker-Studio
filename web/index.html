@@ -188,6 +188,8 @@ th{font-size:12px;color:var(--mut);font-weight:600}
 td.n,th.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
 td.nw{white-space:nowrap}
 tr.click{cursor:pointer}tr.click:hover td{background:var(--soft)}
+#exTable th.sort{cursor:pointer;user-select:none;white-space:nowrap}#exTable th.sort:hover{color:var(--fg)}
+#exTable th .ar{display:inline-block;width:1em;text-align:center;color:var(--acc);visibility:hidden}#exTable th.on .ar{visibility:visible}
 .tscroll{overflow-x:auto}
 .day{border-top:1px solid var(--line);padding:10px 0}
 .day:first-child{border-top:0}
@@ -1024,13 +1026,25 @@ $('#csvBtn').onclick=()=>csv(filteredEntries());
 
 // ---------- exercises view ----------
 const SUBS=[['Quarter notes',1],['8ths',2],['8th triplets',3],['16ths',4],['16th triplets',6],['32nds',8]];
+// Click a column heading to sort by it; click again to reverse. Ties are sorted by name, so
+// exercises with the same name end up next to each other.
+const EXCOLS=[['name','Exercise',''],['tech','Technique',''],['sub','Subdivision',''],['best','Best / Goal','n'],['prog','Progress',''],['last','Last practiced',''],['tot','Total','n']];
+function exSortKey(e,k,s){switch(k){
+  case'name':return(e.name||'').toLowerCase();case'tech':return(e.technique||'').toLowerCase()||null;case'sub':return(e.sub||'').toLowerCase()||null;
+  case'best':return s.best;case'prog':return e.goal&&s.best!=null?s.best/e.goal:null;case'last':return s.last?s.last.date+' '+(s.last.time||''):null;case'tot':return s.tot||0}}
+function sortExRows(rows){const o=D.settings.exSort;if(!o||!o.k)return rows;const dir=o.desc?-1:1,col=new Intl.Collator(undefined,{numeric:true,sensitivity:'base'});
+  const cmp=(a,b)=>a==null&&b==null?0:a==null?1:b==null?-1:typeof a=='number'&&typeof b=='number'?a-b:col.compare(String(a),String(b));
+  return rows.map(e=>({e,s:exStats(e.id)})).sort((x,y)=>{const ka=exSortKey(x.e,o.k,x.s),kb=exSortKey(y.e,o.k,y.s);
+    const c=(ka==null||kb==null)?cmp(ka,kb):dir*cmp(ka,kb);   // empty values always last
+    return c||col.compare(x.e.name||'',y.e.name||'')}).map(x=>x.e)}
 function renderExercises(){
   const arch=$('#showArch').checked;
-  const rows=D.exercises.filter(e=>arch||!e.archived);
-  $('#exTable').innerHTML='<thead><tr><th>Exercise</th><th>Technique</th><th>Subdivision</th><th class="n">Best / Goal</th><th>Progress</th><th>Last practiced</th><th class="n">Total</th></tr></thead><tbody>'+
+  const rows=sortExRows(D.exercises.filter(e=>arch||!e.archived)),o=D.settings.exSort||{};
+  $('#exTable').innerHTML='<thead><tr>'+EXCOLS.map(([k,t,c])=>'<th class="sort'+(c?' '+c:'')+(o.k==k?' on':'')+'" data-k="'+k+'">'+t+'<span class="ar">'+(o.k==k&&o.desc?'▼':'▲')+'</span></th>').join('')+'</tr></thead><tbody>'+
     rows.map(e=>{const s=exStats(e.id),p=e.goal&&s.best!=null?Math.min(1,s.best/e.goal):null;
       return'<tr class="click" data-id="'+e.id+'"><td>'+esc(e.name)+(e.trainer?' <span title="Uses the fretboard trainer">🎸</span>':'')+(e.archived?' <span class="sub">(archived)</span>':'')+'</td><td>'+esc(e.technique||'')+'</td><td class="nw">'+esc(e.sub||'')+'</td><td class="n">'+(s.best!=null?trim(s.best):'—')+(e.goal?' / '+trim(e.goal):'')+(metricOf(e)!='BPM'?' <span class="sub">'+esc(metricOf(e))+'</span>':'')+'</td><td class="nw">'+(p!=null?'<span class="pct"><i style="width:'+(100*p)+'%"></i></span>'+Math.round(100*p)+'%':'<span class="sub">—</span>')+'</td><td class="nw">'+(s.last?fmtDate(s.last.date,{month:'short',day:'numeric',year:'numeric'})+' '+(s.last.effort?effHtml(s.last.effort):''):'<span class="sub">never</span>')+'</td><td class="n">'+fmtMin(s.tot)+'</td></tr>'}).join('')+'</tbody>';
   $$('#exTable tr.click').forEach(r=>r.onclick=()=>editEx(+r.dataset.id));
+  $$('#exTable th.sort').forEach(h=>h.onclick=()=>{const k=h.dataset.k,o=D.settings.exSort||{};D.settings.exSort={k,desc:o.k==k?!o.desc:false};save();renderExercises()});
   if(!$('#cvFrom').options.length){const o=SUBS.map(([n,v])=>'<option value="'+v+'">'+n+'</option>').join('');$('#cvFrom').innerHTML=o;$('#cvTo').innerHTML=o;$('#cvFrom').value='4';$('#cvTo').value='3'}
   convert();
   $('#effKey').innerHTML='<table>'+D.efforts.map(f=>'<tr><td style="white-space:nowrap">'+effHtml(f.id)+'</td><td class="sub">'+esc(f.desc||'')+'</td></tr>').join('')+'</table>';
