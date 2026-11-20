@@ -217,7 +217,7 @@ dialog h2{margin:0 0 12px;font:600 17px/1.3 system-ui,sans-serif}
 .fgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .fgrid .w{grid-column:1/-1}
 .tabsec{display:flex;flex-wrap:wrap;gap:8px;align-items:center;border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-top:4px}
-.tabsec .src{flex:1;min-width:200px;color:var(--mut)}.tabsec .src b{display:block;color:var(--fg);font-size:15px}
+.tabsec .src{flex:1 1 100%;min-height:64px;color:var(--mut)}.tabsec .src b{display:block;color:var(--fg);font-size:15px}.tabsec .src small{display:block;font-size:12px;margin-top:3px;overflow-wrap:anywhere}
 .lenwrap{position:relative;display:inline-block}
 #exLenTab{position:absolute;left:0;top:0;bottom:0;display:flex;align-items:center;white-space:nowrap;font-weight:600;font-size:17px;color:var(--fg)}
 #exLenTab[hidden]{display:none}
@@ -526,6 +526,7 @@ iframe#trFrame{width:100%;border:0;height:900px;display:block;border-radius:10px
     <h2>Color scheme</h2>
     <div class="skins" id="skinPick"></div>
     <label class="row" style="margin-top:14px;gap:10px">Tab colors<select id="stTabCol"><option value="theme">Follow color scheme</option><option value="paper">White paper</option></select></label>
+    <label class="row" id="stTabEdRow" style="margin-top:10px;gap:10px" hidden>Tab editor<select id="stTabEd"></select></label>
   </div>
   <div class="grid2" style="margin-top:16px">
     <div class="card">
@@ -586,7 +587,7 @@ iframe#trFrame{width:100%;border:0;height:900px;display:block;border-radius:10px
       <label class="f w">Notes<textarea id="dxNotes" rows="2"></textarea></label>
       <div class="f w">Tab
         <div class="tabsec"><div class="src" id="dxTabInfo"></div>
-          <button type="button" id="dxTabFile">Open file…</button><button type="button" id="dxTabType">Type it…</button><button type="button" id="dxTabDel">Remove</button></div>
+          <button type="button" id="dxTabEdit">Edit in tab editor</button><button type="button" id="dxTabFile">Open file…</button><button type="button" id="dxTabType">Type it…</button><button type="button" id="dxTabDel">Remove</button></div>
         <input type="file" id="dxTabPick" hidden accept=".gp,.gp3,.gp4,.gp5,.gpx,.xml,.musicxml,.mxl,.capx,.atex,.alphatex,.txt">
       </div>
       <div class="opts">
@@ -667,7 +668,7 @@ function fixTrainerEx(){let t=D.exercises.find(e=>/^fretboard (notes|trainer)$/i
   D.exercises.forEach(e=>{e.trainer=e===t});
   if(t&&!D.settings.trainerRenamed&&/^fretboard notes$/i.test(t.name))t.name='Fretboard Trainer';D.settings.trainerRenamed=true}
 fixTrainerEx();
-function save(){LS.set('gp.data',D)}
+function save(){LS.set('gp.data',D);if(typeof syncTabWatch=='function')syncTabWatch()}
 
 // ---------- helpers ----------
 const pad=n=>String(n).padStart(2,'0');
@@ -1274,9 +1275,45 @@ $('#stTabCol').onchange=e=>{D.settings.tabColors=e.target.value;save();tabTheme(
 
 // ---- the exercise editor's tab section ----
 let dxTab=null;
-function renderDxTab(){const t=dxTab;$('#dxTabInfo').innerHTML=t?'<b>'+esc(t.kind=='tex'?(t.info.title||'Typed tab'):t.name)+'</b>'+esc(tabDesc(t)):'No tab';
-  $('#dxTabDel').hidden=!t;$('#dxTabType').textContent=t&&t.kind=='tex'?'Edit…':'Type it…'}
-$('#dxTabFile').onclick=()=>$('#dxTabPick').click();
+const STUDIO_APP=!!(window.__JUCE__&&window.__JUCE__.backend);
+function studioSend(o){try{window.__JUCE__.backend.emitEvent('studio',o)}catch(e){}}
+function shortPath(p){return String(p||'').replace(/^\/Users\/[^/]+/,'~').replace(/^[A-Za-z]:\\Users\\[^\\]+/,'~')}
+function renderDxTab(){const t=dxTab;
+  $('#dxTabInfo').innerHTML=t?'<b>'+esc(t.kind=='tex'?(t.info.title||'Typed tab'):t.name)+'</b>'+esc(tabDesc(t))+
+    (t.path?'<small>'+esc(shortPath(t.path))+' · updates when you save it</small>':t.kind!='tex'?'<small>A copy, not linked to a file. Use Open file… to link one.</small>':''):'No tab';
+  // the same four buttons, always: the ones that don't apply are greyed out
+  $('#dxTabEdit').disabled=!(t&&t.path&&STUDIO_APP);$('#dxTabDel').disabled=!t}
+let tabPicking=false;
+$('#dxTabFile').onclick=()=>{if(STUDIO_APP){tabPicking=true;studioSend({action:'tabPick'})}else $('#dxTabPick').click()};
+$('#dxTabEdit').onclick=()=>{if(dxTab&&dxTab.path)studioSend({action:'tabEdit',path:dxTab.path})};
+// Studio's picker, Edit in tab editor and saved files all answer here
+async function tabFileEvent(m){if(!m)return;
+  if(m.cancel){tabPicking=false;return}
+  if(m.error){if(m.reload)return;tabPicking=false;
+    tell(m.error=='missing'?'Studio can’t find “'+shortPath(m.path)+'”. It may have been moved or deleted. Use Open file… to link the tab again.':m.error=='big'?'That file is too big for a tab. Tabs up to 2 MB can be used.':'Studio couldn’t read that file.');return}
+  const t={kind:'file',name:m.name,data:m.data,path:m.path,mtime:m.mtime};
+  try{t.info=await readTab(t)}catch(x){if(!m.reload){tabPicking=false;tell('Studio couldn’t read “'+m.name+'” as a tab. It reads Guitar Pro (.gp, .gp3–.gp5, .gpx), MusicXML (.xml, .musicxml, .mxl) and Capella (.capx) files.')}return}
+  if(!m.reload){if(tabPicking){tabPicking=false;dxTab=t;renderDxTab()}return}
+  // saved in the tab editor: every exercise linked to this file gets the new version
+  let n=0;D.exercises.forEach(ex=>{if(!ex.tab||ex.tab.path!=m.path)return;n++;
+    const s=ex.tabSel;if(s&&s.to>=t.info.bars)ex.tabSel=null;ex.tab=t;
+    if(TABWIN.open&&TABWIN.ex==ex.id)openTab();
+    if($('#dlgEx').open&&editingEx==ex.id){dxTab=t;renderDxTab()}});
+  if(n){save();render();toast('Tab updated from '+m.name)}}
+try{if(STUDIO_APP){window.__JUCE__.backend.addEventListener('studioTabFile',m=>tabFileEvent(m));
+  window.__JUCE__.backend.addEventListener('studioStatus',st=>renderTabEditor(st.tabEditor||''))}}catch(e){}
+// Studio watches the files exercises are linked to, and reloads them when they change
+let tabWatchKey='';
+function syncTabWatch(){if(!STUDIO_APP)return;const seen={},files=[];
+  D.exercises.forEach(ex=>{const t=ex.tab;if(t&&t.path&&!seen[t.path]){seen[t.path]=1;files.push({ex:String(ex.id),path:t.path,mtime:t.mtime||0})}});
+  const k=JSON.stringify(files);if(k!=tabWatchKey){tabWatchKey=k;studioSend({action:'tabWatch',files})}}
+// Settings → Tab editor: your chosen program, or the computer's default
+let tabEdName='';
+function renderTabEditor(name){if(name===tabEdName&&$('#stTabEd').options.length)return;tabEdName=name;$('#stTabEdRow').hidden=!STUDIO_APP;
+  $('#stTabEd').innerHTML=(name?'<option value="app">'+esc(name)+'</option>':'')+'<option value="default">Your computer’s default</option><option value="pick">Choose a program…</option>';
+  $('#stTabEd').value=name?'app':'default'}
+$('#stTabEd').onchange=e=>{const v=e.target.value;if(v=='pick'){studioSend({action:'tabEditorPick'});e.target.value=tabEdName?'app':'default'}
+  else if(v=='default'){studioSend({action:'tabEditorClear'})}};
 $('#dxTabPick').onchange=async e=>{const f=e.target.files[0];e.target.value='';if(!f)return;
   if(f.size>TAB_MAX_BYTES){tell('That file is too big for a tab ('+Math.round(f.size/1024/1024*10)/10+' MB). Tabs up to 2 MB can be used.');return}
   const u8=new Uint8Array(await f.arrayBuffer()),isTex=/\.(atex|alphatex|txt)$/i.test(f.name);
@@ -1694,6 +1731,7 @@ function renderSkins(){const c=curSkin();
   $('#skinPick').innerHTML=SKINS.map(s=>'<button class="skin'+(s.k==c?' on':'')+'" data-k="'+s.k+'"><div class="pv" style="background:'+s.bg+'"><i style="background:'+s.a+';width:70%"></i><i style="background:'+s.fg+';opacity:.25;width:45%"></i><b style="background:'+s.a+'"></b></div><div class="nm">'+esc(s.n)+(s.note?'<small>'+esc(s.note)+'</small>':'')+'</div></button>').join('');
   $$('#skinPick .skin').forEach(b=>b.onclick=()=>{applySkin(b.dataset.k);renderSkins()})}
 applySkin(curSkin());
+if(STUDIO_APP){renderTabEditor('');syncTabWatch()}
 addEventListener('storage',e=>{if(e.key=='gp.skin'&&e.newValue)applySkin(e.newValue)});
 
 // ---------- version ----------

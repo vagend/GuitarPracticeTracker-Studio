@@ -492,6 +492,11 @@ private:
                 matchTitleBar (*top);
         }
         else if (action == "tab")    { tabMessage (msg.getProperty ("msg", {})); return; }
+        else if (action == "tabPick") { pickTabFile(); return; }
+        else if (action == "tabEdit") { editTabFile (msg.getProperty ("path", {}).toString()); return; }
+        else if (action == "tabWatch") { watchTabFiles (msg.getProperty ("files", {})); return; }
+        else if (action == "tabEditorPick") { pickTabEditor(); return; }
+        else if (action == "tabEditorClear") { settings.setValue ("tabEditor", juce::String()); settings.saveIfNeeded(); }
         else if (action == "showData") appData.revealToUser();
         else if (action == "openSource") juce::URL ("https://github.com/vagend/GuitarPracticeTracker-Studio").launchInDefaultBrowser();
         else if (action == "autoUpdate") { settings.setValue ("autoUpdateCheck", (bool) msg.getProperty ("on", true)); settings.saveIfNeeded(); }
@@ -679,6 +684,7 @@ private:
         obj->setProperty ("test", STUDIO_TEST != 0);   // Guitar Practice Studio Test
         obj->setProperty ("autoUpdate", settings.getBoolValue ("autoUpdateCheck", true));
         obj->setProperty ("inputMuted", ! engine.isInputOn());
+        obj->setProperty ("tabEditor", tabEditorName());
         web->emitEventIfBrowserIsVisible ("studioStatus", juce::var (obj));
     }
 
@@ -843,6 +849,13 @@ private:
             sendStatus();
         }
 
+        // Tab files saved in a tab editor: reload them about once a second.
+        if (++tabWatchTicks >= 20)
+        {
+            tabWatchTicks = 0;
+            checkTabFiles();
+        }
+
         if (! sentFirstStatus)
         {
             sentFirstStatus = true;
@@ -976,6 +989,150 @@ private:
     // between it and the practice page ("tab" events to it, "studioTab" events back).
     std::unique_ptr<StudioWebView> tabWeb;
     std::unique_ptr<ToolWindow> tabWindow;
+
+    //==========================================================================
+    // Tab files: Studio's own file picker (so it knows where the file is), opening a tab in your
+    // tab editor, and reloading it when you save it there. Results go to the page as
+    // "studioTabFile" events: { path, name, data (base64), mtime, reload } or { error, path }.
+    std::unique_ptr<juce::FileChooser> chooser;
+    struct WatchedTab { juce::String ex, path; juce::int64 mtime = 0; };
+    std::vector<WatchedTab> watchedTabs;
+    int tabWatchTicks = 0;
+    static constexpr juce::int64 maxTabBytes = 2 * 1024 * 1024;
+
+    void sendTabFile (const juce::File& f, const juce::String& ex, bool reload)
+    {
+        auto* o = new juce::DynamicObject();
+        o->setProperty ("path", f.getFullPathName());
+        o->setProperty ("name", f.getFileName());
+        o->setProperty ("ex", ex);
+        o->setProperty ("reload", reload);
+        juce::MemoryBlock mb;
+        if (! f.existsAsFile())                        o->setProperty ("error", "missing");
+        else if (f.getSize() > maxTabBytes)            o->setProperty ("error", "big");
+        else if (! f.loadFileAsData (mb))              o->setProperty ("error", "read");
+        else
+        {
+            o->setProperty ("data", juce::Base64::toBase64 (mb.getData(), mb.getSize()));
+            o->setProperty ("mtime", (double) f.getLastModificationTime().toMilliseconds());
+        }
+        web->emitEventIfBrowserIsVisible ("studioTabFile", juce::var (o));
+    }
+
+    void pickTabFile()
+    {
+        chooser = std::make_unique<juce::FileChooser> ("Open a tab",
+                      juce::File::getSpecialLocation (juce::File::userDocumentsDirectory),
+                      "*.gp;*.gp3;*.gp4;*.gp5;*.gpx;*.xml;*.musicxml;*.mxl;*.capx");
+        const juce::Component::SafePointer<MainComponent> self (this);
+        chooser->launchAsync (juce::FileBrowserComponent::openMode | juce::FileBrowserComponent::canSelectFiles,
+                              [self] (const juce::FileChooser& fc)
+        {
+            if (self == nullptr) return;
+            const auto f = fc.getResult();
+            if (f == juce::File())
+            {
+                auto* o = new juce::DynamicObject();
+                o->setProperty ("cancel", true);
+                self->web->emitEventIfBrowserIsVisible ("studioTabFile", juce::var (o));
+                return;
+            }
+            self->sendTabFile (f, {}, false);
+        });
+    }
+
+    // Your chosen tab editor (Settings), or whatever your computer opens this kind of file with.
+    void editTabFile (const juce::String& path)
+    {
+        const juce::File f (path);
+        if (! juce::File::isAbsolutePath (path) || ! f.existsAsFile())
+        {
+            auto* o = new juce::DynamicObject();
+            o->setProperty ("error", "missing");
+            o->setProperty ("path", path);
+            web->emitEventIfBrowserIsVisible ("studioTabFile", juce::var (o));
+            return;
+        }
+        const juce::File app (settings.getValue ("tabEditor"));
+        if (app.exists())
+        {
+           #if JUCE_MAC
+            juce::ChildProcess open;
+            open.start (juce::StringArray { "/usr/bin/open", "-a", app.getFullPathName(), f.getFullPathName() }, 0);
+            open.waitForProcessToFinish (5000);
+           #else
+            app.startAsProcess (f.getFullPathName().quoted());
+           #endif
+        }
+        else
+        {
+            f.startAsProcess();
+        }
+    }
+
+    void pickTabEditor()
+    {
+       #if JUCE_MAC
+        const auto start = juce::File ("/Applications");
+        const juce::String pattern ("*.app");
+       #else
+        const auto start = juce::File::getSpecialLocation (juce::File::globalApplicationsDirectory);
+        const juce::String pattern ("*.exe");
+       #endif
+        chooser = std::make_unique<juce::FileChooser> ("Choose your tab editor", start, pattern);
+        const juce::Component::SafePointer<MainComponent> self (this);
+        chooser->launchAsync (juce::FileBrowserComponent::openMode | juce::FileBrowserComponent::canSelectFiles,
+                              [self] (const juce::FileChooser& fc)
+        {
+            if (self == nullptr) return;
+            const auto f = fc.getResult();
+            if (f != juce::File())
+            {
+                self->settings.setValue ("tabEditor", f.getFullPathName());
+                self->settings.saveIfNeeded();
+            }
+            self->sendStatus();
+        });
+    }
+
+    juce::String tabEditorName() const
+    {
+        const juce::File app (settings.getValue ("tabEditor"));
+        return app.exists() ? app.getFileNameWithoutExtension() : juce::String();
+    }
+
+    // The page lists the tab files exercises are linked to, with the time of the copy it has.
+    void watchTabFiles (const juce::var& files)
+    {
+        watchedTabs.clear();
+        if (auto* arr = files.getArray())
+            for (const auto& v : *arr)
+            {
+                WatchedTab w;
+                w.ex = v.getProperty ("ex", {}).toString();
+                w.path = v.getProperty ("path", {}).toString();
+                w.mtime = (juce::int64) (double) v.getProperty ("mtime", 0.0);
+                if (w.path.isNotEmpty() && juce::File::isAbsolutePath (w.path))
+                    watchedTabs.push_back (w);
+            }
+        checkTabFiles();   // also picks up files saved while Studio was closed
+    }
+
+    void checkTabFiles()
+    {
+        for (auto& w : watchedTabs)
+        {
+            const juce::File f (w.path);
+            if (! f.existsAsFile()) continue;
+            const auto t = f.getLastModificationTime().toMilliseconds();
+            // reload once the save has finished (the time hasn't changed in the last half second)
+            if (t > w.mtime && juce::Time::currentTimeMillis() - t > 500)
+            {
+                w.mtime = t;
+                sendTabFile (f, w.ex, true);
+            }
+        }
+    }
 
     void tabMessage (const juce::var& m)
     {
