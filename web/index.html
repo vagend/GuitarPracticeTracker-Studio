@@ -1290,6 +1290,9 @@ $('#dxTabEdit').onclick=()=>{if(dxTab&&dxTab.path)studioSend({action:'tabEdit',p
 async function tabFileEvent(m){if(!m)return;
   if(m.cancel){tabPicking=false;return}
   if(m.error){if(m.reload)return;tabPicking=false;
+    if(m.edit&&(m.error=='noapp'||m.error=='editor')){const ext=(String(m.path).match(/\.[^.\/\\]+$/)||[''])[0];
+      if(await ask('',(m.error=='noapp'?'Nothing on this computer is set up to open '+ext+' files.':'Your tab editor couldn’t open this tab.')+' Choose the program you edit tabs with (for example Guitar Pro or TuxGuitar), and Studio will open the tab with it.',{ok:'Choose…'}))
+        studioSend({action:'tabEditorPick',then:m.path});return}
     tell(m.error=='missing'?'Studio can’t find “'+shortPath(m.path)+'”. It may have been moved or deleted. Use Open file… to link the tab again.':m.error=='big'?'That file is too big for a tab. Tabs up to 2 MB can be used.':'Studio couldn’t read that file.');return}
   const t={kind:'file',name:m.name,data:m.data,path:m.path,mtime:m.mtime};
   try{t.info=await readTab(t)}catch(x){if(!m.reload){tabPicking=false;tell('Studio couldn’t read “'+m.name+'” as a tab. It reads Guitar Pro (.gp, .gp3–.gp5, .gpx), MusicXML (.xml, .musicxml, .mxl) and Capella (.capx) files.')}return}

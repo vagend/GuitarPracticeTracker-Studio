@@ -495,7 +495,7 @@ private:
         else if (action == "tabPick") { pickTabFile(); return; }
         else if (action == "tabEdit") { editTabFile (msg.getProperty ("path", {}).toString()); return; }
         else if (action == "tabWatch") { watchTabFiles (msg.getProperty ("files", {})); return; }
-        else if (action == "tabEditorPick") { pickTabEditor(); return; }
+        else if (action == "tabEditorPick") { pickTabEditor (msg.getProperty ("then", {}).toString()); return; }
         else if (action == "tabEditorClear") { settings.setValue ("tabEditor", juce::String()); settings.saveIfNeeded(); }
         else if (action == "showData") appData.revealToUser();
         else if (action == "openSource") juce::URL ("https://github.com/vagend/GuitarPracticeTracker-Studio").launchInDefaultBrowser();
@@ -1042,35 +1042,42 @@ private:
     }
 
     // Your chosen tab editor (Settings), or whatever your computer opens this kind of file with.
+    // If nothing opens it, the page says so and offers to choose a tab editor.
     void editTabFile (const juce::String& path)
     {
         const juce::File f (path);
-        if (! juce::File::isAbsolutePath (path) || ! f.existsAsFile())
+        auto tell = [this, &path] (const char* error)
         {
             auto* o = new juce::DynamicObject();
-            o->setProperty ("error", "missing");
+            o->setProperty ("error", error);
             o->setProperty ("path", path);
+            o->setProperty ("edit", true);
             web->emitEventIfBrowserIsVisible ("studioTabFile", juce::var (o));
-            return;
-        }
+        };
+        if (! juce::File::isAbsolutePath (path) || ! f.existsAsFile()) { tell ("missing"); return; }
+
         const juce::File app (settings.getValue ("tabEditor"));
-        if (app.exists())
+        bool opened = false;
+       #if JUCE_MAC
+        // "open" reports whether anything could open the file (macOS shows nothing itself)
+        juce::StringArray cmd { "/usr/bin/open" };
+        if (app.exists()) cmd.addArray ({ "-a", app.getFullPathName() });
+        cmd.add (f.getFullPathName());
+        juce::ChildProcess open;
+        if (open.start (cmd, juce::ChildProcess::wantStdErr))
         {
-           #if JUCE_MAC
-            juce::ChildProcess open;
-            open.start (juce::StringArray { "/usr/bin/open", "-a", app.getFullPathName(), f.getFullPathName() }, 0);
-            open.waitForProcessToFinish (5000);
-           #else
-            app.startAsProcess (f.getFullPathName().quoted());
-           #endif
+            open.readAllProcessOutput();
+            opened = open.waitForProcessToFinish (10000) && open.getExitCode() == 0;
         }
-        else
-        {
-            f.startAsProcess();
-        }
+       #else
+        opened = app.exists() ? app.startAsProcess (f.getFullPathName().quoted())
+                              : f.startAsProcess();
+       #endif
+        if (! opened)
+            tell (app.exists() ? "editor" : "noapp");
     }
 
-    void pickTabEditor()
+    void pickTabEditor (const juce::String& thenOpen = {})
     {
        #if JUCE_MAC
         const auto start = juce::File ("/Applications");
@@ -1082,7 +1089,7 @@ private:
         chooser = std::make_unique<juce::FileChooser> ("Choose your tab editor", start, pattern);
         const juce::Component::SafePointer<MainComponent> self (this);
         chooser->launchAsync (juce::FileBrowserComponent::openMode | juce::FileBrowserComponent::canSelectFiles,
-                              [self] (const juce::FileChooser& fc)
+                              [self, thenOpen] (const juce::FileChooser& fc)
         {
             if (self == nullptr) return;
             const auto f = fc.getResult();
@@ -1092,6 +1099,8 @@ private:
                 self->settings.saveIfNeeded();
             }
             self->sendStatus();
+            if (f != juce::File() && thenOpen.isNotEmpty())
+                self->editTabFile (thenOpen);
         });
     }
 
