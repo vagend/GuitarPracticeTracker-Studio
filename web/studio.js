@@ -11,6 +11,7 @@ window.STUDIO_CHANGES = [
     'Tabs: give an exercise a tab in Edit exercise (Guitar Pro, MusicXML or Capella file, or type it). Open tab shows it in its own window.',
     'With Use tab on (on the Exercise card), the tab\u2019s tempo is the goal, the bars you select in the tab are the tempo ladder\u2019s length, and the metronome follows the tab\u2019s time signatures and tempo changes. Use tab off brings back the exercise\u2019s own settings.',
     'Exercises: click a column heading to sort by it, again to reverse.',
+    'Saving an exercise you opened no longer makes a copy of it, and Studio won\u2019t save two exercises with the same name, technique and subdivision.',
     'Edit in tab editor opens the exercise\u2019s tab file in your tab editor (Settings \u2192 Tab editor, or your computer\u2019s default). When you save it there, Studio reloads it and keeps your selected bars.',
     'Settings \u2192 Color scheme \u2192 Tab colors: follow the color scheme or white paper. Tabs are drawn by alphaTab (alphatab.net).'
   ]],

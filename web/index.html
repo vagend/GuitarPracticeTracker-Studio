@@ -1076,8 +1076,10 @@ $('#dlgEx').addEventListener('close',async()=>{
   if(!v.name){toast('The exercise needs a name');return}
   {const old=editingEx!=null?exById(editingEx).tab||null:null;v.tab=dxTab;
    if(dxTab!==old){v.tabSel=null;v.tabTrack=null;v.useTab=!!dxTab;if(CURVE.on||CURVE.hold)curveCancel()}}
-  if(editingEx!=null)Object.assign(exById(editingEx),v);
-  if(editingEx!=null&&editingEx==T.ex&&!v.metronome&&(CURVE.on||CURVE.hold))curveCancel();
+  // no two exercises with the same name, technique and subdivision
+  const same=D.exercises.find(x=>x.id!==editingEx&&(x.name||'').trim().toLowerCase()==v.name.toLowerCase()&&(x.technique||'')==(v.technique||'')&&(x.sub||'').trim().toLowerCase()==(v.sub||'').toLowerCase());
+  if(same){tell('There’s already an exercise called “'+v.name+'” with the same technique and subdivision.');return}
+  if(editingEx!=null){Object.assign(exById(editingEx),v);if(editingEx==T.ex&&!v.metronome&&(CURVE.on||CURVE.hold))curveCancel()}
   else{const id=Math.max(0,...D.exercises.map(x=>x.id))+1;D.exercises.push(Object.assign({id},v));if(!running()&&T.acc==0){T.ex=id;saveT()}}
   save();render();
 });
