@@ -7,7 +7,7 @@ name: Vendor alphaTab
 on:
   push:
     branches: [test]
-    paths: [web/vendor/alphatab.version]
+    paths: [web/vendor/alphatab.version, .github/workflows/vendor-alphatab.yml]
 
 permissions:
   contents: write
@@ -27,8 +27,9 @@ jobs:
           echo "package contents:"; find package -maxdepth 2 | sort
           D=web/vendor/alphatab
           rm -rf "$D"; mkdir -p "$D"
-          # The runtime files only: scripts, fonts and the sound bank (no type definitions or source maps).
-          rsync -a --exclude '*.d.ts' --exclude '*.map' package/dist/ "$D/"
+          # The runtime files only: scripts, fonts and the sound bank (no type definitions, source maps
+          # or the add-ons for website build tools).
+          rsync -a --exclude '*.d.ts' --exclude '*.map' --exclude '*.vite.*' --exclude '*.webpack.*' package/dist/ "$D/"
           cp package/LICENSE* "$D/" 2>/dev/null || true
           cat > "$D/SOURCE.md" <<NOTE
           # alphaTab $V
