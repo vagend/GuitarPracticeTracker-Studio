@@ -46,7 +46,7 @@ jobs:
       - name: Build
         shell: pwsh
         run: |
-          cmake -S . -B build -A x64 -DSTUDIO_BUILD=${{ github.run_number }} -DSTUDIO_CHANNEL=$env:CHANNEL "-DJUCE_WEBVIEW2_PACKAGE_LOCATION=$env:RUNNER_TEMP\nuget"
+          cmake -S . -B build -A x64 -DSTUDIO_BUILD=${{ github.run_number }} "-DSTUDIO_CHANNEL=$env:CHANNEL" "-DJUCE_WEBVIEW2_PACKAGE_LOCATION=$env:RUNNER_TEMP\nuget"
           if ($LASTEXITCODE -ne 0) { exit 1 }
           cmake --build build --config Release --parallel
           if ($LASTEXITCODE -ne 0) { exit 1 }
