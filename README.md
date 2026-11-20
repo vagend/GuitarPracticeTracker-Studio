@@ -34,6 +34,14 @@ GitHub builds both every time `main` changes. After installing, Studio offers ne
 
 Not yet: a chain of several plugins.
 
+## Test builds
+
+New features are tried out on the `test` branch first. Each push there builds **Guitar Practice
+Studio Test**, a separate app with its own practice log, exercises and settings that installs next to
+the normal one. It's published as the `test` pre-release, and only the test app updates from it. The
+normal app only ever updates from the latest release, which is built from `main` when a change is
+ready.
+
 ## Building it yourself on a Mac
 
 1. Install Xcode from the App Store and open it once.

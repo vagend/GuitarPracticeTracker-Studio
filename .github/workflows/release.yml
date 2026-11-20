@@ -1,11 +1,13 @@
-# Builds Guitar Practice Studio for Windows (installer) and Mac (one app for Apple Silicon and Intel)
-# every time you push to main, and puts them on the repo's Releases page as the latest release.
-# Studio checks that release's BUILD.txt to offer updates.
+# Builds Guitar Practice Studio for Windows (installer) and Mac (one app for Apple Silicon and Intel).
+#   push to main -> the public app, published as the "latest" release (what everyone's Studio updates from)
+#   push to test -> Guitar Practice Studio Test, a separate app with its own data, published as the
+#                   "test" pre-release; only the test app updates from it, the public app never sees it
+# Each app checks its own release's BUILD.txt to offer updates.
 name: Build Guitar Practice Studio
 
 on:
   push:
-    branches: [main]
+    branches: [main, test]
     paths-ignore: ["**.md", ".gitignore", "LICENSE", "Build Studio (Mac).command"]
   workflow_dispatch:   # lets you start a build from the Actions tab
 
@@ -13,12 +15,15 @@ permissions:
   contents: write      # needed to publish the release
 
 concurrency:
-  group: build
+  group: build-${{ github.ref }}   # a newer push replaces a build of the same branch only
   cancel-in-progress: true
 
 env:
   JUCE_VERSION: "9.0.5"
   WEBVIEW2_VERSION: "1.0.3485.44"
+  CHANNEL: ${{ github.ref == 'refs/heads/test' && 'test' || 'public' }}
+  APP:     ${{ github.ref == 'refs/heads/test' && 'Guitar Practice Studio Test' || 'Guitar Practice Studio' }}
+  FILES:   ${{ github.ref == 'refs/heads/test' && 'GuitarPracticeStudioTest' || 'GuitarPracticeStudio' }}
 
 jobs:
   windows:
@@ -41,7 +46,7 @@ jobs:
       - name: Build
         shell: pwsh
         run: |
-          cmake -S . -B build -A x64 -DSTUDIO_BUILD=${{ github.run_number }} "-DJUCE_WEBVIEW2_PACKAGE_LOCATION=$env:RUNNER_TEMP\nuget"
+          cmake -S . -B build -A x64 -DSTUDIO_BUILD=${{ github.run_number }} -DSTUDIO_CHANNEL=$env:CHANNEL "-DJUCE_WEBVIEW2_PACKAGE_LOCATION=$env:RUNNER_TEMP\nuget"
           if ($LASTEXITCODE -ne 0) { exit 1 }
           cmake --build build --config Release --parallel
           if ($LASTEXITCODE -ne 0) { exit 1 }
@@ -50,7 +55,7 @@ jobs:
       - name: Check the app opens
         shell: pwsh
         run: |
-          $p = Start-Process "build\GuitarPracticeStudio_artefacts\Release\Guitar Practice Studio.exe" -PassThru
+          $p = Start-Process "build\GuitarPracticeStudio_artefacts\Release\$env:APP.exe" -PassThru
           Start-Sleep 15
           if ($p.HasExited) { throw "Studio closed by itself (exit code $($p.ExitCode))" }
           Stop-Process $p -Force
@@ -62,29 +67,30 @@ jobs:
           $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
           if (!(Test-Path $iscc)) { choco install innosetup -y --no-progress | Out-Null }
           if (!(Test-Path $iscc)) { $iscc = (Get-Command iscc).Source }
-          & $iscc "/DAppVersion=0.7.${{ github.run_number }}" "/DSourceDir=$PWD\build\GuitarPracticeStudio_artefacts\Release" "/O$PWD\dist" packaging\windows-installer.iss
+          $test = @(); if ($env:CHANNEL -eq 'test') { $test = @('/DTest') }
+          & $iscc @test "/DAppVersion=0.7.${{ github.run_number }}" "/DSourceDir=$PWD\build\GuitarPracticeStudio_artefacts\Release" "/O$PWD\dist" packaging\windows-installer.iss
           if ($LASTEXITCODE -ne 0) { exit 1 }
 
       - name: Check the installer
         shell: pwsh
         run: |
-          $app = "$env:LOCALAPPDATA\Programs\Guitar Practice Studio"
+          $app = "$env:LOCALAPPDATA\Programs\$env:APP"
           # -Wait would also wait for Studio, which the installer opens at the end
-          $s = Start-Process dist\GuitarPracticeStudio-setup.exe -ArgumentList "/VERYSILENT","/SUPPRESSMSGBOXES","/NORESTART" -PassThru
+          $s = Start-Process "dist\$env:FILES-setup.exe" -ArgumentList "/VERYSILENT","/SUPPRESSMSGBOXES","/NORESTART" -PassThru
           if (!$s.WaitForExit(300000)) { throw "installer didn't finish within 5 minutes" }
           Start-Sleep 5
-          if (!(Get-Process "Guitar Practice Studio" -ErrorAction SilentlyContinue)) { throw "installer didn't open Studio" }
-          if (!(Test-Path "$app\Guitar Practice Studio.exe")) { throw "app not installed" }
+          if (!(Get-Process $env:APP -ErrorAction SilentlyContinue)) { throw "installer didn't open Studio" }
+          if (!(Test-Path "$app\$env:APP.exe")) { throw "app not installed" }
           if (!(Test-Path "$app\web\index.html")) { throw "web files not installed" }
-          Get-Process "Guitar Practice Studio" -ErrorAction SilentlyContinue | Stop-Process -Force
-          $u = Get-ItemProperty "HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\*" | Where-Object DisplayName -eq "Guitar Practice Studio"
+          Get-Process $env:APP -ErrorAction SilentlyContinue | Stop-Process -Force
+          $u = Get-ItemProperty "HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\*" | Where-Object DisplayName -eq $env:APP
           if (!$u) { throw "not listed under Apps" }
           "Installed: $($u.DisplayName) $($u.DisplayVersion)"
 
       - uses: actions/upload-artifact@v4
         with:
           name: studio-windows
-          path: dist/GuitarPracticeStudio-setup.exe
+          path: dist/${{ env.FILES }}-setup.exe
           if-no-files-found: error
           retention-days: 3
 
@@ -101,18 +107,18 @@ jobs:
 
       - name: Build (Apple Silicon and Intel in one app)
         run: |
-          cmake -S . -B build -G Xcode -DSTUDIO_BUILD=${{ github.run_number }} "-DCMAKE_OSX_ARCHITECTURES=arm64;x86_64"
+          cmake -S . -B build -G Xcode -DSTUDIO_BUILD=${{ github.run_number }} -DSTUDIO_CHANNEL=$CHANNEL "-DCMAKE_OSX_ARCHITECTURES=arm64;x86_64"
           cmake --build build --config Release -- -quiet
-          APP="build/GuitarPracticeStudio_artefacts/Release/Guitar Practice Studio.app"
+          APP="build/GuitarPracticeStudio_artefacts/Release/$APP.app"
           # ad-hoc signature: without one, macOS won't offer "Open Anyway" for a downloaded app
           codesign --force --deep --sign - "$APP"
           codesign --verify --deep --strict --verbose=2 "$APP"
-          lipo -info "$APP/Contents/MacOS/Guitar Practice Studio"
+          lipo -info "$APP/Contents/MacOS/${{ env.APP }}"
           test -f "$APP/Contents/Resources/web/index.html"
 
       - name: Check the app opens
         run: |
-          "build/GuitarPracticeStudio_artefacts/Release/Guitar Practice Studio.app/Contents/MacOS/Guitar Practice Studio" &
+          "build/GuitarPracticeStudio_artefacts/Release/$APP.app/Contents/MacOS/$APP" &
           pid=$!
           sleep 15
           kill -0 $pid || { echo "Studio closed by itself"; exit 1; }
@@ -121,27 +127,28 @@ jobs:
 
       - name: Zip and disk image
         run: |
-          APP="build/GuitarPracticeStudio_artefacts/Release/Guitar Practice Studio.app"
+          NAME="$APP"
+          APP="build/GuitarPracticeStudio_artefacts/Release/$NAME.app"
           mkdir -p dist
           # zip: what Studio downloads to update itself. ditto keeps permissions, links and signature.
-          ditto -c -k --keepParent "$APP" dist/GuitarPracticeStudio-mac.zip
+          ditto -c -k --keepParent "$APP" "dist/$FILES-mac.zip"
           # dmg: for first installs, with an Applications shortcut to drag the app onto
           S="$RUNNER_TEMP/dmg"; mkdir -p "$S"
-          ditto "$APP" "$S/Guitar Practice Studio.app"
+          ditto "$APP" "$S/$NAME.app"
           ln -s /Applications "$S/Applications"
           for i in 1 2 3; do   # hdiutil is sometimes "busy" on CI machines
-            hdiutil create -volname "Guitar Practice Studio" -srcfolder "$S" -ov -format UDZO dist/GuitarPracticeStudio-mac.dmg && break
+            hdiutil create -volname "$NAME" -srcfolder "$S" -ov -format UDZO "dist/$FILES-mac.dmg" && break
             sleep 5
           done
-          test -f dist/GuitarPracticeStudio-mac.dmg
+          test -f "dist/$FILES-mac.dmg"
           ls -la dist
 
       - uses: actions/upload-artifact@v4
         with:
           name: studio-mac
           path: |
-            dist/GuitarPracticeStudio-mac.zip
-            dist/GuitarPracticeStudio-mac.dmg
+            dist/${{ env.FILES }}-mac.zip
+            dist/${{ env.FILES }}-mac.dmg
           if-no-files-found: error
           retention-days: 3
 
@@ -179,3 +186,32 @@ jobs:
           (GuitarPracticeStudio-mac.zip is what Studio uses to update itself.)
 
           After that, Studio offers new builds itself: Settings > Studio > Check for updates."
+
+  release-test:
+    needs: [windows, mac]
+    if: github.ref == 'refs/heads/test'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: studio-*
+          merge-multiple: true
+          path: out
+
+      - name: Publish the test build (a pre-release, never marked latest)
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          gh release delete test --yes --cleanup-tag || true
+          echo "${{ github.run_number }}" > out/BUILD.txt
+          ls -la out
+          gh release create test out/GuitarPracticeStudioTest-setup.exe out/GuitarPracticeStudioTest-mac.dmg \
+            out/GuitarPracticeStudioTest-mac.zip out/BUILD.txt \
+            --target "$GITHUB_SHA" \
+            --title "Guitar Practice Studio Test (build ${{ github.run_number }}, work in progress)" \
+            --prerelease --latest=false \
+            --notes "**Work in progress, not for general use.** Built from the test branch (${GITHUB_SHA::7}) on $(date -u '+%Y-%m-%d %H:%M') UTC.
+
+          Installs as a separate app, **Guitar Practice Studio Test**, next to the normal one, with its own practice log, exercises and settings. The normal app never updates to these builds.
+          Get the normal app from the Latest release instead."

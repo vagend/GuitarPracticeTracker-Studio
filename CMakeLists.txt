@@ -7,6 +7,23 @@ project(GuitarPracticeStudio VERSION 0.7.1)
 # GitHub Actions passes its run number; builds made on your own computer are build 0.
 set(STUDIO_BUILD "0" CACHE STRING "Build number")
 
+# "test" builds (from the test branch) are a separate app, Guitar Practice Studio Test, with
+# its own data, installed next to the real one, and updated only from the "test" release.
+set(STUDIO_CHANNEL "public" CACHE STRING "public or test")
+if(STUDIO_CHANNEL STREQUAL "test")
+    set(STUDIO_NAME   "Guitar Practice Studio Test")
+    set(STUDIO_BUNDLE "com.vagend.guitarpracticestudio.test")
+    set(STUDIO_FILES  "GuitarPracticeStudioTest")   # download file names
+    set(STUDIO_RELEASE_URL "https://github.com/vagend/GuitarPracticeTracker-Studio/releases/download/test/")
+    set(STUDIO_TEST 1)
+else()
+    set(STUDIO_NAME   "Guitar Practice Studio")
+    set(STUDIO_BUNDLE "com.vagend.guitarpracticestudio")
+    set(STUDIO_FILES  "GuitarPracticeStudio")
+    set(STUDIO_RELEASE_URL "https://github.com/vagend/GuitarPracticeTracker-Studio/releases/latest/download/")
+    set(STUDIO_TEST 0)
+endif()
+
 # JUCE is downloaded into external/JUCE by the setup script (it is not kept in git).
 set(JUCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/external/JUCE" CACHE PATH "Path to the JUCE source folder")
 if(NOT EXISTS "${JUCE_DIR}/CMakeLists.txt")
@@ -15,9 +32,9 @@ endif()
 add_subdirectory("${JUCE_DIR}" JUCE)
 
 juce_add_gui_app(GuitarPracticeStudio
-    PRODUCT_NAME "Guitar Practice Studio"
+    PRODUCT_NAME "${STUDIO_NAME}"
     COMPANY_NAME "vagend"
-    BUNDLE_ID "com.vagend.guitarpracticestudio"
+    BUNDLE_ID "${STUDIO_BUNDLE}"
     ICON_BIG "${CMAKE_CURRENT_SOURCE_DIR}/web/icons/studio-1024.png"   # brass pocket-watch pick
     NEEDS_WEB_BROWSER TRUE
     NEEDS_CURL FALSE
@@ -39,6 +56,9 @@ target_compile_definitions(GuitarPracticeStudio
         JUCE_USE_WIN_WEBVIEW2_WITH_STATIC_LINKING=1
         JUCE_ASIO=1                   # Windows: low-latency ASIO audio interfaces
         STUDIO_BUILD=${STUDIO_BUILD}
+        STUDIO_TEST=${STUDIO_TEST}
+        STUDIO_FILES="${STUDIO_FILES}"
+        STUDIO_RELEASE_URL="${STUDIO_RELEASE_URL}"
         JUCE_APPLICATION_NAME_STRING="$<TARGET_PROPERTY:GuitarPracticeStudio,JUCE_PRODUCT_NAME>"
         JUCE_APPLICATION_VERSION_STRING="$<TARGET_PROPERTY:GuitarPracticeStudio,JUCE_VERSION>")
 

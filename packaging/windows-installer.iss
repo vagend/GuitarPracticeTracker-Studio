@@ -8,27 +8,38 @@
 #ifndef AppVersion
   #define AppVersion "0.0.0"
 #endif
+; /DTest builds Guitar Practice Studio Test: a separate app (own install folder, Start-menu entry,
+; Apps entry and data) that installs next to the real one.
+#ifdef Test
+  #define AppName "Guitar Practice Studio Test"
+  #define AppGuid "{{6B0C9E52-4D7F-4F7B-9A43-2F3B8E1C7D15}"
+  #define FileBase "GuitarPracticeStudioTest"
+#else
+  #define AppName "Guitar Practice Studio"
+  #define AppGuid "{{E2DBE3AF-3CDC-4BE4-B370-99B8F8932DC7}"
+  #define FileBase "GuitarPracticeStudio"
+#endif
 #ifndef SourceDir
   #define SourceDir "..\build\GuitarPracticeStudio_artefacts\Release"
 #endif
 
 [Setup]
-AppId={{E2DBE3AF-3CDC-4BE4-B370-99B8F8932DC7}
-AppName=Guitar Practice Studio
+AppId={#AppGuid}
+AppName={#AppName}
 AppVersion={#AppVersion}
-AppVerName=Guitar Practice Studio {#AppVersion}
+AppVerName={#AppName} {#AppVersion}
 AppPublisher=vagend
 AppPublisherURL=https://github.com/vagend/GuitarPracticeTracker-Studio
-DefaultDirName={userpf}\Guitar Practice Studio
-DefaultGroupName=Guitar Practice Studio
+DefaultDirName={userpf}\{#AppName}
+DefaultGroupName={#AppName}
 DisableProgramGroupPage=yes
 DisableDirPage=yes
 PrivilegesRequired=lowest
 ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
-OutputBaseFilename=GuitarPracticeStudio-setup
-UninstallDisplayIcon={app}\Guitar Practice Studio.exe
-UninstallDisplayName=Guitar Practice Studio
+OutputBaseFilename={#FileBase}-setup
+UninstallDisplayIcon={app}\{#AppName}.exe
+UninstallDisplayName={#AppName}
 Compression=lzma2
 SolidCompression=yes
 WizardStyle=modern
@@ -40,16 +51,16 @@ RestartApplications=no
 Type: filesandordirs; Name: "{app}\web"
 
 [Files]
-Source: "{#SourceDir}\Guitar Practice Studio.exe"; DestDir: "{app}"; Flags: ignoreversion
+Source: "{#SourceDir}\{#AppName}.exe"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#SourceDir}\web\*"; DestDir: "{app}\web"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [Icons]
-Name: "{userprograms}\Guitar Practice Studio"; Filename: "{app}\Guitar Practice Studio.exe"
-Name: "{userdesktop}\Guitar Practice Studio"; Filename: "{app}\Guitar Practice Studio.exe"; Tasks: desktopicon
+Name: "{userprograms}\{#AppName}"; Filename: "{app}\{#AppName}.exe"
+Name: "{userdesktop}\{#AppName}"; Filename: "{app}\{#AppName}.exe"; Tasks: desktopicon
 
 [Tasks]
 Name: "desktopicon"; Description: "Put a shortcut on the desktop"; Flags: unchecked
 
 [Run]
 ; no skipifsilent: after an update (run with /SILENT) Studio opens again
-Filename: "{app}\Guitar Practice Studio.exe"; Description: "Open Guitar Practice Studio"; Flags: nowait postinstall
+Filename: "{app}\{#AppName}.exe"; Description: "Open {#AppName}"; Flags: nowait postinstall

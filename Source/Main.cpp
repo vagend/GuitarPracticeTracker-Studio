@@ -24,13 +24,20 @@
 
 namespace
 {
-// Updates come from the newest GitHub release, built by .github/workflows/release.yml.
-const juce::String releaseFiles ("https://github.com/vagend/GuitarPracticeTracker-Studio/releases/latest/download/");
+// Updates come from the GitHub release built by .github/workflows/release.yml: "latest" for
+// the public app, "test" for Guitar Practice Studio Test (see STUDIO_CHANNEL in CMakeLists.txt).
+#ifndef STUDIO_RELEASE_URL
+ #define STUDIO_RELEASE_URL "https://github.com/vagend/GuitarPracticeTracker-Studio/releases/latest/download/"
+ #define STUDIO_FILES "GuitarPracticeStudio"
+ #define STUDIO_TEST 0
+#endif
+const juce::String appName (JUCE_APPLICATION_NAME_STRING);   // "Guitar Practice Studio" or "... Test"
+const juce::String releaseFiles (STUDIO_RELEASE_URL);
 
 #if JUCE_MAC
-const juce::String updateAsset ("GuitarPracticeStudio-mac.zip");
+const juce::String updateAsset (juce::String (STUDIO_FILES) + "-mac.zip");
 #else
-const juce::String updateAsset ("GuitarPracticeStudio-setup.exe");
+const juce::String updateAsset (juce::String (STUDIO_FILES) + "-setup.exe");
 #endif
 
 std::unique_ptr<juce::InputStream> openDownload (const juce::String& name, int timeoutMs)
@@ -54,7 +61,7 @@ int latestReleaseBuild()
 juce::String downloadAndStartUpdate()
 {
     auto temp = juce::File::getSpecialLocation (juce::File::tempDirectory)
-                    .getChildFile ("GuitarPracticeStudioUpdate");
+                    .getChildFile (juce::String (STUDIO_FILES) + "Update");
     temp.deleteRecursively();
     temp.createDirectory();
     const auto file = temp.getChildFile (updateAsset);
@@ -76,15 +83,15 @@ juce::String downloadAndStartUpdate()
         || ! unzip.waitForProcessToFinish (120000) || unzip.getExitCode() != 0)
         return "Couldn't unpack the update.";
 
-    const auto newApp = unpacked.getChildFile ("Guitar Practice Studio.app");
+    const auto newApp = unpacked.getChildFile (appName + ".app");
     const auto oldApp = juce::File::getSpecialLocation (juce::File::currentApplicationFile);
     if (! newApp.isDirectory())
         return "The update didn't contain the app.";
 
     const auto q = [] (const juce::File& f) { return f.getFullPathName().quoted ('\'') ; };
-    const auto old = oldApp.getSiblingFile (".Guitar Practice Studio (previous).app");
+    const auto old = oldApp.getSiblingFile ("." + appName + " (previous).app");
     const auto log = juce::File::getSpecialLocation (juce::File::userHomeDirectory)
-                         .getChildFile ("Library/Logs/Guitar Practice Studio update.log");
+                         .getChildFile ("Library/Logs/" + appName + " update.log");
     log.getParentDirectory().createDirectory();
     const auto script = temp.getChildFile ("install.sh");
     // Move the old app aside, copy the new one in, put the old one back if that fails, then open it.
@@ -163,8 +170,8 @@ juce::String mimeTypeFor (const juce::File& f)
 juce::MemoryBlock brandAsStudio (juce::String html)
 {
     html = html.replace ("<title>Guitar Practice</title>",
-                         "<title>Guitar Practice Studio</title><script src=\"studio.js\"></script>")
-               .replace ("<h1>Guitar Practice</h1>", "<h1>Guitar Practice Studio</h1>")
+                         "<title>" + appName + "</title><script src=\"studio.js\"></script>")
+               .replace ("<h1>Guitar Practice</h1>", "<h1>" + appName + "</h1>")
                .replace ("const CHANGES=[", "const CHANGES=window.STUDIO_CHANGES||[");
 
     const juce::String key ("const APP_VERSION='");
@@ -966,9 +973,9 @@ public:
     {
         juce::LookAndFeel::setDefaultLookAndFeel (&studioLook());
         juce::PropertiesFile::Options opt;
-        opt.applicationName     = "Guitar Practice Studio";
+        opt.applicationName     = appName;
         opt.filenameSuffix      = ".settings";
-        opt.folderName          = "Guitar Practice Studio";
+        opt.folderName          = appName;   // the test app keeps its own settings and data
         opt.osxLibrarySubFolder = "Application Support";
         opt.storageFormat       = juce::PropertiesFile::storeAsXML;
         settings = std::make_unique<juce::PropertiesFile> (opt);
