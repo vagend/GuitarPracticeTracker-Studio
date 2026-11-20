@@ -216,6 +216,11 @@ dialog::backdrop{background:rgba(0,0,0,.4)}
 dialog h2{margin:0 0 12px;font:600 17px/1.3 system-ui,sans-serif}
 .fgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .fgrid .w{grid-column:1/-1}
+.tabsec{display:flex;flex-wrap:wrap;gap:8px;align-items:center;border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-top:4px}
+.tabsec .src{flex:1;min-width:200px;color:var(--mut)}.tabsec .src b{display:block;color:var(--fg);font-size:15px}
+.lenwrap{position:relative;display:inline-block}
+#exLenTab{position:absolute;left:0;top:0;bottom:0;display:flex;align-items:center;white-space:nowrap;font-weight:600;font-size:17px;color:var(--fg)}
+#exLenTab[hidden]{display:none}
 .fgrid input:not([type=checkbox]),.fgrid select,.fgrid textarea{width:100%}
 .chk small{display:block;color:var(--mut);font-size:12px;margin-top:1px}
 .opts{grid-column:1/-1;border-top:1px solid var(--line);padding-top:10px;display:flex;flex-direction:column;gap:8px}
@@ -262,6 +267,7 @@ iframe#trFrame{width:100%;border:0;height:900px;display:block;border-radius:10px
       <div class="row" style="margin-bottom:10px">
         <h2 style="margin:0">Exercise</h2>
         <span class="sp"></span>
+        <button id="openTab" hidden style="margin-right:8px">Open tab</button>
         <button id="editEx">Edit exercise</button>
       </div>
       <select id="exSel" style="width:100%" aria-label="Exercise"></select>
@@ -270,7 +276,7 @@ iframe#trFrame{width:100%;border:0;height:900px;display:block;border-radius:10px
       <details class="ladsec" id="ladSec" hidden>
         <summary><b>Tempo ladder</b> <span class="sub" id="ladSum"></span></summary>
         <div class="ladgrid">
-          <label title="How many measures one time through this exercise takes"><span>Length</span><input id="exLen" type="number" min="1" max="64" step="1" inputmode="numeric"> <small>measures</small></label>
+          <label title="How many measures one time through this exercise takes"><span>Length</span><span class="lenwrap"><input id="exLen" type="number" min="1" max="64" step="1" inputmode="numeric"><b id="exLenTab" hidden></b></span> <small id="exLenUnit">measures</small></label>
           <label title="The top of the ladder (110%). Leave empty to use the goal + 10%."><span>Ladder max</span><input id="exMax" type="number" min="0" step="1" inputmode="numeric"> <small>BPM</small></label>
           <label title="How many times you play the exercise at each tempo"><span>Repeats per tempo</span><input id="curveBars" type="number" min="1" max="64" step="1" inputmode="numeric"></label>
           <label title="Clicks on each beat at the new tempo before you start playing it"><span>Count-in before each new tempo</span><select id="curveReady"><option value="0">none</option><option value="1">1 measure</option><option value="2">2 measures</option><option value="4">4 measures</option></select></label>
@@ -519,6 +525,7 @@ iframe#trFrame{width:100%;border:0;height:900px;display:block;border-radius:10px
   <div class="card" style="margin-top:16px">
     <h2>Color scheme</h2>
     <div class="skins" id="skinPick"></div>
+    <label class="row" style="margin-top:14px;gap:10px">Tab colors<select id="stTabCol"><option value="theme">Follow color scheme</option><option value="paper">White paper</option></select></label>
   </div>
   <div class="grid2" style="margin-top:16px">
     <div class="card">
@@ -577,6 +584,11 @@ iframe#trFrame{width:100%;border:0;height:900px;display:block;border-radius:10px
       <label class="f">Ladder repeats per tempo<input id="dxReps" type="number" min="1" max="64" step="1" placeholder="4"></label>
       <label class="f">Measure label<input id="dxMetric" type="text" placeholder="BPM"></label>
       <label class="f w">Notes<textarea id="dxNotes" rows="2"></textarea></label>
+      <div class="f w">Tab
+        <div class="tabsec"><div class="src" id="dxTabInfo"></div>
+          <button type="button" id="dxTabFile">Open file…</button><button type="button" id="dxTabType">Type it…</button><button type="button" id="dxTabDel">Remove</button></div>
+        <input type="file" id="dxTabPick" hidden accept=".gp,.gp3,.gp4,.gp5,.gpx,.xml,.musicxml,.mxl,.capx,.atex,.alphatex,.txt">
+      </div>
       <div class="opts">
         <label class="chk"><input type="checkbox" id="dxMet"><span>Metronome<small>Off: Play starts only the practice timer.</small></span></label>
         <label class="chk"><input type="checkbox" id="dxArch"><span>Archived<small>Hides it from the exercise list. Its practice history is kept.</small></span></label>
@@ -588,6 +600,15 @@ iframe#trFrame{width:100%;border:0;height:900px;display:block;border-radius:10px
       <span class="sp"></span>
       <button value="delete" class="danger" id="dxDel" formnovalidate>Delete</button>
     </div>
+  </form>
+</dialog>
+<dialog id="dlgTex">
+  <form method="dialog">
+    <h2>Type a tab</h2>
+    <p class="sub" style="margin:0 0 8px">Written in alphaTex: <code>fret.string</code> for each note, <code>:8</code> or <code>:16</code> for note lengths, <code>|</code> between bars.</p>
+    <textarea id="texIn" rows="10" spellcheck="false" style="width:100%;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px"></textarea>
+    <div class="sub" id="texErr" style="min-height:20px"></div>
+    <div class="row" style="margin-top:8px"><button value="ok" class="primary">Use this</button><button value="cancel" formnovalidate>Cancel</button></div>
   </form>
 </dialog>
 <datalist id="subs"><option>8th</option><option>8th Triplets</option><option>16th</option><option>16th Triplets</option><option>Quarter</option></datalist>
@@ -805,23 +826,28 @@ function renderPractice(){
     '<div class="tile"><div class="k">All time</div><div class="v">'+fmtH(total)+' <small>· '+st.days+' days</small></div></div>';
   syncExSel();
   const ex=exById(T.ex),s=exStats(T.ex),m=metricOf(ex);
-  $('#exSub').innerHTML=ex?'<span>'+esc([ex.technique,ex.sub].filter(Boolean).join(' · '))+'</span>'+(ex.trainer?'':'<label class="sw'+(usesMet(ex)?' on':'')+'" id="swMet" title="Off: Play starts only the practice timer"><i></i>Metronome</label>'):'';
+  $('#exSub').innerHTML=ex?'<span>'+esc([ex.technique,ex.sub].filter(Boolean).join(' · '))+'</span>'+(ex.trainer?'':(ex.tab?'<label class="sw'+(tabOn(ex)?' on':'')+'" id="swTab" title="On: the tab sets the goal, the tempo ladder length and the metronome’s time signature"><i></i>Use tab</label>':'')+'<label class="sw'+(usesMet(ex)?' on':'')+'" id="swMet" title="Off: Play starts only the practice timer"><i></i>Metronome</label>'):'';
+  const stb=$('#swTab');if(stb)stb.onclick=e=>{e.preventDefault();ex.useTab=!ex.useTab;if(CURVE.on||CURVE.hold)curveCancel();TABPTR=null;save();render()};
   const sm=$('#swMet');if(sm)sm.onclick=e=>{e.preventDefault();ex.metronome=!usesMet(ex);
     if(!ex.metronome){if(CURVE.on||CURVE.hold)curveCancel();if(MET.on)metHalt()}   // off: stop it, not just its sound
     else if(running()&&!MET.on)metStart();                                        // on while practising: start it
     save();render();renderMetBtn()};
   $('#exInfo').innerHTML=ex?[
-    ['Goal',ex.goal?trim(ex.goal)+' <small class="sub">'+esc(m)+'</small>':'—'],
+    ['Goal',exGoal(ex)?trim(exGoal(ex))+' <small class="sub">'+esc(m)+'</small>':'—'],
     ['Best',s.best!=null?trim(s.best):'—'],
     ['Last time',s.last?(s.last.bpm!=null?trim(s.last.bpm)+' · ':'')+fmtDate(s.last.date):'—'],
     ['Total',fmtMin(s.tot)]
   ].map(([k,v])=>'<div><span>'+k+'</span><b>'+v+'</b></div>').join('')+(s.last&&s.last.effort?'<div><span>Last effort</span><b style="font-size:15px">'+effHtml(s.last.effort)+'</b></div>':'')+(ex.notes?'<div style="grid-column:1/-1"><span>Notes</span><div>'+esc(ex.notes)+'</div></div>':''):(hasPracticeEx()?'<div>No exercise selected</div>':'<div class="firstex" style="grid-column:1/-1"><b>No exercises yet</b><p class="sub">Add the things you practice — a lick, a scale, a song — with a goal tempo if it has one. The Fretboard tab is ready to use any time.</p><button class="primary" id="exFirst">+ Add your first exercise</button></div>');
-  $('#exSel').hidden=!hasPracticeEx();$('#editEx').hidden=!ex;const fx=$('#exFirst');if(fx)fx.onclick=()=>editEx(null);
+  $('#exSel').hidden=!hasPracticeEx();$('#editEx').hidden=!ex;$('#openTab').hidden=!ex||ex.trainer||!ex.tab;const fx=$('#exFirst');if(fx)fx.onclick=()=>editEx(null);
   const ls=$('#ladSec');ls.hidden=!ex||ex.trainer||!usesMet(ex);
   if(ex&&!ex.trainer){if(ls.open!=(D.settings.ladOpen!==false))ls.open=D.settings.ladOpen!==false;
     if(document.activeElement!=$('#exLen'))$('#exLen').value=ex.lenBars||1;
-    if(document.activeElement!=$('#exMax')){$('#exMax').value=ex.curveMax??'';$('#exMax').placeholder=ex.goal?Math.round(ex.goal*1.1):'—'}}
-  if(T.ex!==lastExEvt){lastExEvt=T.ex;dispatchEvent(new CustomEvent('gp:exercise',{detail:{id:T.ex??null,name:ex?ex.name:''}}))}
+    // with the tab in use, Length shows the tab's bars in the same place (the number box stays, hidden, so nothing moves)
+    const tl=tabOn(ex);$('#exLen').style.visibility=tl?'hidden':'';$('#exLenUnit').style.visibility=tl?'hidden':'';
+    $('#exLenTab').hidden=!tl;if(tl)$('#exLenTab').textContent=tabSelText(ex);
+    if(document.activeElement!=$('#exMax')){$('#exMax').value=ex.curveMax??'';$('#exMax').placeholder=exGoal(ex)?Math.round(exGoal(ex)*1.1):'—'}}
+  if(T.ex!==lastExEvt){lastExEvt=T.ex;dispatchEvent(new CustomEvent('gp:exercise',{detail:{id:T.ex??null,name:ex?ex.name:''}}));
+    if(TABWIN.open){if(ex&&ex.tab)openTab();else tabSend({type:'none',name:ex?ex.name:''})}}
   renderLadder();
   renderCurve();
   // today list
@@ -1022,6 +1048,7 @@ function editEx(id){
   const techs=[...new Set([...D.techniques,e.technique].filter(Boolean))];
   $('#dxTech').innerHTML='<option value="">— None —</option>'+techs.map(t=>'<option'+(t==e.technique?' selected':'')+'>'+esc(t)+'</option>').join('');
   $('#dxNotes').value=e.notes||'';$('#dxArch').checked=!!e.archived;$('#dxMet').checked=e.metronome!==false;
+  dxTab=e.tab||null;renderDxTab();
   $('#dxDel').hidden=id==null;$('#dlgEx').showModal()}
 $('#addEx').onclick=()=>editEx(null);
 $('#dlgEx').addEventListener('close',async()=>{
@@ -1032,6 +1059,8 @@ $('#dlgEx').addEventListener('close',async()=>{
   if(r!='save')return;
   const v={name:$('#dxName').value.trim(),technique:$('#dxTech').value,sub:$('#dxSub').value.trim(),goal:num($('#dxGoal').value),curveMax:num($('#dxMax').value),lenBars:(v=>v>0?Math.min(64,Math.round(v)):null)(num($('#dxLen').value)),curveBars:(v=>v>0?Math.min(64,Math.round(v)):null)(num($('#dxReps').value)),metric:$('#dxMetric').value.trim()||'BPM',notes:$('#dxNotes').value.trim(),archived:$('#dxArch').checked,metronome:$('#dxMet').checked};
   if(!v.name){toast('The exercise needs a name');return}
+  {const old=editingEx!=null?exById(editingEx).tab||null:null;v.tab=dxTab;
+   if(dxTab!==old){v.tabSel=null;v.tabTrack=null;v.useTab=!!dxTab;if(CURVE.on||CURVE.hold)curveCancel()}}
   if(editingEx!=null)Object.assign(exById(editingEx),v);
   if(editingEx!=null&&editingEx==T.ex&&!v.metronome&&(CURVE.on||CURVE.hold))curveCancel();
   else{const id=Math.max(0,...D.exercises.map(x=>x.id))+1;D.exercises.push(Object.assign({id},v));if(!running()&&T.acc==0){T.ex=id;saveT()}}
@@ -1139,7 +1168,7 @@ $('#sRange').onchange=renderStats;$('#sEx').onchange=renderProgress;
 function renderSettings(){
   const s=D.settings;
   renderSkins();
-  $('#stGoal').value=s.goal;$('#stPresets').value=s.presets.join(', ');$('#stVol').value=s.chimeVol;
+  $('#stGoal').value=s.goal;$('#stTabCol').value=s.tabColors=='paper'?'paper':'theme';$('#stPresets').value=s.presets.join(', ');$('#stVol').value=s.chimeVol;
   $('#stNotify').checked=!!s.notify;
   $('#bkInfo').innerHTML=D.entries.length+' entries, '+D.exercises.length+' exercises. Last backup: '+(s.lastBackup?new Date(s.lastBackup).toLocaleDateString():'never')+'. <span id="persist"></span>';
   try{navigator.storage&&navigator.storage.persisted&&navigator.storage.persisted().then(p=>{const e=$('#persist');if(e)e.textContent=p?'Storage is marked persistent.':''})}catch(e){}
@@ -1169,6 +1198,98 @@ $('#bkFile').onchange=async e=>{const f=e.target.files[0];e.target.value='';if(!
     if(!await ask('Restore backup?','Replace all current data with this backup ('+o.entries.length+' entries, '+o.exercises.length+' exercises)?',{ok:'Replace',danger:true}))return;
     const keepMet=D.settings.metro;D=o;D.settings=Object.assign({},DEFSET,D.settings||{});D.settings.metro=Object.assign(clone(MDEF),D.settings.metro||keepMet||{});D.efforts=D.efforts||clone(SEED.efforts);D.techniques=D.techniques||clone(SEED.techniques);fixTrainerEx();save();resetTimer();T.ex=(activeExercises().find(e=>!e.trainer)||{}).id;saveT();buildPresets();render();toast('Backup restored')}
   catch(x){tell('That file doesn’t look like a Guitar Practice backup.')}};
+
+
+// ---------- tab (Guitar Practice Studio) ----------
+// An exercise can carry a tab (ex.tab: a Guitar Pro / MusicXML / Capella file or typed alphaTex). With the
+// exercise's "Use tab" switch on, the tab's tempo is the goal, the bars selected in it (or the whole tab) are
+// the tempo ladder's length, and the metronome follows its time signatures and tempo changes. Switching it
+// off brings back the exercise's own goal and length, which are kept. The tab itself shows in its own window.
+const TAB_MAX_BYTES=2*1024*1024;
+let ATP=null;
+function loadAlphaTab(){return ATP||(ATP=new Promise((ok,no)=>{if(window.alphaTab)return ok(window.alphaTab);
+  const sc=document.createElement('script');sc.src='vendor/alphatab/alphaTab.min.js';sc.onload=()=>ok(window.alphaTab);sc.onerror=()=>{ATP=null;no(new Error('alphaTab not found'))};document.head.appendChild(sc)}))}
+function b64FromBytes(u8){let s='';for(let i=0;i<u8.length;i+=0x8000)s+=String.fromCharCode.apply(null,u8.subarray(i,i+0x8000));return btoa(s)}
+function bytesFromB64(b){const s=atob(b),u=new Uint8Array(s.length);for(let i=0;i<s.length;i++)u[i]=s.charCodeAt(i);return u}
+function tabBytes(t){return t.kind=='tex'?new TextEncoder().encode(t.data):bytesFromB64(t.data)}
+// Reads a tab and works out what Studio needs from it: bars, time signature and tempo of each bar.
+// Typed tabs report the first mistake with its line ("Line 3: Note string is out of range…").
+function texError(e){const E=e&&e.lexerDiagnostics?e:(e&&(e.cause||e.inner||e.innerError))||e||{};
+  const all=[].concat(...['lexerDiagnostics','parserDiagnostics','semanticDiagnostics'].map(k=>{const d=E[k];return d?(d.items||d):[]}));
+  const bad=all.filter(x=>!/can be removed/i.test(x.message||''));const x=bad[0]||all[0];
+  return x?(x.start&&x.start.line?'Line '+x.start.line+': ':'')+x.message:String(e&&e.message||e)}
+async function readTab(t){const AT=await loadAlphaTab();let sc;
+  if(t.kind=='tex'){try{const imp=new AT.importer.AlphaTexImporter();imp.initFromString(t.data,new AT.Settings());sc=imp.readScore()}catch(e){throw new Error(texError(e))}}
+  else sc=AT.importer.ScoreLoader.loadScoreFromBytes(tabBytes(t),new AT.Settings());
+  const mb=sc.masterBars;if(!mb.length)throw new Error('no bars');
+  let cur=sc.tempo||120;const tempos=[],ts=[];
+  mb.forEach(m=>{const a=(m.tempoAutomations||[]).filter(x=>x.ratioPosition<=0.001);if(a.length)cur=a[a.length-1].value;tempos.push(cur);
+    ts.push([m.timeSignatureNumerator||4,m.timeSignatureDenominator||4]);
+    const late=(m.tempoAutomations||[]).filter(x=>x.ratioPosition>0.001);if(late.length)cur=late[late.length-1].value});
+  const hasTempo=t.kind=='tex'?/\\tempo\b/.test(t.data):true;
+  return{title:sc.title||'',bars:mb.length,ts,tempos,tempo:tempos[0]||sc.tempo||120,hasTempo,tracks:sc.tracks.map(x=>x.name||'Track')}}
+function tabOn(ex){return !!(ex&&!ex.trainer&&ex.useTab&&ex.tab&&ex.tab.info)}
+function exGoal(ex){return tabOn(ex)&&ex.tab.info.hasTempo?Math.round(ex.tab.info.tempo):(ex&&ex.goal)}
+function tabSel(ex){const n=ex.tab.info.bars,s=ex.tabSel;return s&&s.from>=0&&s.to<n&&s.from<=s.to?s:{from:0,to:n-1}}
+function tabLen(ex){const s=tabSel(ex);return s.to-s.from+1}
+function tabSelText(ex){const s=tabSel(ex);return s.from==s.to?'Bar '+(s.from+1):'Bars '+(s.from+1)+'–'+(s.to+1)}
+function tabDesc(t){const i=t.info,fmt=t.kind=='tex'?'typed':(t.name.split('.').pop()||'').toUpperCase();
+  const tsl=[...new Set(i.ts.map(x=>x[0]+'/'+x[1]))].join(', ');return i.bars+' bar'+(i.bars==1?'':'s')+' · '+tsl+(i.hasTempo?' · '+Math.round(i.tempo)+' BPM':'')+' · '+fmt}
+
+// The metronome asks this at the start of every bar while the tab is in use: which bar of the tab, its beats,
+// and how much faster or slower than the tab's first tempo it is (tempo changes are scaled with the ladder).
+let TABPTR=null;const TABPAT={};
+function tabBarStart(){const ex=exById(T.ex);if(!tabOn(ex))return null;const I=ex.tab.info,s=tabSel(ex),M=MC();let b;
+  if(CURVE.on){b=(CURVE.counting||CURVE.first)?s.from:s.from+Math.max(0,(CURVE.bar||1)-1)}
+  else{if(TABPTR==null||TABPTR>s.to||TABPTR<s.from)TABPTR=s.from;b=TABPTR++}
+  b=Math.min(s.to,Math.max(s.from,b));
+  const [num,den]=I.ts[b]||[4,4],base=I.tempo||120,t=I.tempos[b]||base;
+  // x/8 bars click on every eighth note; the subdivision under each click halves to match
+  const sub=den>=8?Math.max(1,Math.round(M.sub/2)):M.sub;
+  let pat=M.pat;if(num!=M.beats||sub!=M.sub){const k=num+'/'+sub+'/'+(patState().kind=='backbeat'?'rock':'basic');pat=TABPAT[k]||(TABPAT[k]=defPattern(num,sub,patState().kind=='backbeat'?'rock':'basic'))}
+  return{bar:b,beats:num,sub,pat,mult:(t/base)*(den/4)}}
+
+// ---- the tab window (a separate window: Studio passes messages between it and this page) ----
+const TABWIN={open:false,ex:null,lastPos:''};
+function tabSend(m){try{if(window.__JUCE__&&window.__JUCE__.backend){window.__JUCE__.backend.emitEvent('studio',{action:'tab',msg:m});return}}catch(e){}
+  // in a plain browser (testing): an ordinary pop-up window
+  if(m.type=='open'&&(!TABWIN.w||TABWIN.w.closed))TABWIN.w=window.open('tab.html','gptab','width=1100,height=700');
+  if(TABWIN.w&&!TABWIN.w.closed){if(TABWIN.wReady)TABWIN.w.postMessage(m,'*');else(TABWIN.queue=TABWIN.queue||[]).push(m)}}
+function tabColors(){const cs=getComputedStyle(document.documentElement),v=n=>cs.getPropertyValue(n).trim();
+  return{paper:D.settings.tabColors=='paper',bg:v('--bg'),card:v('--card'),fg:v('--fg'),mut:v('--mut'),line:v('--line'),acc:v('--acc'),accfg:v('--accfg')}}
+function openTab(){const ex=exById(T.ex);if(!ex||!ex.tab)return;TABWIN.open=true;TABWIN.ex=ex.id;TABWIN.lastPos='';
+  tabSend({type:'open',ex:ex.id,name:ex.name,kind:ex.tab.kind,data:ex.tab.data,sel:ex.tabSel||null,track:ex.tabTrack||0,colors:tabColors()})}
+function tabTheme(){if(TABWIN.open)tabSend({type:'theme',colors:tabColors()})}
+function tabPos(bar,frac){if(!TABWIN.open)return;const k=bar+':'+frac.toFixed(3);if(k==TABWIN.lastPos)return;TABWIN.lastPos=k;tabSend({type:'pos',bar,frac})}
+function tabFromWindow(m){if(!m||!m.type)return;
+  if(m.type=='ready'){TABWIN.wReady=true;const q=TABWIN.queue||[];TABWIN.queue=[];if(TABWIN.open&&!q.some(x=>x.type=='open'))openTab();else q.forEach(x=>tabSend(x));return}
+  if(m.type=='closed'){TABWIN.open=false;TABWIN.wReady=false;return}
+  const ex=exById(m.ex);if(!ex||!ex.tab)return;
+  if(m.type=='sel'){ex.tabSel=m.from==null?null:{from:m.from,to:m.to};save();if(CURVE.on&&tabOn(ex))CURVE.len=tabLen(ex);render()}
+  else if(m.type=='track'){ex.tabTrack=m.track|0;save()}}
+addEventListener('message',e=>{if(TABWIN.w&&e.source===TABWIN.w)tabFromWindow(e.data)});
+try{if(window.__JUCE__&&window.__JUCE__.backend)window.__JUCE__.backend.addEventListener('studioTab',m=>tabFromWindow(m))}catch(e){}
+$('#openTab').onclick=openTab;
+$('#stTabCol').onchange=e=>{D.settings.tabColors=e.target.value;save();tabTheme()};
+
+// ---- the exercise editor's tab section ----
+let dxTab=null;
+function renderDxTab(){const t=dxTab;$('#dxTabInfo').innerHTML=t?'<b>'+esc(t.kind=='tex'?(t.info.title||'Typed tab'):t.name)+'</b>'+esc(tabDesc(t)):'No tab';
+  $('#dxTabDel').hidden=!t;$('#dxTabType').textContent=t&&t.kind=='tex'?'Edit…':'Type it…'}
+$('#dxTabFile').onclick=()=>$('#dxTabPick').click();
+$('#dxTabPick').onchange=async e=>{const f=e.target.files[0];e.target.value='';if(!f)return;
+  if(f.size>TAB_MAX_BYTES){tell('That file is too big for a tab ('+Math.round(f.size/1024/1024*10)/10+' MB). Tabs up to 2 MB can be used.');return}
+  const u8=new Uint8Array(await f.arrayBuffer()),isTex=/\.(atex|alphatex|txt)$/i.test(f.name);
+  const t=isTex?{kind:'tex',name:f.name,data:new TextDecoder().decode(u8)}:{kind:'file',name:f.name,data:b64FromBytes(u8)};
+  try{t.info=await readTab(t)}catch(x){tell('Studio couldn’t read “'+f.name+'” as a tab. It reads Guitar Pro (.gp, .gp3–.gp5, .gpx), MusicXML (.xml, .musicxml, .mxl) and Capella (.capx) files.');return}
+  dxTab=t;renderDxTab()};
+$('#dxTabDel').onclick=()=>{dxTab=null;renderDxTab()};
+const TEX_START='\\title "My exercise"\n\\tempo 120\n:16 5.6 7.6 8.6 5.5 7.5 8.5 5.4 7.4 9.4 5.3 7.3 9.3 6.2 8.2 10.2 7.1 |\n';
+$('#dxTabType').onclick=()=>{$('#texIn').value=dxTab&&dxTab.kind=='tex'?dxTab.data:TEX_START;$('#texErr').textContent='';$('#dlgTex').showModal()};
+$('#dlgTex').addEventListener('close',async()=>{if($('#dlgTex').returnValue!='ok')return;const text=$('#texIn').value;
+  const t={kind:'tex',name:'',data:text};
+  try{t.info=await readTab(t)}catch(x){$('#texErr').textContent=String(x&&x.message||x).slice(0,200);$('#dlgTex').showModal();return}
+  dxTab=t;renderDxTab()});
 
 // ---------- metronome ----------
 const SUBS_M=[[1,'Quarter notes'],[2,'8ths'],[3,'Triplets'],[4,'16ths'],[6,'16th triplets'],[8,'32nds']];
@@ -1222,42 +1343,46 @@ function voice(v,t){
   else{f.frequency.value=7000;env(a,f,t,.35,.045).connect(g);n.start(t);n.stop(t+.06)}
 }
 function metPump(){
-  if(!MET.on||!actx)return;const a=actx,M=MC(),n=M.beats*M.sub;
+  if(!MET.on||!actx)return;const a=actx,M=MC();
   if(MET.next<a.currentTime-.2)MET.next=a.currentTime+.05;
-  while(MET.next<a.currentTime+.12){const i=MET.step%n,P=M.pat;if(i==0&&CURVE.on&&!CURVE.paused)curveBar();const dur=60/metTempo()/M.sub;
+  while(MET.next<a.currentTime+.12){
+    if(MET.step==0){if(CURVE.on&&!CURVE.paused)curveBar();MET.bar=tabBarStart()}   // a new bar (from the tab when it's in use)
+    const B=MET.bar,sub=B?B.sub:M.sub,n=(B?B.beats:M.beats)*sub,i=MET.step%n,P=B?B.pat:M.pat;const dur=60/(metTempo()*(B?B.mult:1))/sub;
     const gr=CURVE.on&&CURVE.counting;
-    if(CURVE.on&&(CURVE.counting||CURVE.first)){if(CURVE.counting&&i%M.sub==0)readyClick(MET.next,i==0)}
+    if(CURVE.on&&(CURVE.counting||CURVE.first)){if(CURVE.counting&&i%sub==0)readyClick(MET.next,i==0)}
     else for(const v of['p','s','m'])if(P[v][i])voice(v,MET.next);
-    MET.q.push({i,t:MET.next,g:gr});MET.next+=dur;MET.step=(i+1)%n}
+    MET.q.push({i,t:MET.next,g:gr,tb:B&&!gr?B.bar:-1,f:i/n,sub,B:!!B});MET.next+=dur;MET.step=(i+1)%n}
 }
 function metDraw(){
   if(!MET.on)return;const now=actx.currentTime;let cur=null;
   while(MET.q.length&&MET.q[0].t<=now+.005)cur=MET.q.shift();
-  if(cur){lightStep(cur.i);$('#metCard').classList.toggle('gr',!!cur.g)}
+  if(cur){lightStep(cur.i,cur);$('#metCard').classList.toggle('gr',!!cur.g);if(cur.tb!=null)tabPos(cur.tb,cur.f)}
   requestAnimationFrame(metDraw)}
-function lightStep(i){MET.lit.forEach(e=>e.classList.remove('now'));MET.lit=[...document.querySelectorAll('#metGrid [data-i="'+i+'"]')];
-  const M=MC();if(i%M.sub==0){const d=$('#metDots').children[i/M.sub];if(d)MET.lit.push(d)}MET.lit.forEach(e=>e.classList.add('now'))}
+function lightStep(i,q){MET.lit.forEach(e=>e.classList.remove('now'));const M=MC(),sub=q&&q.B?q.sub:M.sub;
+  // a tab bar in another meter than the metronome's grid lights only the beat dots
+  MET.lit=q&&q.B&&sub!=M.sub?[]:[...document.querySelectorAll('#metGrid [data-i="'+i+'"]')];
+  if(i%sub==0){const d=$('#metDots').children[i/sub];if(d)MET.lit.push(d)}MET.lit.forEach(e=>e.classList.add('now'))}
 function metStart(){
   if(!usesMet(exById(T.ex)))return;   // metronome switched off for this exercise: no clicks and no beat lights
-  const a=audio();if(!a)return;loadSamples();MET.on=true;MET.step=0;MET.next=a.currentTime+.08;MET.q=[];
+  const a=audio();if(!a)return;loadSamples();MET.on=true;MET.step=0;MET.next=a.currentTime+.08;MET.q=[];TABPTR=null;MET.bar=null;
   if(!MET.w){try{MET.w=new Worker(URL.createObjectURL(new Blob(["let t=null;onmessage=e=>{clearInterval(t);if(e.data=='start')t=setInterval(()=>postMessage(0),25)}"],{type:'text/javascript'})));MET.w.onmessage=metPump}catch(e){MET.w=null}}
   if(MET.w)MET.w.postMessage('start');else MET.iv=setInterval(metPump,25);
   metPump();requestAnimationFrame(metDraw);renderMetBtn()}
 function metStop(){curveCancel();metHalt()}
-function metHalt(){$('#metCard').classList.remove('gr');MET.on=false;if(MET.w)MET.w.postMessage('stop');clearInterval(MET.iv);MET.q=[];MET.lit.forEach(e=>e.classList.remove('now'));MET.lit=[];renderMetBtn()}
+function metHalt(){$('#metCard').classList.remove('gr');MET.on=false;tabPos(-1,0);if(MET.w)MET.w.postMessage('stop');clearInterval(MET.iv);MET.q=[];MET.lit.forEach(e=>e.classList.remove('now'));MET.lit=[];renderMetBtn()}
 const PCTS=[70,75,80,85,90,95,100,105,110];
 // a bar clicked before Play: the ladder starts there
 let LADSTART=null;
 const CURVE={on:false,hold:false,counting:false,steps:[],pcts:[],idx:0,bar:0,bars:4,ready:1,readyBar:0,first:true,ref:0,max:0,last:null,top:0};
-function curveMaxOf(ex){if(!ex)return null;return ex.curveMax||(ex.goal?ex.goal*1.1:null)}
+function curveMaxOf(ex){if(!ex)return null;const g=exGoal(ex);return ex.curveMax||(g?g*1.1:null)}
 function curveSteps(ex){const max=curveMaxOf(ex);if(!max)return null;const ref=max/1.1;
   const pcts=PCTS.concat([105,100,95,90]);return{steps:pcts.map(p=>Math.round(ref*p/100)),pcts,ref,max:Math.round(max)}}
-function ladderRef(ex){if((CURVE.on||CURVE.hold)&&CURVE.ex==T.ex)return CURVE.ref;return ex&&ex.goal}
+function ladderRef(ex){if((CURVE.on||CURVE.hold)&&CURVE.ex==T.ex)return CURVE.ref;return exGoal(ex)}
 function renderLadder(){} // the ladder's step buttons were removed in 2.1
 function exReady(ex){return +((ex&&ex.readyBars)??MC().readyBars??1)}
 function exRepReady(ex){return +((ex&&ex.repReady)??MC().repReady??0)}
 function curveBarsVal(){const ex=exById(T.ex),v=Math.round(num($('#curveBars').value)||0);return v>0?Math.min(64,v):((ex&&ex.curveBars)||4)}
-function curveLenVal(){const ex=exById(T.ex);return(ex&&ex.lenBars)||1}
+function curveLenVal(){const ex=exById(T.ex);return tabOn(ex)?tabLen(ex):(ex&&ex.lenBars)||1}
 function ladderMinutes(c){const M=MC(),ex=exById(T.ex),len=curveLenVal(),reps=curveBarsVal(),rd=exReady(ex),rr=exRepReady(ex),bars=rd+reps*len+(reps-1)*rr;
   return c.steps.reduce((s,b)=>s+bars*M.beats*60/b,0)/60}
 function renderCurve(){const ex=exById(T.ex),c=curveSteps(ex),b=$('#curveGo'),act=CURVE.on||CURVE.hold;
@@ -1329,7 +1454,7 @@ function renderLadPanel(){const ex=exById(T.ex),pn=$('#ladPanel');if(!pn)return;
   if(!ex||ex.trainer){pn.hidden=true;return}pn.hidden=false;
   const big=$('#lpBig'),sub=$('#lpSub'),reps=$('#lpReps'),bars=$('#lpBars');reps.innerHTML='';const bpm=num($('#bpm').value);
   big.classList.remove('hold');
-  if(!on){const g=+ex.goal;
+  if(!on){const g=+exGoal(ex);
     if(!g){big.textContent='—';sub.textContent='Set a goal (Edit exercise) for quick picks';setBars(bars,'');return}
     big.textContent=bpm?Math.round(bpm/g*100)+'%':'—';sub.textContent='of goal ('+trim(g)+' BPM)';
     setBars(bars,PCTS.map(p=>{const v=Math.round(g*p/100);return'<span class="col" data-v="'+v+'" title="'+p+'% · '+v+' BPM"><i class="'+(v==bpm?'cur':'')+'" style="height:'+Math.round(p/110*58)+'px"></i><b>'+p+'</b></span>'}).join(''));
@@ -1563,6 +1688,7 @@ function applySkin(k){
   const s=SKINS.find(x=>x.k==k);$('#themecolor').content=k=='orange'?'#1c1410':s.bg;
   try{const d=$('#trFrame').contentDocument;if(d&&d.documentElement)d.documentElement.setAttribute('data-skin',k)}catch(e){}
   if(view=='stats')renderStats();
+  if(typeof tabTheme=='function')tabTheme();
 }
 function renderSkins(){const c=curSkin();
   $('#skinPick').innerHTML=SKINS.map(s=>'<button class="skin'+(s.k==c?' on':'')+'" data-k="'+s.k+'"><div class="pv" style="background:'+s.bg+'"><i style="background:'+s.a+';width:70%"></i><i style="background:'+s.fg+';opacity:.25;width:45%"></i><b style="background:'+s.a+'"></b></div><div class="nm">'+esc(s.n)+(s.note?'<small>'+esc(s.note)+'</small>':'')+'</div></button>').join('');

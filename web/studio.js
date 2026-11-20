@@ -7,6 +7,11 @@
 // the same as the VERSION in CMakeLists.txt.
 
 window.STUDIO_CHANGES = [
+  ['0.8.0', 'Nov 20, 2026', [
+    'Tabs: give an exercise a tab in Edit exercise (Guitar Pro, MusicXML or Capella file, or type it). Open tab shows it in its own window.',
+    'With Use tab on (on the Exercise card), the tab\u2019s tempo is the goal, the bars you select in the tab are the tempo ladder\u2019s length, and the metronome follows the tab\u2019s time signatures and tempo changes. Use tab off brings back the exercise\u2019s own settings.',
+    'Settings \u2192 Color scheme \u2192 Tab colors: follow the color scheme or white paper. Tabs are drawn by alphaTab (alphatab.net).'
+  ]],
   ['0.7.1', 'Nov 19, 2026', [
     'With an exercise\u2019s Metronome switch off, the metronome doesn\u2019t run at all (it used to keep flashing the beats silently). Switching it on or off while you practise starts or stops it.',
     'If your audio interface is switched off or unplugged, Studio turns audio off instead of switching to the computer\u2019s own microphone and speakers (which could howl through an amp plugin), says so, and reconnects on its own when the interface is back.',

@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tab</title>
+<!-- Guitar Practice Studio's tab window. The tab is drawn by alphaTab (MPL-2.0, web/vendor/alphatab).
+     Studio passes messages between this page and the practice page:
+       from the practice page: open (the exercise's tab), pos (where the metronome is), theme, none
+       to the practice page:   ready, sel (the bars you selected), track (the track you picked)          -->
+<style>
+:root{--bg:#0d0a07;--card:#17120c;--fg:#f1e6d2;--mut:#a8977a;--line:#3a2c1a;--acc:#d4a64a;--accfg:#1a1205}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);font:14px -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+.bar{position:sticky;top:0;z-index:5;display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:10px 14px;border-bottom:1px solid var(--line);background:var(--card)}
+.bar b{font-size:15px}.sp{flex:1}
+.st{color:var(--mut)}.st em{color:var(--acc);font-style:normal}
+button,select{background:var(--card);color:var(--fg);border:1px solid var(--line);border-radius:10px;padding:7px 14px;font:inherit;cursor:pointer}
+button:disabled{opacity:.45;cursor:default}
+#zoom{min-width:52px;text-align:center;color:var(--mut)}
+#page{padding:14px}
+#wrap{position:relative;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:8px;min-height:120px;user-select:none;-webkit-user-select:none;touch-action:none}
+body.paper #wrap{background:#fff;border-color:#d8d2c4}
+#at{position:relative;z-index:1}
+/* the selection sits behind the drawing, so it never covers anything alphaTab draws (including its credit) */
+#marks{position:absolute;inset:0;z-index:0;pointer-events:none}
+.sel{position:absolute;background:color-mix(in srgb,var(--acc) 22%,transparent);border-radius:4px}
+body.paper .sel{background:rgba(212,166,74,.28)}
+#cur{position:absolute;z-index:2;width:3px;border-radius:2px;background:var(--acc);pointer-events:none;display:none}
+#msg{padding:40px 20px;text-align:center;color:var(--mut)}
+</style>
+<script src="vendor/alphatab/alphaTab.min.js"></script>
+<script src="selects.js"></script>
+</head>
+<body>
+<div class="bar">
+  <b id="title">Tab</b><span class="st" id="status"></span><span class="sp"></span>
+  <button id="clear" disabled>Clear selection</button>
+  <select id="track" hidden aria-label="Track"></select>
+  <select id="view" aria-label="View"><option value="tab">Tab only</option><option value="both">Tab + notation</option></select>
+  <button id="zout" aria-label="Smaller">−</button><span id="zoom">100%</span><button id="zin" aria-label="Bigger">+</button>
+</div>
+<div id="page">
+  <div id="msg">Loading…</div>
+  <div id="wrap" hidden><div id="marks"></div><div id="at"></div><div id="cur"></div></div>
+</div>
+<script>
+'use strict';
+const $=id=>document.getElementById(id);
+const isJuce=!!(window.__JUCE__&&window.__JUCE__.backend);
+function send(m){try{if(isJuce)window.__JUCE__.backend.emitEvent('tabwin',m);else if(window.opener)window.opener.postMessage(m,'*')}catch(e){}}
+
+let prefs={zoom:1,view:'tab'};try{prefs=Object.assign(prefs,JSON.parse(localStorage.getItem('gp.tabview')||'{}'))}catch(e){}
+function savePrefs(){try{localStorage.setItem('gp.tabview',JSON.stringify(prefs))}catch(e){}}
+
+const S={ex:null,name:'',score:null,sel:null,track:0,colors:null,api:null,bars:[]};
+
+function setColors(c){S.colors=c||S.colors;if(!S.colors)return;const r=document.documentElement.style;
+  ['bg','card','fg','mut','line','acc','accfg'].forEach(k=>{if(S.colors[k])r.setProperty('--'+k,S.colors[k])});
+  document.body.classList.toggle('paper',!!S.colors.paper)}
+function resources(){const c=S.colors;if(!c||c.paper)return{};
+  return{mainGlyphColor:c.fg,secondaryGlyphColor:mix(c.fg,.55),staffLineColor:mix(c.fg,.35),barSeparatorColor:mix(c.fg,.5),scoreInfoColor:c.fg,barNumberColor:c.acc}}
+function mix(col,a){const d=document.createElement('i');d.style.color=col;document.body.appendChild(d);const m=getComputedStyle(d).color.match(/[\d.]+/g);d.remove();
+  return m?'rgba('+m[0]+','+m[1]+','+m[2]+','+a+')':col}
+
+function makeApi(){
+  if(S.api){try{S.api.destroy()}catch(e){}S.api=null;$('at').innerHTML=''}
+  const st={core:{fontDirectory:'vendor/alphatab/font/',useWorkers:false,engine:'svg'},player:{enablePlayer:false,scrollMode:alphaTab.ScrollMode.Off},
+    display:{scale:prefs.zoom,staveProfile:prefs.view=='both'?alphaTab.StaveProfile.ScoreTab:alphaTab.StaveProfile.Tab,resources:resources()}};
+  const api=new alphaTab.AlphaTabApi($('at'),st);
+  api.renderFinished.on(()=>{collectBars();drawMarks()});
+  api.error.on(e=>showMsg('Studio couldn’t draw this tab ('+String(e&&e.message||e).slice(0,120)+').'));
+  S.api=api;return api}
+
+function bytesFrom(m){if(m.kind=='tex')return new TextEncoder().encode(m.data);const s=atob(m.data),u=new Uint8Array(s.length);for(let i=0;i<s.length;i++)u[i]=s.charCodeAt(i);return u}
+
+function load(m){
+  S.ex=m.ex;S.name=m.name||'';S.sel=m.sel||null;S.track=m.track|0;setColors(m.colors);
+  $('title').textContent=S.name||'Tab';document.title=(S.name?S.name+' – ':'')+'Tab';
+  try{S.score=alphaTab.importer.ScoreLoader.loadScoreFromBytes(bytesFrom(m),new alphaTab.Settings())}
+  catch(e){showMsg('Studio couldn’t read this tab.');return}
+  const tr=$('track');tr.innerHTML=S.score.tracks.map((t,i)=>'<option value="'+i+'">'+esc(t.name||('Track '+(i+1)))+'</option>').join('');
+  tr.hidden=S.score.tracks.length<2;if(S.track>=S.score.tracks.length)S.track=0;tr.value=S.track;
+  $('msg').hidden=true;$('wrap').hidden=false;render();status()}
+function render(){if(!S.score)return;const api=makeApi();api.renderScore(S.score,[S.track]);$('zoom').textContent=Math.round(prefs.zoom*100)+'%';$('view').value=prefs.view}
+function showMsg(t){$('msg').textContent=t;$('msg').hidden=false;$('wrap').hidden=true;$('status').textContent='';$('clear').disabled=true}
+function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+
+function nBars(){return S.score?S.score.masterBars.length:0}
+function selRange(){const n=nBars(),s=S.sel;return s&&s.from>=0&&s.to<n&&s.from<=s.to?s:null}
+function status(){const s=selRange(),n=nBars();
+  $('status').innerHTML=s?'· <em>'+(s.from==s.to?'Bar '+(s.from+1):'Bars '+(s.from+1)+'–'+(s.to+1))+'</em> selected · the tempo ladder uses '+(s.from==s.to?'it':'these'):'· Whole tab · '+n+' bar'+(n==1?'':'s');
+  $('clear').disabled=!s}
+
+// ---- bar positions, selection and cursor ----
+function collectBars(){S.bars=[];const bl=S.api&&S.api.boundsLookup;if(!bl)return;
+  bl.staffSystems.forEach((sys,si)=>sys.bars.forEach(mb=>{const r=mb.realBounds||mb.visualBounds;let x0=r.x;
+    try{const b=mb.bars[0]&&mb.bars[0].beats[0];if(b)x0=Math.max(r.x,(b.realBounds||b.visualBounds).x)}catch(e){}
+    S.bars[mb.index]={x:r.x,y:r.y,w:r.w,h:r.h,x0,sys:si}}))}
+function barAt(x,y){let best=-1,bd=1e9;S.bars.forEach((b,i)=>{if(!b)return;
+  const dx=x<b.x?b.x-x:x>b.x+b.w?x-b.x-b.w:0,dy=y<b.y?b.y-y:y>b.y+b.h?y-b.y-b.h:0,d=dx+dy*3;if(d<bd){bd=d;best=i}});return best}
+function drawMarks(){const m=$('marks');m.innerHTML='';const s=selRange();if(!s)return;
+  for(let i=s.from;i<=s.to;i++){const b=S.bars[i];if(!b)continue;const d=document.createElement('div');d.className='sel';
+    d.style.cssText='left:'+(b.x+8)+'px;top:'+(b.y+8)+'px;width:'+b.w+'px;height:'+b.h+'px';m.appendChild(d)}}
+let drag=null;
+$('at').addEventListener('pointerdown',e=>{if(e.button!==0||!S.bars.length)return;const r=$('at').getBoundingClientRect(),i=barAt(e.clientX-r.left,e.clientY-r.top);if(i<0)return;
+  const cur=selRange();drag={a:e.shiftKey&&cur?cur.from:i};S.sel={from:Math.min(drag.a,i),to:Math.max(drag.a,i)};drawMarks();status();$('at').setPointerCapture(e.pointerId)});
+$('at').addEventListener('pointermove',e=>{if(!drag)return;const r=$('at').getBoundingClientRect(),i=barAt(e.clientX-r.left,e.clientY-r.top);if(i<0)return;
+  const s={from:Math.min(drag.a,i),to:Math.max(drag.a,i)};if(!S.sel||s.from!=S.sel.from||s.to!=S.sel.to){S.sel=s;drawMarks();status()}});
+const endDrag=()=>{if(!drag)return;drag=null;const s=selRange();send({type:'sel',ex:S.ex,from:s?s.from:null,to:s?s.to:null})};
+$('at').addEventListener('pointerup',endDrag);$('at').addEventListener('pointercancel',endDrag);
+$('clear').onclick=()=>{S.sel=null;drawMarks();status();send({type:'sel',ex:S.ex,from:null,to:null})};
+function cursor(bar,frac){const c=$('cur'),b=S.bars[bar];if(bar<0||!b){c.style.display='none';return}
+  const x=b.x0+(b.x+b.w-b.x0)*Math.max(0,Math.min(1,frac));c.style.cssText='display:block;left:'+(x+8-1)+'px;top:'+(b.y+8)+'px;height:'+b.h+'px';
+  const r=c.getBoundingClientRect(),vh=innerHeight;
+  if(r.top<60||r.bottom>vh-10)window.scrollBy({top:r.top-vh/3,behavior:'smooth'})}
+
+// ---- toolbar ----
+$('track').onchange=e=>{S.track=+e.target.value;render();send({type:'track',ex:S.ex,track:S.track})};
+$('view').onchange=e=>{prefs.view=e.target.value;savePrefs();render()};
+$('zin').onclick=()=>{prefs.zoom=Math.min(2,Math.round((prefs.zoom+.1)*10)/10);savePrefs();render()};
+$('zout').onclick=()=>{prefs.zoom=Math.max(.5,Math.round((prefs.zoom-.1)*10)/10);savePrefs();render()};
+
+// ---- messages from the practice page ----
+function onMsg(m){if(!m||!m.type)return;
+  if(m.type=='open')load(m);
+  else if(m.type=='pos')cursor(m.bar,m.frac);
+  else if(m.type=='theme'){setColors(m.colors);render()}
+  else if(m.type=='none'){S.score=null;S.ex=null;$('title').textContent=m.name||'Tab';showMsg('This exercise has no tab. Add one in Edit exercise.')}}
+if(isJuce)window.__JUCE__.backend.addEventListener('tab',onMsg);else addEventListener('message',e=>onMsg(e.data));
+addEventListener('beforeunload',()=>send({type:'closed'}));
+send({type:'ready'});
+</script>
+</body>
+</html>

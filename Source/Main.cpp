@@ -162,6 +162,9 @@ juce::String mimeTypeFor (const juce::File& f)
     if (ext == ".wav")         return "audio/wav";
     if (ext == ".mp3")         return "audio/mpeg";
     if (ext == ".woff2")       return "font/woff2";
+    if (ext == ".woff")        return "font/woff";
+    if (ext == ".otf")         return "font/otf";
+    if (ext == ".mjs")         return "text/javascript";
     return "application/octet-stream";
 }
 
@@ -409,6 +412,19 @@ public:
 //==============================================================================
 // The whole window is the practice app. Studio's controls live in the app's Settings tab
 // (added by web/studio.js), which talks to this class through "studio" events.
+// Both web views (the practice page and the tab window) share these: same files, same data folder.
+juce::WebBrowserComponent::Options studioWebOptions (const juce::File& dataFolder)
+{
+    return juce::WebBrowserComponent::Options{}
+               .withNativeIntegrationEnabled()
+               .withKeepPageLoadedWhenBrowserIsHidden()
+               .withBackend (juce::WebBrowserComponent::Options::Backend::webview2)
+               .withWinWebView2Options (juce::WebBrowserComponent::Options::WinWebView2{}
+                                            .withUserDataFolder (dataFolder.getChildFile ("WebView"))
+                                            .withStatusBarDisabled())
+               .withResourceProvider ([] (const juce::String& p) { return serveWebFile (p); });
+}
+
 class MainComponent final : public juce::Component,
                             private juce::Timer,
                             private juce::ChangeListener
@@ -418,14 +434,7 @@ public:
         : engine (e), settings (props), appData (dataFolder)
     {
         const juce::Component::SafePointer<MainComponent> self (this);
-        auto options = juce::WebBrowserComponent::Options{}
-                           .withNativeIntegrationEnabled()
-                           .withKeepPageLoadedWhenBrowserIsHidden()
-                           .withBackend (juce::WebBrowserComponent::Options::Backend::webview2)
-                           .withWinWebView2Options (juce::WebBrowserComponent::Options::WinWebView2{}
-                                                        .withUserDataFolder (dataFolder.getChildFile ("WebView"))
-                                                        .withStatusBarDisabled())
-                           .withResourceProvider ([] (const juce::String& p) { return serveWebFile (p); })
+        auto options = studioWebOptions (dataFolder)
                            .withEventListener ("studio", [self] (const juce::var& msg)
                            {
                                juce::MessageManager::callAsync ([safe = self, msg]
@@ -452,6 +461,7 @@ public:
         engine.knownPlugins.removeChangeListener (this);
         engine.deviceManager.removeChangeListener (this);
         editorWindow.reset();
+        closeTabWindow (false);
         engine.saveState();
     }
 
@@ -476,11 +486,12 @@ private:
         else if (action == "theme")
         {
             studioLook().setFrom (msg);
-            for (auto* w : { audioWindow.get(), chooserWindow.get(), editorWindow.get() })
+            for (auto* w : { audioWindow.get(), chooserWindow.get(), editorWindow.get(), tabWindow.get() })
                 if (w != nullptr) { w->sendLookAndFeelChange(); matchTitleBar (*w); w->repaint(); }
             if (auto* top = getTopLevelComponent())
                 matchTitleBar (*top);
         }
+        else if (action == "tab")    { tabMessage (msg.getProperty ("msg", {})); return; }
         else if (action == "showData") appData.revealToUser();
         else if (action == "openSource") juce::URL ("https://github.com/vagend/GuitarPracticeTracker-Studio").launchInDefaultBrowser();
         else if (action == "autoUpdate") { settings.setValue ("autoUpdateCheck", (bool) msg.getProperty ("on", true)); settings.saveIfNeeded(); }
@@ -958,6 +969,76 @@ private:
 
     std::unique_ptr<StudioWebView> web;
     std::unique_ptr<ToolWindow> audioWindow, chooserWindow, editorWindow;
+
+    //==========================================================================
+    // The tab window: web/tab.html in a window of its own. This class only passes messages
+    // between it and the practice page ("tab" events to it, "studioTab" events back).
+    std::unique_ptr<StudioWebView> tabWeb;
+    std::unique_ptr<ToolWindow> tabWindow;
+
+    void tabMessage (const juce::var& m)
+    {
+        const auto type = m.getProperty ("type", {}).toString();
+        if (type == "close") { closeTabWindow (true); return; }
+        if (type == "open" && tabWindow == nullptr) openTabWindow();
+        if (tabWindow == nullptr) return;
+        if (type == "open")
+        {
+            const auto name = m.getProperty ("name", {}).toString();
+            tabWindow->setName (name.isNotEmpty() ? name + " - Tab" : juce::String ("Tab"));
+            tabWindow->toFront (true);
+        }
+        if (tabWeb->ready)            // before the page is ready it asks for the tab itself ("ready")
+            tabWeb->emitEventIfBrowserIsVisible ("tab", m);
+    }
+
+    void openTabWindow()
+    {
+        const juce::Component::SafePointer<MainComponent> self (this);
+        auto options = studioWebOptions (appData)
+                           .withEventListener ("tabwin", [self] (const juce::var& m)
+                           {
+                               juce::MessageManager::callAsync ([safe = self, m]
+                               {
+                                   if (safe != nullptr)
+                                       safe->fromTabWindow (m);
+                               });
+                           });
+        tabWeb = std::make_unique<StudioWebView> (options);
+        tabWeb->setSize (1100, 720);
+        tabWindow = std::make_unique<ToolWindow> ("Tab", tabWeb.get(), false, [self]
+        {
+            juce::MessageManager::callAsync ([safe = self] { if (safe != nullptr) safe->closeTabWindow (true); });
+        });
+        tabWindow->setResizeLimits (480, 320, 10000, 10000);
+        const auto saved = settings.getValue ("tabWindow");
+        if (saved.isNotEmpty())
+            tabWindow->restoreWindowStateFromString (saved);
+        tabWindow->keepOnScreen();
+        tabWeb->goToURL (juce::WebBrowserComponent::getResourceProviderRoot() + "tab.html");
+    }
+
+    void fromTabWindow (const juce::var& m)
+    {
+        if (tabWeb == nullptr) return;
+        if (m.getProperty ("type", {}).toString() == "ready")
+            tabWeb->ready = true;
+        web->emitEventIfBrowserIsVisible ("studioTab", m);
+    }
+
+    void closeTabWindow (bool tellPage)
+    {
+        if (tabWindow == nullptr) return;
+        settings.setValue ("tabWindow", tabWindow->getWindowStateAsString());
+        tabWindow.reset();
+        tabWeb.reset();
+        if (tellPage && web != nullptr)
+        {
+            auto* o = new juce::DynamicObject();
+            o->setProperty ("type", "closed");
+            web->emitEventIfBrowserIsVisible ("studioTab", juce::var (o));
+        }
+    }
 };
 } // namespace
 
