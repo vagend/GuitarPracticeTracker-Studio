@@ -8,6 +8,9 @@ name: Build Guitar Practice Studio
 on:
   push:
     branches: [main, test]
+    paths-ignore:                     # changing only these doesn't need an app build
+      - web/vendor/alphatab.version
+      - .github/workflows/vendor-alphatab.yml
     paths-ignore: ["**.md", ".gitignore", "LICENSE", "Build Studio (Mac).command"]
   workflow_dispatch:   # lets you start a build from the Actions tab
 

@@ -1,16 +1,13 @@
 # Copies a pinned version of alphaTab (tab and notation display, MPL-2.0) into web/vendor/alphatab,
 # so Studio's builds never download it and keep working even if alphaTab disappears.
-# Run it by hand (Actions > Vendor alphaTab > Run workflow) only when deliberately changing versions;
-# it commits to the branch it's run on (use test, try it, then release).
+# To change versions, edit web/vendor/alphatab.version on the test branch and push: this runs and
+# commits the files back to test (try it there, then release).
 name: Vendor alphaTab
 
 on:
-  workflow_dispatch:
-    inputs:
-      version:
-        description: alphaTab version (npm @coderline/alphatab)
-        default: "1.9.0"
-        required: true
+  push:
+    branches: [test]
+    paths: [web/vendor/alphatab.version]
 
 permissions:
   contents: write
@@ -21,10 +18,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Fetch alphaTab ${{ inputs.version }}
+      - name: Fetch alphaTab
         run: |
           set -e
-          V="${{ inputs.version }}"
+          V="$(tr -d ' \n\r' < web/vendor/alphatab.version)"; echo "V=$V" >> "$GITHUB_ENV"
           npm pack "@coderline/alphatab@$V"
           tar xzf coderline-alphatab-$V.tgz
           echo "package contents:"; find package -maxdepth 2 | sort
@@ -49,5 +46,5 @@ jobs:
           git config user.email "33006883+vagend@users.noreply.github.com"
           git add web/vendor/alphatab
           git diff --cached --quiet && { echo "no change"; exit 0; }
-          git commit -m "Vendor alphaTab ${{ inputs.version }} (MPL-2.0) into web/vendor/alphatab [skip ci]"
+          git commit -m "Vendor alphaTab $V (MPL-2.0) into web/vendor/alphatab [skip ci]"
           git push
