@@ -379,6 +379,7 @@ window.STUDIO_CHANGES = [
         renderUpdate();
         renderSlot();
         // the test app shows it's the test app, and which build, next to the version
+        window.gpStudioTest = !!s.test;
         var vt = document.getElementById('verTag');
         if (vt && s.test) {
           if (!vt.dataset.v) vt.dataset.v = vt.textContent;
