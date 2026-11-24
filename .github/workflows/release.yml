@@ -2,7 +2,9 @@
 #   push to main -> the public app, published as the "latest" release (what everyone's Studio updates from)
 #   push to test -> Guitar Practice Studio Test, a separate app with its own data, published as the
 #                   "test-build" pre-release (tag test-build: a tag named "test" would clash with the
-#                   test branch); only the test app updates from it, the public app never sees it
+#                   test branch); only the test app updates from it, the public app never sees it.
+#                   Test builds are Windows only: the Mac is tested with local builds
+#                   (Build Studio Test (Mac).command), and GitHub's Mac machines are often too busy.
 # Each app checks its own release's BUILD.txt to offer updates.
 name: Build Guitar Practice Studio
 
@@ -103,6 +105,7 @@ jobs:
           retention-days: 3
 
   mac:
+    if: github.ref != 'refs/heads/test'   # test builds: Windows only (see the top)
     runs-on: macos-15
     steps:
       - uses: actions/checkout@v4
@@ -196,7 +199,7 @@ jobs:
           After that, Studio offers new builds itself: Settings > Studio > Check for updates."
 
   release-test:
-    needs: [windows, mac]
+    needs: [windows]
     if: github.ref == 'refs/heads/test'
     runs-on: ubuntu-latest
     steps:
@@ -214,12 +217,12 @@ jobs:
           gh release delete test-build --yes --cleanup-tag || true
           echo "${{ github.run_number }}" > out/BUILD.txt
           ls -la out
-          gh release create test-build out/GuitarPracticeStudioTest-setup.exe out/GuitarPracticeStudioTest-mac.dmg \
-            out/GuitarPracticeStudioTest-mac.zip out/BUILD.txt \
+          gh release create test-build out/GuitarPracticeStudioTest-setup.exe out/BUILD.txt \
             --target "$GITHUB_SHA" \
             --title "Guitar Practice Studio Test (build ${{ github.run_number }}, work in progress)" \
             --prerelease --latest=false \
             --notes "**Work in progress, not for general use.** Built from the test branch (${GITHUB_SHA::7}) on $(date -u '+%Y-%m-%d %H:%M') UTC.
 
           Installs as a separate app, **Guitar Practice Studio Test**, next to the normal one, with its own practice log, exercises and settings. The normal app never updates to these builds.
+          Windows only: the Mac test app is built locally.
           Get the normal app from the Latest release instead."
