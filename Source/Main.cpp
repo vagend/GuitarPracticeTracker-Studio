@@ -448,6 +448,7 @@ public:
         web->goToURL (juce::WebBrowserComponent::getResourceProviderRoot());
 
         loadExercisePlugins();
+        engine.tabSynth.load (getWebFolder().getChildFile ("vendor/alphatab/soundfont/sonivox.sf2"));
 
         engine.knownPlugins.addChangeListener (this);
         engine.deviceManager.addChangeListener (this);
@@ -499,7 +500,9 @@ private:
         else if (action == "tabEditorPick") { pickTabEditor (msg.getProperty ("then", {}).toString()); return; }
         else if (action == "tabEditorClear") { settings.setValue ("tabEditor", juce::String()); settings.saveIfNeeded(); }
         else if (action == "metHits") { scheduleMetronome (msg.getProperty ("hits", {})); return; }
-        else if (action == "metClear") { engine.metronome.clearScheduled(); return; }
+        else if (action == "metClear") { engine.metronome.clearScheduled(); engine.tabSynth.clearScheduled(); return; }
+        else if (action == "tabNotes") { scheduleTab (msg.getProperty ("ev", {})); return; }
+        else if (action == "tabVol")   { engine.tabSynth.setVolume ((float) (double) msg.getProperty ("v", 0.8)); return; }
         else if (action == "metSample") { setMetronomeSample (msg); return; }
         else if (action == "showData") appData.revealToUser();
         else if (action == "openSource") juce::URL ("https://github.com/vagend/GuitarPracticeTracker-Studio").launchInDefaultBrowser();
@@ -834,9 +837,9 @@ private:
             }
         }
         else if (engine.reopenGaveUp())
-            message = "Couldn't open your audio interface. Check it's on and connected, or pick another in Settings > Audio interface.";
+            message = "Couldn't open your audio interface, so sound plays through your computer and there's no guitar input. Check it's on and connected, or pick another in Settings > Audio interface.";
         else
-            message = "Your audio interface isn't connected. Audio is off until it's back; Studio reconnects on its own.";
+            message = "Your audio interface isn't connected: sound plays through your computer and there's no guitar input until it's back. Studio switches back on its own.";
     }
 
     void timerCallback() override
@@ -872,10 +875,10 @@ private:
         auto* obj = new juce::DynamicObject();
         obj->setProperty ("level", juce::jlimit (0.0f, 1.0f, engine.getInputLevel()));
         // The engine's clock, for the metronome: the page schedules its hits on it. "ok" means the
-        // clock is running and its sound reaches your interface; otherwise the page uses Web Audio.
+        // clock is running (on your interface, or the computer's output without it); otherwise the page uses Web Audio.
         const double clock = engine.metronome.now();
         obj->setProperty ("t", clock);
-        obj->setProperty ("ok", engine.isPlayingOnInterface() && clock > lastClock);
+        obj->setProperty ("ok", engine.isOutputPlaying() && clock > lastClock);
         obj->setProperty ("lat", engine.outputLatencySeconds());
         lastClock = clock;
         web->emitEventIfBrowserIsVisible ("studioLevel", juce::var (obj));
@@ -904,6 +907,15 @@ private:
             for (auto& h : *list)
                 if (auto* a = h.getArray(); a != nullptr && a->size() >= 4)
                     engine.metronome.schedule ((double) (*a)[0], (int) (*a)[1], (int) (*a)[2], (float) (double) (*a)[3]);
+    }
+
+    // The tab's notes for the next bar: [time on the engine's clock, type (0 on, 1 off, 2 program), channel, key, velocity 0..1].
+    void scheduleTab (const juce::var& ev)
+    {
+        if (auto* list = ev.getArray())
+            for (auto& e : *list)
+                if (auto* a = e.getArray(); a != nullptr && a->size() >= 5)
+                    engine.tabSynth.schedule ((double) (*a)[0], (int) (*a)[1], (int) (*a)[2], (int) (*a)[3], (float) (double) (*a)[4]);
     }
 
     // Your own sample for a metronome voice ("p", "s" or "m"), as base64 file bytes; empty removes it.

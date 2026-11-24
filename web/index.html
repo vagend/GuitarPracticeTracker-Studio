@@ -116,6 +116,7 @@ main{max-width:1100px;margin:0 auto;padding:16px}
 #exTable thead th{position:sticky;top:var(--hdrH,0px);z-index:3;background:var(--card)}
 .grid2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);gap:16px}
 .grid2>.card{margin-bottom:0}
+.grid2.tools,#v-settings .grid2{align-items:start}
 @media(max-width:820px){.grid2{grid-template-columns:1fr}#v-practice .grid2:not(.tools)>.card:last-child{order:-1}}
 .row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 .sp{flex:1}
@@ -148,16 +149,15 @@ label.f>*{color:var(--fg)}
 .seg{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden}
 .seg button{border:0;border-radius:0;padding:7px 14px}
 .seg button.on{background:var(--acc);color:var(--accfg)}
-.clock{font:600 76px/1 ui-monospace,SFMono-Regular,Menlo,monospace;font-variant-numeric:tabular-nums;text-align:center;letter-spacing:-2px;margin:18px 0 6px}
+.clock{font:600 76px/1 ui-monospace,SFMono-Regular,Menlo,monospace;font-variant-numeric:tabular-nums;text-align:center;letter-spacing:-2px;margin:18px 0 6px;cursor:text;border-radius:10px;outline:none}
+.clock.editing{background:var(--soft);box-shadow:0 0 0 2px var(--acc)}
 .clock.done{color:var(--ok)}
-.cbar{height:6px;border-radius:3px;background:var(--line);overflow:hidden;max-width:420px;margin:0 auto 8px}
-.cbar i{display:block;height:100%;background:var(--acc)}
 .center{justify-content:center}
 .big{font-size:17px;padding:10px 26px}
 .exinfo{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:10px}
 .exsub{color:var(--mut);font-size:14px;margin:6px 2px 0;min-height:1em;display:flex;align-items:center;gap:10px}.exsub>span:first-child{flex:1}
 .ladsec{margin-top:12px;border:1px solid var(--line);border-radius:10px;padding:9px 12px}
-.ladsec summary{cursor:pointer}.ladsec summary .sub{margin-left:6px}
+.ladsec summary{cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.ladsec summary .sub{margin-left:6px}
 .ladgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
 .ladgrid label{display:block;background:var(--soft);border-radius:8px;padding:7px 10px}
 .ladgrid span{display:block;font-size:12px;color:var(--mut);margin-bottom:4px}
@@ -233,6 +233,7 @@ dialog h2{margin:0 0 12px;font:600 17px/1.3 system-ui,sans-serif}
 .tabsec{display:flex;flex-wrap:wrap;gap:8px;align-items:center;border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-top:4px}
 .tabsec .src{flex:1 1 100%;min-height:64px;color:var(--mut)}.tabsec .src b{display:block;color:var(--fg);font-size:15px}.tabsec .src small{display:block;font-size:12px;margin-top:3px;overflow-wrap:anywhere}
 .lenwrap{position:relative;display:inline-block}
+.lenrow{margin:6px 0 2px}.lenrow label{display:inline-flex;align-items:center;gap:6px}.lenrow input{width:4.2em}.lenrow small{color:var(--mut)}
 #exLenTab{position:absolute;left:0;top:0;bottom:0;display:flex;align-items:center;white-space:nowrap;font-weight:600;font-size:17px;color:var(--fg)}
 #exLenTab[hidden]{display:none}
 .fgrid input:not([type=checkbox]),.fgrid select,.fgrid textarea{width:100%}
@@ -276,6 +277,8 @@ iframe#trFrame{width:100%;border:0;height:900px;display:block;border-radius:10px
     <div class="tiles" id="todayTiles"></div>
   </div>
 
+  <div class="card" id="dueCard" hidden><div id="dueList"></div></div>
+
   <div class="grid2">
     <div class="card">
       <div class="row" style="margin-bottom:10px">
@@ -286,11 +289,13 @@ iframe#trFrame{width:100%;border:0;height:900px;display:block;border-radius:10px
       </div>
       <select id="exSel" style="width:100%" aria-label="Exercise"></select>
       <div class="exsub" id="exSub"></div>
+      <div class="lenrow" id="lenRow" hidden>
+          <label title="How many measures one time through this exercise takes"><span class="sub">Length</span><span class="lenwrap"><input id="exLen" type="number" min="1" max="64" step="1" inputmode="numeric"><b id="exLenTab" hidden></b></span> <small id="exLenUnit">measures</small></label>
+      </div>
       <div class="exinfo" id="exInfo"></div>
       <details class="ladsec" id="ladSec" hidden>
         <summary><b>Tempo ladder</b> <span class="sub" id="ladSum"></span></summary>
         <div class="ladgrid">
-          <label title="How many measures one time through this exercise takes"><span>Length</span><span class="lenwrap"><input id="exLen" type="number" min="1" max="64" step="1" inputmode="numeric"><b id="exLenTab" hidden></b></span> <small id="exLenUnit">measures</small></label>
           <label title="The top of the ladder (110%). Leave empty to use the goal + 10%."><span>Ladder max</span><input id="exMax" type="number" min="0" step="1" inputmode="numeric"> <small>BPM</small></label>
           <label title="How many times you play the exercise at each tempo"><span>Repeats per tempo</span><input id="curveBars" type="number" min="1" max="64" step="1" inputmode="numeric"></label>
           <label title="Clicks on each beat at the new tempo before you start playing it"><span>Count-in before each new tempo</span><select id="curveReady"><option value="0">none</option><option value="1">1 measure</option><option value="2">2 measures</option><option value="4">4 measures</option></select></label>
@@ -304,9 +309,7 @@ iframe#trFrame{width:100%;border:0;height:900px;display:block;border-radius:10px
       <div class="row">
         <div class="seg" id="tmode"><button data-m="up">Stopwatch</button><button data-m="down">Countdown</button></div>
       </div>
-      <div class="chips" id="presets" style="margin-top:12px"></div>
-      <div class="clock" id="clock">0:00</div>
-      <div class="cbar" id="cbar"><i style="width:0"></i></div>
+      <div class="clock" id="clock" title="Click to type a countdown: minutes (15), or minutes:seconds (12:30)">0:00</div>
       <div class="sub" id="clockSub" style="text-align:center;min-height:20px"></div>
       <div class="row center" style="margin-top:14px">
         <button id="bStart" class="primary big">Start</button>
@@ -320,7 +323,7 @@ iframe#trFrame{width:100%;border:0;height:900px;display:block;border-radius:10px
   <div class="card" id="logForm" hidden style="margin-top:16px;border-color:var(--acc)">
     <h2>Log this practice — <span id="lfEx"></span></h2>
     <div class="row" style="align-items:flex-end;gap:14px">
-      <label class="f">Minutes<input id="lfMin" type="number" min="0" step="1"></label>
+      <label class="f">Minutes<input id="lfMin" type="number" min="0" step="any"><small class="sub" id="lfEarlier"></small></label>
       <label class="f"><span id="lfBpmL">BPM</span><input id="lfBpm" type="number" min="0" step="any"></label>
       <label class="f" style="flex:1;min-width:200px">Note (optional)<input id="lfNote" type="text" placeholder="e.g. clean up the position shift"></label>
     </div>
@@ -386,19 +389,20 @@ iframe#trFrame{width:100%;border:0;height:900px;display:block;border-radius:10px
             <select id="metKit"><option value="drums">Drum kit (kick, snare, hi-hat)</option><option value="click">Classic click (high, middle, low)</option></select></label>
           <div id="metVoices"></div>
           <label class="row sub" style="gap:8px;margin-top:6px">Master volume <input type="range" id="metMaster" min="0" max="1" step="0.05" style="flex:1"></label>
+          <label class="row sub" id="tabVolRow" style="gap:8px;margin-top:6px" hidden>Tab volume <input type="range" id="tabVol" min="0" max="1.5" step="0.05" style="flex:1"></label>
           <label class="chk"><input type="checkbox" id="metFollow"> Set the division from the exercise’s subdivision (e.g. 16th, 8th Triplets)</label>
           <input type="file" id="metFile" accept="audio/*,.wav,.aif,.aiff,.mp3,.m4a,.ogg,.flac" hidden>
+          <details id="cvSec" style="margin-top:12px">
+            <summary>Tempo converter</summary>
+            <div class="row" style="align-items:flex-end;margin-top:10px">
+              <label class="f">BPM<input id="cvBpm" type="number" value="120" step="any"></label>
+              <label class="f">From<select id="cvFrom"></select></label>
+              <label class="f">To<select id="cvTo"></select></label>
+            </div>
+            <p id="cvOut" style="font-size:18px;margin:12px 0 4px"></p>
+            <p class="sub" id="cvNps" style="margin:0"></p>
+          </details>
         </div>
-      </details>
-      <details id="cvSec" style="margin-top:8px">
-        <summary>Tempo converter</summary>
-        <div class="row" style="align-items:flex-end;margin-top:10px">
-          <label class="f">BPM<input id="cvBpm" type="number" value="120" step="any"></label>
-          <label class="f">From<select id="cvFrom"></select></label>
-          <label class="f">To<select id="cvTo"></select></label>
-        </div>
-        <p id="cvOut" style="font-size:18px;margin:12px 0 4px"></p>
-        <p class="sub" id="cvNps" style="margin:0"></p>
       </details>
     </div>
 
@@ -407,7 +411,6 @@ iframe#trFrame{width:100%;border:0;height:900px;display:block;border-radius:10px
 
   <div class="card" style="margin-top:16px">
     <div class="row"><h2 style="margin:0">Today</h2><span class="sp"></span><button id="addToday">+ Add entry</button></div>
-    <div id="dueList" style="margin-top:10px"></div>
     <div id="todayList" style="margin-top:8px"></div>
   </div>
 </section>
@@ -502,8 +505,8 @@ iframe#trFrame{width:100%;border:0;height:900px;display:block;border-radius:10px
       <h2>Practice</h2>
       <div class="fgrid">
         <label class="f">Daily goal (minutes)<input id="stGoal" type="number" min="0" step="5"></label>
-        <label class="f">Countdown buttons (minutes)<input id="stPresets" type="text" placeholder="1, 2, 5, 10, 15"></label>
         <label class="f w">Chime volume<span class="row"><input id="stVol" type="range" min="0" max="1" step="0.05" style="flex:1"><button id="stTest">Test</button></span></label>
+        <label class="chk w"><input type="checkbox" id="stTrainer"> Show the Fretboard Trainer</label>
         <label class="chk w"><input type="checkbox" id="stNotify"> Show a notification when a countdown ends while the app is in the background</label>
       </div>
     </div>
@@ -749,7 +752,7 @@ function exOptions(sel,{all,includeArchived,noTrainer,noSub}={}){
 
 // ---------- tabs ----------
 let view='practice';
-function show(v){if(!$('#v-'+v))v='practice';if(view=='trainer'&&v!='trainer'&&typeof TR!='undefined')trainerLeave();if(v!='tuner'&&view=='tuner'&&typeof TU!='undefined'&&(TU.stream||TU.sg))tunStop();if(v=='tuner')setTimeout(tunAuto,0);if(v!='settings'&&typeof IN!='undefined'&&IN.stream)inStop();if(v=='settings'&&typeof inList=='function')setTimeout(inList,0);view=v;$$('.view').forEach(s=>s.hidden=s.id!='v-'+v);$$('#tabs button').forEach(b=>b.classList.toggle('on',b.dataset.v==v));
+function show(v){if(!$('#v-'+v)||(v=='trainer'&&!trainerShown()))v='practice';if(view=='trainer'&&v!='trainer'&&typeof TR!='undefined')trainerLeave();if(v!='tuner'&&view=='tuner'&&typeof TU!='undefined'&&(TU.stream||TU.sg))tunStop();if(v=='tuner')setTimeout(tunAuto,0);if(v!='settings'&&typeof IN!='undefined'&&IN.stream)inStop();if(v=='settings'&&typeof inList=='function')setTimeout(inList,0);view=v;$$('.view').forEach(s=>s.hidden=s.id!='v-'+v);$$('#tabs button').forEach(b=>b.classList.toggle('on',b.dataset.v==v));
   try{history.replaceState(null,'','#'+v)}catch(e){}render()}
 $$('#tabs button').forEach(b=>b.onclick=()=>show(b.dataset.v));
 function render(){({practice:renderPractice,tuner:()=>{},trainer:loadTrainer,log:renderLog,exercises:renderExercises,stats:renderStats,settings:renderSettings})[view]();renderTimer()}
@@ -804,16 +807,14 @@ let lastClock='';
 function hasPracticeEx(){return D.exercises.some(e=>!e.trainer&&!e.archived)}
 function renderTimer(){
   const el=elapsed(),down=T.mode=='down',v=down?Math.max(0,T.target-el):el,txt=clockStr(v,!down);
-  if(txt!==lastClock){$('#clock').textContent=txt;lastClock=txt}
+  if(txt!==lastClock&&!clockEditing){$('#clock').textContent=txt;lastClock=txt}
   $('#clock').classList.toggle('done',!!T.done);
-  $('#cbar').style.visibility=down?'visible':'hidden';$('#cbar i').style.width=(down?Math.min(100,100*el/T.target):0)+'%';
+
   $$('#tmode button').forEach(b=>{b.classList.toggle('on',b.dataset.m==T.mode)});
-  $('#presets').style.display=down?'':'none';
-  $$('#presets .chip[data-m]').forEach(c=>c.classList.toggle('on',+c.dataset.m*60000==T.target));
   $('#bStart').textContent=running()?'Pause':(T.acc>0&&!T.done?'Resume':'Start');
-  $('#bFinish').disabled=!(el>=1000);$('#bReset').disabled=!(el>0);$('#bStart').disabled=!running()&&!exById(T.ex);if(typeof renderMetBtn=='function'&&$('#metStop'))renderMetBtn();
+  $('#bFinish').disabled=!(el>=1000||(ex0=>ex0&&!ex0.trainer)(exById(T.ex)));$('#bReset').disabled=!(el>0);$('#bStart').disabled=!running()&&!exById(T.ex);if(typeof renderMetBtn=='function'&&$('#metStop'))renderMetBtn();
   const ex=exById(T.ex);
-  $('#clockSub').textContent=T.done?'Time’s up — log it below':(el>0||running())?(running()?'Practicing ':'Paused · ')+exName(ex)+(down?' · '+clockStr(el,true)+' done':''):(down?Math.round(T.target/60000)+'-minute countdown':'Ready');
+  $('#clockSub').textContent=T.done?'Time’s up — log it below':(el>0||running())?(running()?'Practicing ':'Paused · ')+exName(ex)+(down?' · '+clockStr(el,true)+' done':''):'';
   const p=$('#pill'),act=running()||el>0;p.hidden=!act||view=='practice';
   if(act){p.textContent='⏱ '+txt;p.classList.toggle('paused',!running())}
   document.title=running()?txt+' · Guitar Practice':'Guitar Practice';
@@ -822,7 +823,7 @@ $('#pill').onclick=()=>show('practice');
 $('#bStart').onclick=startPause;
 // Logging ends the practice: the metronome (and a tempo ladder) stop too, not just the timer
 function stopForLog(){if(CURVE.on||CURVE.hold)curveEnd();else if(MET.on)metStop();pause();renderMetBtn()}
-$('#bFinish').onclick=()=>{if(elapsed()<1000){toast('Nothing to log yet');return}stopForLog();openLog()};
+$('#bFinish').onclick=()=>{const x=exById(T.ex);if(!x||(x.trainer&&elapsed()<1000)){toast('Nothing to log yet');return}stopForLog();openLog()};
 async function discardSession(after){
   if(elapsed()>60000&&!await ask('Discard practice?','Discard '+fmtMin(elapsed()/60000)+' of practice without logging it?'+(after?' '+after:''),{ok:'Discard',cancel:'Keep it',danger:true}))return false;
   $('#logForm').hidden=true;pendingEx=null;resetTimer();syncExSel();return true}
@@ -830,14 +831,25 @@ $('#bReset').onclick=()=>discardSession();
 $$('#tmode button').forEach(b=>b.onclick=async()=>{if(b.dataset.m==T.mode)return;
   if(T.acc>0||running()){if(!await discardSession('Then switch to '+b.textContent+'.'))return}
   T.mode=b.dataset.m;T.done=false;saveT();renderTimer()});
-function buildPresets(){const c=$('#presets');c.innerHTML=D.settings.presets.map(m=>'<button class="chip" data-m="'+m+'">'+m+' min</button>').join('')+'<span class="row" style="gap:4px"><input id="customMin" type="number" min="0.5" step="0.5" placeholder="min" style="width:70px" aria-label="Custom minutes"><button class="chip" id="customSet">Set</button></span>';
-  $$('#presets .chip[data-m]').forEach(b=>b.onclick=()=>setTarget(+b.dataset.m));
-  $('#customSet').onclick=()=>{const m=num($('#customMin').value);if(m>0)setTarget(m)};
-  $('#customMin').onkeydown=e=>{if(e.key=='Enter')$('#customSet').click()}}
+// Click the clock and type over it to set a countdown: "15" is 15 minutes, "12:30" is 12 min 30 s, "1:05:00" an hour
+// and 5 minutes. From an unused stopwatch it switches to Countdown. Enter sets it, Esc leaves it as it was.
+function buildPresets(){}
+function parseClock(t){t=String(t).trim().replace(/[^\d:.]/g,'');if(!t)return null;const p=t.split(':').map(Number);if(p.some(isNaN))return null;
+  const m=p.length==1?p[0]:p.length==2?p[0]+p[1]/60:p[0]*60+p[1]+p[2]/60;return m>0?m:null}
+var clockEditing=false;
+$('#clock').onclick=()=>{if(clockEditing)return;if(T.mode!='down'&&(T.acc>0||running()))return;   // a stopwatch in use isn't a countdown
+  const c=$('#clock');clockEditing=true;c.contentEditable='true';c.classList.add('editing');c.focus();
+  const r=document.createRange();r.selectNodeContents(c);const sel=getSelection();sel.removeAllRanges();sel.addRange(r)};
+function endClockEdit(apply){if(!clockEditing)return;const c=$('#clock'),m=apply?parseClock(c.textContent):null;
+  clockEditing=false;c.contentEditable='false';c.classList.remove('editing');lastClock='';
+  if(m){if(T.mode!='down'){T.mode='down';T.done=false}setTarget(m)}else renderTimer()}
+$('#clock').onkeydown=e=>{if(e.key=='Enter'){e.preventDefault();endClockEdit(true)}else if(e.key=='Escape'){e.preventDefault();endClockEdit(false)}};
+$('#clock').onblur=()=>endClockEdit(true);
+addEventListener('pointerdown',e=>{if(clockEditing&&!e.target.closest('#clock'))endClockEdit(true)},true);
 function setTarget(m){const ms=Math.round(m*60000);if(T.done){resetTimer()}if(ms<=T.acc){toast('That’s less than the time already done');return}
   T.target=ms;if(running()){cancelChime();chimeNodes=chime((T.target-elapsed())/1000);chimeArmed=true}saveT();renderTimer()}
 addEventListener('keydown',e=>{
-  if(e.code!='Space'||view!='practice'||e.ctrlKey||e.metaKey||e.altKey)return;
+  if(e.code!='Space'||view!='practice'||e.ctrlKey||e.metaKey||e.altKey||clockEditing)return;
   // Space is always Play/Pause on this page, even when a button has focus (a focused button would
   // otherwise be pressed instead); typing in a field or an open dialog keeps the space.
   const t=e.target;if(['SELECT','TEXTAREA'].includes(t.tagName)||(t.tagName=='INPUT'&&!['checkbox','radio','range','button'].includes(t.type))||t.isContentEditable||$('dialog[open]'))return;
@@ -858,8 +870,10 @@ function renderPractice(){
     '<div class="tile"><div class="k">All time</div><div class="v">'+fmtH(total)+' <small>· '+st.days+' days</small></div></div>';
   syncExSel();
   const ex=exById(T.ex),s=exStats(T.ex),m=metricOf(ex);
-  $('#exSub').innerHTML=ex?'<span>'+esc([ex.technique,ex.sub].filter(Boolean).join(' · '))+'</span>'+(ex.trainer?'':(ex.tab?'<label class="sw'+(tabOn(ex)?' on':'')+'" id="swTab" title="On: the tab sets the goal, the tempo ladder length and the metronome’s time signature"><i></i>Use tab</label>':'')+'<label class="sw'+(usesMet(ex)?' on':'')+'" id="swMet" title="Off: Practice timer does not start the Metronome"><i></i>Metronome</label>'):'';
+  $('#exSub').innerHTML=ex?'<span>'+esc([ex.technique,ex.sub].filter(Boolean).join(' · '))+'</span>'+(ex.trainer?'':(ex.tab?'<label class="sw'+(tabOn(ex)?' on':'')+'" id="swTab" title="On: the tab sets the goal, the tempo ladder length and the metronome’s time signature"><i></i>Use tab</label>'+(tabOn(ex)&&STUDIO_APP?'<label class="sw'+(hearTab(ex)?' on':'')+'" id="swHear" title="Studio plays the tab with the metronome: the selected bars, at the tempo the metronome is playing"><i></i>Hear tab</label>':''):'')+'<label class="sw'+(usesMet(ex)?' on':'')+'" id="swMet" title="Off: Practice timer does not start the Metronome"><i></i>Metronome</label>'):'';
   const stb=$('#swTab');if(stb)stb.onclick=e=>{e.preventDefault();ex.useTab=!ex.useTab;if(CURVE.on||CURVE.hold)curveCancel();TABPTR=null;save();render()};
+  const shr=$('#swHear');if(shr)shr.onclick=e=>{e.preventDefault();setHearTab(ex,!hearTab(ex))};
+  if(STUDIO_APP&&hearTab(ex))tabNotes(ex);   // read the tab's notes now, so the first bar is ready
   const sm=$('#swMet');if(sm)sm.onclick=e=>{e.preventDefault();ex.metronome=!usesMet(ex);
     if(!ex.metronome){if(CURVE.on||CURVE.hold)curveCancel();if(MET.on)metHalt()}   // off: stop it, not just its sound
     else if(running()&&!MET.on)metStart();                                        // on while practising: start it
@@ -869,10 +883,10 @@ function renderPractice(){
     ['Best',s.best!=null?trim(s.best):'—'],
     ['Last time',s.last?(s.last.bpm!=null?trim(s.last.bpm)+' · ':'')+fmtDate(s.last.date):'—'],
     ['Total',fmtMin(s.tot)]
-  ].concat(ex.timeGoal?[['Today',trim(Math.round(minToday(ex.id)*10)/10)+' / '+trim(ex.timeGoal)+' <small class="sub">min</small>']]:[])
-   .concat(schedDays(ex)?[['Schedule',esc(schedDays(ex))]]:[]).map(([k,v])=>'<div><span>'+k+'</span><b>'+v+'</b></div>').join('')+(s.last&&s.last.effort?'<div><span>Last effort</span><b style="font-size:15px">'+effHtml(s.last.effort)+'</b></div>':'')+(ex.notes?'<div style="grid-column:1/-1"><span>Notes</span><div>'+esc(ex.notes)+'</div></div>':''):(hasPracticeEx()?'<div>No exercise selected</div>':'<div class="firstex" style="grid-column:1/-1"><b>No exercises yet</b><p class="sub">Add the things you practice — a lick, a scale, a song — with a goal tempo if it has one. The Fretboard tab is ready to use any time.</p><button class="primary" id="exFirst">+ Add your first exercise</button></div>');
+  ]
+   .map(([k,v])=>'<div><span>'+k+'</span><b>'+v+'</b></div>').join('')+(s.last&&s.last.effort?'<div><span>Last effort</span><b style="font-size:15px">'+effHtml(s.last.effort)+'</b></div>':'')+(ex.notes?'<div style="grid-column:1/-1"><span>Notes</span><div>'+esc(ex.notes)+'</div></div>':''):(hasPracticeEx()?'<div>No exercise selected</div>':'<div class="firstex" style="grid-column:1/-1"><b>No exercises yet</b><p class="sub">Add the things you practice — a lick, a scale, a song — with a goal tempo if it has one. The Fretboard tab is ready to use any time.</p><button class="primary" id="exFirst">+ Add your first exercise</button></div>');
   $('#exSel').hidden=!hasPracticeEx();$('#editEx').hidden=!ex;$('#openTab').hidden=!ex||ex.trainer||!ex.tab;const fx=$('#exFirst');if(fx)fx.onclick=()=>editEx(null);
-  const ls=$('#ladSec');ls.hidden=!ex||ex.trainer||!usesMet(ex);
+  const ls=$('#ladSec');ls.hidden=!ex||ex.trainer||!usesMet(ex);$('#lenRow').hidden=!ex||ex.trainer;
   if(ex&&!ex.trainer){if(ls.open!=(D.settings.ladOpen!==false))ls.open=D.settings.ladOpen!==false;
     if(document.activeElement!=$('#exLen'))$('#exLen').value=ex.lenBars||1;
     // with the tab in use, Length shows the tab's bars in the same place (the number box stays, hidden, so nothing moves)
@@ -888,20 +902,27 @@ function renderPractice(){
   const te=D.entries.filter(e=>e.date==dkey()).sort(cmpEntry);
   $('#todayList').innerHTML=te.length?te.map(entRow).join(''):'<p class="sub" style="margin:4px 0">Nothing logged yet today.</p>';
   bindEnt($('#todayList'));
-  if(!$('#presets').children.length)buildPresets();
 }
-function entRow(e){const x=exById(e.ex);return'<div class="ent" data-id="'+e.id+'"><div class="nm">'+esc(exName(x))+'<small>'+esc([x&&!x.trainer&&x.technique,x&&x.sub,e.note].filter(Boolean).join(' · '))+'</small></div><div class="n">'+(e.bpm!=null?trim(e.bpm)+' <span class="sub">'+esc(metricOf(x))+'</span>':'<span class="sub">—</span>')+'</div><div class="n">'+trim(e.min)+' <span class="sub">min</span></div><div class="eff">'+effHtml(e.effort)+'</div></div>'}
+function entRow(e){const x=exById(e.ex);return'<div class="ent" data-id="'+e.id+'"><div class="nm">'+esc(exName(x))+'<small>'+esc([e.part?'not finished':'',x&&!x.trainer&&x.technique,x&&x.sub,e.note].filter(Boolean).join(' · '))+'</small></div><div class="n">'+(e.bpm!=null?trim(e.bpm)+' <span class="sub">'+esc(metricOf(x))+'</span>':'<span class="sub">—</span>')+'</div><div class="n">'+trim(e.min)+' <span class="sub">min</span></div><div class="eff">'+effHtml(e.effort)+'</div></div>'}
 function bindEnt(root){root.querySelectorAll('.ent').forEach(r=>r.onclick=()=>editEntry(r.dataset.id))}
 // Switching exercises with time on the clock asks what to do with that time, in a dialog you can't miss.
 async function chooseEx(id){
   if(id==T.ex)return;
-  if(T.acc>0||running()){syncExSel();
-    const c=await choose('Switch to '+exName(exById(id))+'?','You have '+clockStr(elapsed(),true)+' on the timer for '+exName(exById(T.ex))+'. Log it before switching, or discard it.',
-      [{label:'Cancel',value:'cancel'},{label:'Discard and switch',value:'discard',cls:'danger'},{label:'Log it',value:'log',cls:'primary'}]);
-    if(c=='log'){stopForLog();pendingEx=id;openLog()}
-    else if(c=='discard'){resetTimer();T.ex=id;saveT();onExChanged();syncExSel()}
-    return}
-  T.ex=id;saveT();onExChanged()}
+  if(T.acc>0||running())savePart();   // the time so far is kept for today; come back to finish it
+  T.ex=id;saveT();onExChanged();syncExSel()}
+// ---- practice in parts ----
+// Time you practise on an exercise and leave unfinished (switching to another one) is saved straight away in
+// today's log, as one unfinished entry for that exercise (part:true). Coming back adds to it, so what's left of a
+// scheduled time goal is always up to date. Finishing (Log, or the countdown running out) opens the log form for
+// the whole day's time on it, with the effort and a note, and turns the entry into a normal one.
+function partEntry(id){return D.entries.find(x=>x.part&&x.ex==id&&x.date==dkey())}
+function savePart(){const el=elapsed(),ex=exById(T.ex);
+  if(CURVE.on||CURVE.hold)curveEnd();else if(MET.on)metStop();if(running())pause();
+  if(el>=5000&&ex&&!ex.trainer){let e=partEntry(ex.id);
+    if(!e){e={id:uid(),date:dkey(),ex:ex.id,bpm:null,min:0,ms:0,effort:null,note:'',t:Date.now(),part:true};D.entries.push(e)}
+    e.ms=(e.ms||Math.round((+e.min||0)*60000))+el;e.min=Math.round(e.ms/6000)/10;e.t=Date.now();save();
+    toast(trim(Math.round(el/6000)/10)+' min of '+exName(ex)+' saved for today')}
+  $('#logForm').hidden=true;pendingEx=null;resetTimer()}
 $('#exSel').onchange=e=>{const id=+e.target.value;chooseEx(id);if(T.acc>0||running())e.target.value=T.ex};
 function onExChanged(){curveCancel();const s=exStats(T.ex);$('#bpm').value=s.lastB?trim(s.lastB.bpm):'';followEx();renderMetTempo();renderMet();renderPractice();renderTimer();}
 $('#bpm').oninput=()=>{curveCancel();$$('#ladder .chip').forEach(c=>c.classList.toggle('on',+c.dataset.v==num($('#bpm').value)))};
@@ -915,7 +936,9 @@ function openLog(){
   if(view!='practice')show('practice');
   const ex=exById(T.ex);
   $('#lfEx').textContent=exName(ex);
-  $('#lfMin').value=Math.max(1,Math.round(elapsed()/60000));
+  {const pe=partEntry(T.ex),earlier=pe?(pe.ms||Math.round((+pe.min||0)*60000)):0;
+   const tot=earlier+elapsed();$('#lfMin').value=tot>0?Math.max(1,Math.round(tot/6000)/10):'';
+   $('#lfEarlier').textContent=pe?'Includes '+trim(Math.round(earlier/6000)/10)+' min from earlier today':''}
   $('#lfBpm').value=metricOf(ex)=='BPM'?$('#bpm').value:'';$('#lfBpmL').textContent=metricOf(ex);
   if(ex&&ex.trainer){const n=trainerScore();$('#lfBpm').value=n||''}
   $('#lfNote').value='';lfEffort=null;LOGLAD=null;
@@ -957,7 +980,9 @@ function saveLog(){
   const min=num($('#lfMin').value);if(!(min>0)){toast('Enter the minutes');$('#lfMin').focus();return}
   const bpm=num($('#lfBpm').value);
   const lad=!!(LOGLAD&&$('#lfLad').checked);
-  D.entries.push(Object.assign({id:uid(),date:dkey(new Date(T.seg0||Date.now())),ex:T.ex,bpm,min,effort:lfEffort,note:$('#lfNote').value.trim(),t:Date.now()},lad?{ladder:true}:{}));
+  const pe=partEntry(T.ex),done={bpm,min,effort:lfEffort,note:$('#lfNote').value.trim(),t:Date.now()};
+  if(pe){Object.assign(pe,done);delete pe.part;delete pe.ms;if(lad)pe.ladder=true}   // the day's parts become this entry
+  else D.entries.push(Object.assign({id:uid(),date:dkey(new Date(T.seg0||Date.now())),ex:T.ex},done,lad?{ladder:true}:{}));
   save();$('#logForm').hidden=true;LOGLAD=null;
   if(bpm!=null&&!lad)$('#bpm').value=trim(bpm);
   resetTimer();
@@ -1061,14 +1086,29 @@ $('#csvBtn').onclick=()=>csv(filteredEntries());
 const DAYN=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'],DAYORD=[1,2,3,4,5,6,0];
 function schedDays(e){const d=(e&&e.days)||[];return !d.length?'':d.length==7?'Every day':DAYORD.filter(i=>d.includes(i)).map(i=>DAYN[i]).join(' ')}
 function schedText(e){const t=schedDays(e);return t+(e&&e.timeGoal?(t?' · ':'')+trim(e.timeGoal)+' min':'')}
-function dueToday(e){return !!e&&!e.archived&&!e.trainer&&(e.days||[]).includes(new Date().getDay())}
+// The Fretboard Trainer can be turned off (Settings › Practice): its tab and schedule go, its past log stays
+function trainerShown(){return !D.settings.hideTrainer}
+function applyTrainerShown(){const b=$('#tabs [data-v="trainer"]');if(b)b.hidden=!trainerShown()}
+function dueToday(e){return !!e&&!e.archived&&!(e.trainer&&!trainerShown())&&(e.days||[]).includes(new Date().getDay())}
+// The Fretboard Trainer's schedule is set in its own settings (trainer page › ⚙ Settings › Schedule)
+window.gpTrainerSchedule={get(){const t=trainerEx()||{};return{days:(t.days||[]).slice(),goal:t.timeGoal||null}},
+  set(days,goal){const t=trainerEx();if(!t)return;t.days=days.filter(x=>x>=0&&x<=6).sort();t.timeGoal=goal;save();render()}};
 function minToday(id){return D.entries.filter(x=>x.ex==id&&x.date==dkey()).reduce((s,x)=>s+(+x.min||0),0)}
-function renderDue(){const due=D.exercises.filter(dueToday);const el=$('#dueList');if(!el)return;
-  if(!due.length){el.innerHTML='';return}
-  el.innerHTML='<div class="sub" style="margin-bottom:6px">Scheduled today</div>'+due.map(e=>{const m=minToday(e.id),g=+e.timeGoal||0,ok=g?m>=g:m>0;
-    return'<button type="button" class="due'+(ok?' done':'')+(e.id==T.ex?' cur':'')+'" data-id="'+e.id+'"><span class="nm">'+esc(exName(e))+'</span>'+
+// Only what's still to do shows (above the Exercise card); finished ones are in the day's log below.
+function renderDue(){const el=$('#dueList');if(!el)return;
+  const due=D.exercises.filter(e=>{if(!dueToday(e))return false;const m=minToday(e.id),g=+e.timeGoal||0;return g?m<g:m<=0});
+  $('#dueCard').hidden=!due.length;if(!due.length){el.innerHTML='';return}
+  el.innerHTML='<div class="sub" style="margin-bottom:6px">Still to practice today</div>'+due.map(e=>{const m=minToday(e.id),g=+e.timeGoal||0,ok=g?m>=g:m>0;
+    return'<button type="button" class="due'+(ok?' done':'')+(e.id==T.ex?' cur':'')+'" data-id="'+e.id+'"><span class="nm">'+esc(exName(e))+(schedDays(e)?' <small class="sub">'+esc(schedDays(e))+'</small>':'')+'</span>'+
       (g?'<span class="pct"><i style="width:'+Math.min(100,100*m/g)+'%"></i></span><span class="sub">'+trim(Math.round(m*10)/10)+' / '+trim(g)+' min</span>':'<span class="sub">'+(m?trim(Math.round(m*10)/10)+' min':'not yet')+'</span>')+'</button>'}).join('');
-  el.querySelectorAll('.due').forEach(b=>b.onclick=()=>{const id=+b.dataset.id;if(id==T.ex)return;$('#exSel').value=id;$('#exSel').onchange({target:$('#exSel')})})}
+  el.querySelectorAll('.due').forEach(b=>b.onclick=async()=>{const id=+b.dataset.id,x=exById(id);
+    if(x&&x.trainer){show('trainer');return}   // the Fretboard Trainer keeps its own time
+    if(id!=T.ex)await chooseEx(id);if(T.ex==id)countdownToGoal(x)})}
+// A scheduled exercise you click: the timer is reset to a countdown of what's left of its time goal today.
+// Practice still on the timer is offered for logging or discarding first, so it's never lost silently.
+async function countdownToGoal(e){const g=+(e&&e.timeGoal)||0;if(!g)return;let left=g-minToday(e.id);if(left<=0)return;
+  if(T.acc>0||running()){savePart();left=g-minToday(e.id);if(left<=0){renderTimer();return}}
+  T.mode='down';T.done=false;setTarget(left)}
 function renderDays(days){$('#dxDays').innerHTML=DAYORD.map(i=>'<button type="button" class="chip'+(days.includes(i)?' on':'')+'" data-d="'+i+'">'+DAYN[i]+'</button>').join('')+
   '<button type="button" class="chip" data-d="all" style="margin-left:8px">'+(days.length==7?'Clear':'Every day')+'</button>';
   $$('#dxDays .chip').forEach(c=>c.onclick=()=>{let d=$$('#dxDays .chip.on').map(x=>+x.dataset.d);
@@ -1247,8 +1287,8 @@ $('#sRange').onchange=renderStats;$('#sEx').onchange=renderProgress;
 function renderSettings(){
   const s=D.settings;
   renderSkins();
-  $('#stGoal').value=s.goal;$('#stTabCol').value=s.tabColors=='paper'?'paper':'theme';$('#stPresets').value=s.presets.join(', ');$('#stVol').value=s.chimeVol;
-  $('#stNotify').checked=!!s.notify;
+  $('#stGoal').value=s.goal;$('#stTabCol').value=s.tabColors=='paper'?'paper':'theme';$('#stVol').value=s.chimeVol;
+  $('#stNotify').checked=!!s.notify;$('#stTrainer').checked=trainerShown();
   $('#bkInfo').innerHTML=D.entries.length+' entries, '+D.exercises.filter(x=>!x.trainer).length+' exercises. Last backup: '+(s.lastBackup?new Date(s.lastBackup).toLocaleDateString():'never')+'. <span id="persist"></span>';
   try{navigator.storage&&navigator.storage.persisted&&navigator.storage.persisted().then(p=>{const e=$('#persist');if(e)e.textContent=p?'Storage is marked persistent.':''})}catch(e){}
   $('#effEdit').innerHTML=D.efforts.map(f=>'<div class="erow" data-id="'+f.id+'"><span class="ed ed'+f.id+'" style="margin:0 auto"></span><input type="text" class="en" value="'+esc(f.name)+'" aria-label="Name"><input type="text" class="ex" value="'+esc(f.desc||'')+'" aria-label="Description"><button class="ex-del" title="Remove">✕</button></div>').join('');
@@ -1262,9 +1302,9 @@ function renderSettings(){
     r.querySelector('button').onclick=()=>{const n=D.exercises.filter(x=>x.technique==old&&!x.trainer).length;if(n){tell(n+' exercise(s) use “'+old+'”. Change them first.');return}D.techniques.splice(i,1);save();renderSettings()}});
 }
 $('#stGoal').onchange=e=>{D.settings.goal=Math.max(0,num(e.target.value)||0);save()};
-$('#stPresets').onchange=e=>{const a=e.target.value.split(/[,\s]+/).map(num).filter(v=>v>0).slice(0,12);if(a.length){D.settings.presets=a;save();buildPresets()}e.target.value=D.settings.presets.join(', ')};
 $('#stVol').oninput=e=>{D.settings.chimeVol=+e.target.value;save()};
 $('#stTest').onclick=()=>chime(0);
+$('#stTrainer').onchange=e=>{D.settings.hideTrainer=!e.target.checked;save();applyTrainerShown()};
 $('#stNotify').onchange=async e=>{D.settings.notify=e.target.checked;save();if(e.target.checked&&'Notification' in window&&Notification.permission=='default'){try{await Notification.requestPermission()}catch(x){}}};
 $('#effAdd').onclick=()=>{const id=Math.max(0,...D.efforts.map(f=>f.id))+1;D.efforts.push({id,name:'New level',desc:''});save();renderSettings()};
 $('#techAdd').onclick=()=>{const v=$('#techNew').value.trim();if(v&&!D.techniques.includes(v)){D.techniques.push(v);save();$('#techNew').value='';renderSettings()}};
@@ -1359,7 +1399,7 @@ function tabSend(m){try{if(window.__JUCE__&&window.__JUCE__.backend){window.__JU
 function tabColors(){const cs=getComputedStyle(document.documentElement),v=n=>cs.getPropertyValue(n).trim();
   return{paper:D.settings.tabColors=='paper',bg:v('--bg'),card:v('--card'),fg:v('--fg'),mut:v('--mut'),line:v('--line'),acc:v('--acc'),accfg:v('--accfg')}}
 function openTab(){const ex=exById(T.ex);if(!ex||!ex.tab)return;TABWIN.open=true;TABWIN.ex=ex.id;TABWIN.lastPos='';
-  tabSend({type:'open',ex:ex.id,name:ex.name,technique:ex.technique||'',kind:ex.tab.kind,data:ex.tab.data,sel:ex.tabSel||null,track:ex.tabTrack||0,colors:tabColors(),canEdit:!!(STUDIO_APP&&ex.tab.path)});
+  tabSend({type:'open',ex:ex.id,name:ex.name,technique:ex.technique||'',kind:ex.tab.kind,data:ex.tab.data,sel:ex.tabSel||null,track:ex.tabTrack||0,colors:tabColors(),canEdit:!!(STUDIO_APP&&ex.tab.path),sound:hearTab(ex),canSound:!!(STUDIO_APP&&tabOn(ex))});
   TABWIN.lastTr='';tabTransport()}
 // keeps the tab window's Play/Pause and Stop showing the same as this page's
 function tabTransport(){if(!TABWIN.open)return;const playing=/Pause/.test($('#metGo').textContent),canStop=!$('#metStop').disabled,k=playing+'|'+canStop;
@@ -1374,7 +1414,8 @@ function tabFromWindow(m){if(!m||!m.type)return;
   const ex=exById(m.ex);if(!ex||!ex.tab)return;
   if(m.type=='sel'){ex.tabSel=m.from==null?null:{from:m.from,to:m.to};save();if(CURVE.on&&tabOn(ex))CURVE.len=tabLen(ex);render()}
   else if(m.type=='track'){ex.tabTrack=m.track|0;save()}
-  else if(m.type=='edit'){if(STUDIO_APP&&ex.tab.path)studioSend({action:'tabEdit',path:ex.tab.path})}}
+  else if(m.type=='edit'){if(STUDIO_APP&&ex.tab.path)studioSend({action:'tabEdit',path:ex.tab.path})}
+  else if(m.type=='sound'){if(tabOn(ex))setHearTab(ex,!hearTab(ex))}}
 addEventListener('message',e=>{if(TABWIN.w&&e.source===TABWIN.w)tabFromWindow(e.data)});
 try{if(window.__JUCE__&&window.__JUCE__.backend)window.__JUCE__.backend.addEventListener('studioTab',m=>tabFromWindow(m))}catch(e){}
 $('#openTab').onclick=openTab;
@@ -1481,7 +1522,7 @@ function syncPat(){const M=MC(),st=patState(),n=M.beats*M.sub;
 function keepCustom(){const M=MC(),st=patState();st.kind='custom';st.custom={beats:M.beats,sub:M.sub,p:M.pat.p.slice(),s:M.pat.s.slice(),m:M.pat.m.slice()};save()}
 function subFromText(t){t=(t||'').toLowerCase();if(!t.trim())return 0;const tri=/trip/.test(t);
   if(/32/.test(t))return 8;if(/16/.test(t))return tri?6:4;if(/\b8|eighth/.test(t))return tri?3:2;if(/quarter|\b4/.test(t))return tri?3:1;return 0}
-const MET={on:false,step:0,next:0,w:null,iv:null,q:[],taps:[],lit:[],eng:false,out:[],sent:{}};
+const MET={on:false,step:0,next:0,w:null,iv:null,q:[],taps:[],lit:[],eng:false,out:[],sent:{},tabOut:[],tabProg:null};
 // In Studio the metronome plays in Studio's audio engine: out your audio interface, on the engine's clock (the
 // same one as your guitar). This page still decides what plays when (pattern, ladder, tab bars), a quarter of a
 // second ahead, and sends each hit with its time on that clock. Studio reports the clock with the input level
@@ -1496,8 +1537,42 @@ function engReady(){return STUDIO_APP&&ENG.ok&&performance.now()-ENG.seen<1000}
 function useEng(){return MET.on?MET.eng:engReady()}
 function mNow(){return useEng()?engNow():(actx?actx.currentTime:0)}
 function engHit(t,snd,fb,g){MET.out.push([Math.round(t*1e5)/1e5,snd,fb,Math.round(g*1000)/1000])}
-function engFlush(){if(MET.out.length){studioSend({action:'metHits',hits:MET.out});MET.out=[]}}
-function engClear(){MET.out=[];if(MET.eng)studioSend({action:'metClear'})}
+function engFlush(){if(MET.out.length){studioSend({action:'metHits',hits:MET.out});MET.out=[]}
+  if(MET.tabOut.length){studioSend({action:'tabNotes',ev:MET.tabOut});MET.tabOut=[]}}
+function engClear(){MET.out=[];MET.tabOut=[];MET.tabProg=null;if(MET.eng)studioSend({action:'metClear'})}
+
+// ---- hearing the tab ----
+// Studio plays the tab in its audio engine with the free SoundFont (web/vendor/alphatab/soundfont), on the
+// metronome's clock: at the start of each bar the page sends that bar's notes with their times, worked out
+// from the tempo the metronome is playing that bar at. So the tab follows the tempo you set, the tab's tempo
+// changes and the tempo ladder, and is silent during count-ins. It needs Studio's audio engine (not Web Audio).
+const TABN={};
+function hearTab(ex){return tabOn(ex)&&ex.tabSound!==false}
+function tabNotesKey(ex){const t=ex.tab;return ex.id+'|'+(ex.tabTrack||0)+'|'+(t.mtime||'')+'|'+(t.data||'').length}
+function tabNotes(ex){const k=tabNotesKey(ex),c=TABN[k];if(c)return c.ready?c:null;TABN[k]={ready:false};buildTabNotes(ex,k);return null}
+async function buildTabNotes(ex,k){
+  try{const AT=await loadAlphaTab(),t=ex.tab;let sc;
+    if(t.kind=='tex'){const imp=new AT.importer.AlphaTexImporter();imp.initFromString(t.data,new AT.Settings());sc=imp.readScore()}
+    else sc=AT.importer.ScoreLoader.loadScoreFromBytes(tabBytes(t),new AT.Settings());
+    const tr=sc.tracks[Math.min(ex.tabTrack||0,sc.tracks.length-1)],bars=sc.masterBars.map(()=>[]),ticks=sc.masterBars.map(m=>m.calculateDuration());
+    // a tied note sounds for the whole tie; the notes it's tied to aren't played again
+    const tieLen=n=>{let d=0,x=n,g=0;while(x&&g++<64){d+=x.beat.playbackDuration;if(!x.isTieOrigin||!x.tieDestination)break;x=x.tieDestination}return d};
+    tr.staves.forEach(st=>st.bars.forEach((bar,bi)=>bar.voices.forEach(v=>v.beats.forEach(bt=>{if(bt.isRest||!bars[bi])return;
+      bt.notes.forEach(n=>{if(n.isTieDestination||n.isDead)return;
+        const vel=Math.min(1,.35+.08*(+n.dynamics||5))*(n.isGhost?.6:1);
+        let d=n.isTieOrigin?tieLen(n):bt.playbackDuration;if(n.isPalmMute||n.isStaccato)d=Math.min(d,bt.playbackDuration*.5);
+        bars[bi].push([bt.playbackStart,d,n.realValue,vel])})}))));
+    TABN[k]={ready:true,bars,ticks,program:tr.playbackInfo.program|0,perc:!!tr.isPercussion}}
+  catch(e){TABN[k]={ready:true,bars:[],ticks:[],program:0,failed:true}}}
+// the bar B (from tabBarStart) starting at t0 on the engine's clock
+function playTabBar(B,t0){const ex=exById(T.ex);
+  if(!MET.eng||!B||!hearTab(ex)||(CURVE.on&&(CURVE.counting||CURVE.first)))return;
+  const N=tabNotes(ex);if(!N||N.perc)return;const notes=N.bars[B.bar],ticks=N.ticks[B.bar];if(!notes||!ticks)return;
+  const sec=B.beats*60/(metTempo()*B.mult)/ticks,r=x=>Math.round(x*1e5)/1e5;
+  if(MET.tabProg!==N.program){MET.tabProg=N.program;MET.tabOut.push([r(t0-.002),2,0,N.program,0])}
+  notes.forEach(([tk,d,key,vel])=>{const a=t0+tk*sec;MET.tabOut.push([r(a),0,0,key,vel],[r(a+Math.max(.03,d*sec*.97)),1,0,key,0])})}
+function tabVolSend(){if(STUDIO_APP)studioSend({action:'tabVol',v:+(MC().tabVol??.8)})}
+function setHearTab(ex,on){ex.tabSound=on;save();render();if(TABWIN.open)tabSend({type:'sound',on:hearTab(ex),can:tabOn(ex)&&STUDIO_APP})}
 // Studio gets its own copy of your samples (from this page's sample store) to play them itself
 function engSendSample(v,name,buf){MET.sent[v]=name;studioSend({action:'metSample',v,data:buf?b64FromBytes(new Uint8Array(buf)):''})}
 function engSyncSamples(){if(!STUDIO_APP)return;const M=MC();
@@ -1527,7 +1602,7 @@ function metPump(){
   if(!MET.on||(!MET.eng&&!actx))return;const M=MC(),now=mNow(),ahead=MET.eng?.25:.12;
   if(MET.next<now-.2)MET.next=now+.05;
   while(MET.next<now+ahead){
-    if(MET.step==0){if(CURVE.on&&!CURVE.paused)curveBar();MET.bar=tabBarStart()}   // a new bar (from the tab when it's in use)
+    if(MET.step==0){if(CURVE.on&&!CURVE.paused)curveBar();MET.bar=tabBarStart();playTabBar(MET.bar,MET.next)}   // a new bar (from the tab when it's in use)
     const B=MET.bar,sub=B?B.sub:M.sub,n=(B?B.beats:M.beats)*sub,i=MET.step%n,P=B?B.pat:M.pat;const dur=60/(metTempo()*(B?B.mult:1))/sub;
     const gr=CURVE.on&&CURVE.counting;
     if(CURVE.on&&(CURVE.counting||CURVE.first)){if(CURVE.counting&&i%sub==0)readyClick(MET.next,i==0)}
@@ -1551,7 +1626,8 @@ function lightStep(i,q){MET.lit.forEach(e=>e.classList.remove('now'));const M=MC
 function metStart(){
   if(!usesMet(exById(T.ex)))return;   // metronome switched off for this exercise: no clicks and no beat lights
   const a=audio(),eng=engReady();if(!a&&!eng)return;MET.eng=eng;if(eng)engSyncSamples();else loadSamples();
-  MET.on=true;MET.step=0;MET.next=mNow()+(eng?.15:.08);MET.q=[];TABPTR=null;MET.bar=null;
+  MET.on=true;MET.step=0;MET.next=mNow()+(eng?.15:.08);MET.q=[];TABPTR=null;MET.bar=null;MET.tabProg=null;
+  if(eng){const ex=exById(T.ex);if(hearTab(ex))tabNotes(ex);tabVolSend()}
   if(!MET.w){try{MET.w=new Worker(URL.createObjectURL(new Blob(["let t=null;onmessage=e=>{clearInterval(t);if(e.data=='start')t=setInterval(()=>postMessage(0),25)}"],{type:'text/javascript'})));MET.w.onmessage=metPump}catch(e){MET.w=null}}
   if(MET.w)MET.w.postMessage('start');else MET.iv=setInterval(metPump,25);
   metPump();requestAnimationFrame(metDraw);renderMetBtn()}
@@ -1577,9 +1653,9 @@ function renderCurve(){const ex=exById(T.ex),c=curveSteps(ex),b=$('#curveGo'),ac
   b.textContent=CURVE.on?(CURVE.paused?'■ End ladder':'■ Stop ladder'):CURVE.hold?'■ End ladder':'▶ Tempo ladder';b.classList.toggle('primary',act);b.disabled=!c&&!act;
   renderMetBtn();if(act)return curveInfo();
   $('#curveCtl').hidden=true;
-  if(!c){$('#curveInfo').textContent='Needs a goal (Edit exercise) or a Ladder max.';$('#ladSum').textContent='needs a goal or a ladder max';return}
+  if(!c){$('#curveInfo').textContent='Needs a goal (Edit exercise) or a Ladder max.';$('#ladSum').textContent='needs a goal';return}
   $('#curveInfo').textContent='';
-  const mn=ladderMinutes(c);$('#ladSum').textContent='70% → 110% ('+c.max+' BPM'+(ex.curveMax?'':', goal + 10%')+') → 90% · about '+(mn<1?'1':Math.round(mn))+' min'}
+  const mn=ladderMinutes(c);$('#ladSum').textContent='up to '+c.max+' BPM · ~'+(mn<1?'1':Math.round(mn))+' min'}
 function curveInfo(){const C=CURVE;let t;
   if(C.hold)t='Finished — holding at 90% ('+C.steps[C.steps.length-1]+' BPM). Press End ladder to stop.';
   else if(C.first)t='Starting…';
@@ -1648,7 +1724,7 @@ function renderLadPanel(){const ex=exById(T.ex),pn=$('#ladPanel');if(!pn)return;
     bars.onclick=e=>{const b=e.target.closest('.col');if(b)setTempo(+b.dataset.v)};return}
   const c=curveSteps(ex);if(!c){big.textContent='—';sub.textContent='Set a goal or a ladder max';setBars(bars,'');return}
   const C=CURVE,act=(C.on||C.hold)&&C.ex==T.ex,pre=!act&&LADSTART&&LADSTART.ex==T.ex&&LADSTART.i<c.steps.length?LADSTART.i:-1,idx=act?(C.hold?c.steps.length:C.idx):-1;
-  setBars(bars,c.pcts.map((p,i)=>'<span class="col" data-i="'+i+'" title="'+p+'% · '+c.steps[i]+' BPM"><i class="'+(!act?(i==pre?'cur':''):i<idx?'done':i==idx?(C.stay?'hold':'cur'):'')+'" style="height:'+Math.round(p/110*58)+'px"></i></span>').join(''));
+  setBars(bars,c.pcts.map((p,i)=>'<span class="col" data-i="'+i+'" title="'+p+'% · '+c.steps[i]+' BPM"><i class="'+(!act?(i==pre?'cur':''):i<idx?'done':i==idx?(C.stay?'hold':'cur'):'')+'" style="height:'+Math.round(p/110*58)+'px"></i><b>'+p+'</b></span>').join(''));
   if(!act){big.textContent=c.pcts[pre<0?0:pre]+'%';sub.textContent=(pre>0?'start here':'first tempo')+' · max '+c.max+' BPM'}
   else if(C.hold){big.textContent='90%';sub.textContent='ladder done · Stop to end'}
   else{big.textContent=(C.paused?'Paused · ':'')+C.pcts[C.idx]+'%';sub.innerHTML=(C.stay?'<span style="color:#60a5fa;font-weight:600">holding</span>':'ladder step')+' · max '+c.max+' BPM';
@@ -1673,7 +1749,7 @@ function renderMet(){
   $('#metGrid').innerHTML=h;
   // keyboard (Enter/Space) still toggles one cell; mouse/touch use the drag painter below
   $$('#metGrid .mc').forEach(c=>c.onclick=e=>{if(e.detail!==0)return;const v=c.dataset.v,i=+c.dataset.i;M.pat[v][i]=!M.pat[v][i];c.classList.toggle('on',M.pat[v][i]);keepCustom();renderMet()});
-  $('#metKit').value=M.kit;$('#metMaster').value=M.master;$('#metFollow').checked=!!M.follow;
+  $('#metKit').value=M.kit;$('#metMaster').value=M.master;$('#metFollow').checked=!!M.follow;$('#tabVolRow').hidden=!STUDIO_APP;$('#tabVol').value=M.tabVol??.8;
   $('#metVoices').innerHTML=VOICES.map(([v,n,dk,ck])=>{const sm=M.samples&&M.samples[v];
     return'<div class="vrow"><span class="vname"><b>'+n+'</b><small>'+(sm?'Your sample: '+esc(sm):'Built-in '+(M.kit=='click'?ck:dk))+'</small></span>'+
     '<input type="range" min="0" max="1" step="0.05" value="'+(M.vol[v]??1)+'" data-v="'+v+'" class="vvol" aria-label="'+n+' volume">'+
@@ -1723,6 +1799,7 @@ $('#curveBars').oninput=e=>{const ex=exById(T.ex),v=Math.round(num(e.target.valu
 $('#curveBars').onchange=e=>{const ex=exById(T.ex),v=Math.round(num(e.target.value)||0);if(ex&&v>0){ex.curveBars=Math.min(64,v);save();if(CURVE.on)CURVE.bars=ex.curveBars}renderCurve()};
 $('#metKit').onchange=e=>{MC().kit=e.target.value;save();renderMet()};
 $('#metMaster').oninput=e=>{MC().master=+e.target.value;save()};
+$('#tabVol').oninput=e=>{MC().tabVol=+e.target.value;save();tabVolSend()};
 $('#metFollow').onchange=e=>{MC().follow=e.target.checked;save();if(e.target.checked)followEx()};
 $('#metTap').onclick=()=>{const t=performance.now();MET.taps=MET.taps.filter(x=>t-x<2500);MET.taps.push(t);
   if(MET.taps.length>=2){const ts=MET.taps.slice(-5),iv=(ts[ts.length-1]-ts[0])/(ts.length-1);$('#bpm').value=Math.round(60000/iv);$('#bpm').oninput()}};
@@ -1910,7 +1987,7 @@ function applyFolds(){const f=D.settings.folded||{};$$('#v-settings .card').forE
 $('#v-settings').addEventListener('click',e=>{const h=e.target.closest('h2'),c=h&&h.closest('.card');if(!c)return;
   const top=c.firstElementChild;if(h!==top&&!(top.classList.contains('row')&&h.parentElement===top))return;   // only the section's own heading
   foldCard(c,!c.classList.contains('folded'))});
-applyFolds();new MutationObserver(applyFolds).observe($('#v-settings'),{childList:true,subtree:false});
+applyTrainerShown();applyFolds();new MutationObserver(applyFolds).observe($('#v-settings'),{childList:true,subtree:false});
 {const g=$('#v-settings .grid2');if(g)new MutationObserver(applyFolds).observe(g,{childList:true})}
 function renderChanges(){$('#verNow').textContent='· you have version '+APP_VERSION;
   $('#chlog').innerHTML=CHANGES.map(([v,d,items])=>'<h3>Version '+v+'<small>'+esc(d)+'</small></h3><ul>'+items.map(i=>'<li>'+esc(i)+'</li>').join('')+'</ul>').join('')}

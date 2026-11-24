@@ -7,9 +7,9 @@
 <!-- Guitar Practice Studio's tab window. The tab is drawn by alphaTab (MPL-2.0, web/vendor/alphatab).
      Studio passes messages between this page and the practice page:
        from the practice page: open (the exercise's tab), pos (where the metronome is), theme, none,
-                               transport (playing or not, and whether Stop does anything)
+                               transport (playing or not, and whether Stop does anything), sound (Hear tab on or off)
        to the practice page:   ready, sel (the bars you selected), track (the track you picked),
-                               transport (Play/Pause or Stop pressed here), edit (Edit pressed here)    -->
+                               transport (Play/Pause or Stop pressed here), edit (Edit pressed here), sound (🔊 pressed here)    -->
 <style>
 :root{--bg:#0d0a07;--card:#17120c;--fg:#f1e6d2;--mut:#a8977a;--line:#3a2c1a;--acc:#d4a64a;--accfg:#1a1205}
 *{box-sizing:border-box}
@@ -19,6 +19,7 @@ html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);font:14px -a
 .st{color:var(--mut)}.st em{color:var(--acc);font-style:normal}
 button,select{background:var(--card);color:var(--fg);border:1px solid var(--line);border-radius:10px;padding:7px 14px;font:inherit;cursor:pointer}
 button:disabled{opacity:.45;cursor:default}
+#sound.off{opacity:.55;text-decoration:line-through}
 #play{background:var(--acc);color:var(--accfg);border-color:var(--acc);font-weight:600;min-width:92px}
 #zoom{min-width:52px;text-align:center;color:var(--mut)}
 #page{padding:14px}
@@ -41,6 +42,7 @@ body.paper .sel{background:rgba(212,166,74,.28)}
 <div class="bar">
   <button id="play" title="Play and pause the metronome and the practice timer (Space)">▶ Play</button>
   <button id="stop" title="Stop the metronome and the timer" disabled>■ Stop</button>
+  <button id="sound" title="Hear the tab: Studio plays it with the metronome" hidden>🔊</button>
   <b id="title">Tab</b><span class="st" id="tech"></span><span class="sp"></span>
   <button id="edit" disabled>✎ Edit in tab editor</button>
   <button id="pick" title="Then click a bar, or drag across bars, to choose what the tempo ladder plays">Select bars</button>
@@ -86,7 +88,7 @@ function bytesFrom(m){if(m.kind=='tex')return new TextEncoder().encode(m.data);c
 function load(m){
   S.ex=m.ex;S.name=m.name||'';S.sel=m.sel||null;S.track=m.track|0;setColors(m.colors);
   // Edit opens the tab's file in your tab editor; Studio reloads it here when you save it there
-  $('edit').disabled=!m.canEdit;$('edit').title=m.canEdit?'Open this tab in your tab editor (for example Guitar Pro or TuxGuitar). It updates here when you save it.'
+  sound(!!m.sound,!!m.canSound);$('edit').disabled=!m.canEdit;$('edit').title=m.canEdit?'Open this tab in your tab editor (for example Guitar Pro or TuxGuitar). It updates here when you save it.'
     :m.kind=='tex'?'A typed tab: change it in Edit exercise › Type it…':'This tab is a copy, not linked to a file. Link one with Edit exercise › Open file…';
   setPicking(false);$('title').textContent=S.name||'Tab';$('tech').textContent=m.technique?'· '+m.technique:'';document.title=(S.name?S.name+' – ':'')+'Tab';
   try{S.score=alphaTab.importer.ScoreLoader.loadScoreFromBytes(bytesFrom(m),new alphaTab.Settings())}
@@ -141,6 +143,8 @@ $('zout').onclick=()=>{prefs.zoom=Math.max(.5,Math.round((prefs.zoom-.1)*10)/10)
 $('play').onclick=()=>send({type:'transport',cmd:'play'});
 $('stop').onclick=()=>send({type:'transport',cmd:'stop'});
 $('edit').onclick=()=>send({type:'edit',ex:S.ex});
+$('sound').onclick=()=>send({type:'sound',ex:S.ex});
+function sound(on,can){const b=$('sound');if(can!=null)b.hidden=!can;b.classList.toggle('off',!on);b.title=on?'Hear the tab: on (click to turn off)':'Hear the tab: off (click to turn on)'}
 addEventListener('keydown',e=>{if(e.code!='Space'||e.repeat||e.target.tagName=='SELECT'||e.ctrlKey||e.metaKey||e.altKey)return;e.preventDefault();$('play').click()});
 function transport(m){$('play').textContent=m.playing?'⏸ Pause':'▶ Play';$('stop').disabled=!m.canStop}
 
@@ -150,6 +154,7 @@ function onMsg(m){if(!m||!m.type)return;
   else if(m.type=='pos')cursor(m.bar,m.frac);
   else if(m.type=='theme'){setColors(m.colors);render()}
   else if(m.type=='transport')transport(m)
+  else if(m.type=='sound')sound(m.on,m.can)
   else if(m.type=='none'){S.score=null;S.ex=null;$('edit').disabled=true;$('tech').textContent='';setPicking(false);$('title').textContent=m.name||'Tab';showMsg('This exercise has no tab. Add one in Edit exercise.')}}
 if(isJuce)window.__JUCE__.backend.addEventListener('tab',onMsg);else addEventListener('message',e=>onMsg(e.data));
 addEventListener('beforeunload',()=>send({type:'closed'}));

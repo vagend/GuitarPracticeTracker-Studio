@@ -3,6 +3,7 @@
 #include <array>
 #include <juce_audio_utils/juce_audio_utils.h>
 #include "Metronome.h"
+#include "TabSynth.h"
 
 // Plays the guitar input through one hosted plugin (amp sim or effect), and the metronome,
 // out the same audio interface on one clock.
@@ -22,8 +23,12 @@ public:
         inputOn = settings.getBoolValue ("inputOn", true);
 
         wantedDevice = settings.getXmlValue ("audioDevice");
-        // Only fall back to the computer's default device if you never picked one.
-        deviceManager.initialise (2, 2, wantedDevice.get(), wantedDevice == nullptr);
+        // The guitar only ever comes from an audio interface you picked in Audio settings. Until you pick
+        // one, Studio plays through the computer's own output, with no input at all.
+        if (wantedDevice != nullptr)
+            deviceManager.initialise (2, 2, wantedDevice.get(), false);
+        else
+            deviceManager.initialise (0, 2, nullptr, true);
         deviceManager.addAudioCallback (this);
         checkDevice();
     }
@@ -35,9 +40,9 @@ public:
     bool isWantedDeviceOpen() const noexcept { return deviceOk; }
 
     // Called when devices come and go, and now and then while your interface is missing.
-    // Studio never runs on a stand-in device: the computer's own microphone and speakers
-    // through an amp plugin can howl. So it reopens your interface when it's there again,
-    // and otherwise leaves audio off.
+    // Without your interface Studio plays through the computer's own output (metronome and so on)
+    // with no input: no guitar, and never the computer's microphone (through an amp plugin it can
+    // howl). When your interface is there again, Studio goes back to it.
     void followWantedDevice (bool devicesChanged)
     {
         if (wantedDevice == nullptr)
@@ -55,19 +60,36 @@ public:
             deviceManager.initialise (2, 2, wantedDevice.get(), false);
             checkDevice();
             if (deviceOk)
+            {
+                onSpeakers = false;
                 return;
+            }
         }
-        if (deviceManager.getCurrentAudioDevice() != nullptr)
-            deviceManager.closeAudioDevice();
+        if (! onSpeakers || deviceManager.getCurrentAudioDevice() == nullptr)
+        {
+            onSpeakers = true;
+            deviceManager.initialise (0, 2, nullptr, true);   // output only; your choice stays saved
+        }
     }
+
+    // Playing through the computer's own output because your interface is missing.
+    bool isOnSpeakers() const noexcept { return onSpeakers && deviceManager.getCurrentAudioDevice() != nullptr; }
 
     bool reopenGaveUp() const noexcept { return reopenAttempts >= 20; }
 
     // You picked a device in Audio settings: that's the new choice.
     void deviceChosen()
     {
+        // Studio's own switch to the computer's output (no input) isn't your choice, even with Audio settings open
+        if (onSpeakers)
+        {
+            const auto setup = deviceManager.getAudioDeviceSetup();
+            if (setup.inputDeviceName.isEmpty() || setup.inputChannels.isZero())
+                return;
+        }
         wantedDevice = deviceManager.createStateXml();
         deviceOk = true;
+        onSpeakers = false;
         standIn.store (false);
         saveState();
     }
@@ -82,12 +104,13 @@ public:
     juce::AudioDeviceManager deviceManager;
     juce::AudioPluginFormatManager formatManager;
     Metronome metronome;
+    TabSynth tabSynth;   // the tab's notes, on the metronome's clock
 
-    // Is the metronome's sound reaching your interface? (Not on a stand-in device, or with no device.)
-    bool isPlayingOnInterface() const noexcept
+    // Is the engine playing sound? (Your interface, or the computer's own output without it.)
+    bool isOutputPlaying() const noexcept
     {
         auto* dev = deviceManager.getCurrentAudioDevice();
-        return deviceOk && ! standIn.load() && dev != nullptr && dev->isPlaying();
+        return dev != nullptr && dev->isPlaying();
     }
 
     // How long after the engine works on a sound you hear it (for lighting the beat at the right moment).
@@ -287,19 +310,23 @@ public:
     {
         if (standIn.load())
         {
-            // Not your interface (the computer's own mic and speakers): stay silent.
+            // Not your interface (the computer's own output): no guitar, but the metronome plays.
             for (int ch = 0; ch < numOutputs; ++ch)
                 if (outputs[ch] != nullptr)
                     juce::FloatVectorOperations::clear (outputs[ch], numSamples);
             inputLevel.store (0.0f);
-            metronome.render (outputs, 0, numSamples, sampleRate);   // the clock runs, silently
+            const double t0 = metronome.now();
+            metronome.render (outputs, numOutputs, numSamples, sampleRate);
+            tabSynth.render (outputs, numOutputs, numSamples, sampleRate, t0);
             return;
         }
 
         processGuitar (inputs, numInputs, outputs, numOutputs, numSamples);
 
-        // The metronome plays on top, whether or not the guitar is muted.
+        // The metronome and the tab play on top, whether or not the guitar is muted.
+        const double t0 = metronome.now();
         metronome.render (outputs, numOutputs, numSamples, sampleRate);
+        tabSynth.render (outputs, numOutputs, numSamples, sampleRate, t0);
     }
 
 private:
@@ -415,6 +442,7 @@ private:
 
     std::unique_ptr<juce::XmlElement> wantedDevice;
     bool deviceOk = true;
+    bool onSpeakers = false;   // message thread
     int reopenAttempts = 0;
     std::atomic<bool> standIn { false };
 
