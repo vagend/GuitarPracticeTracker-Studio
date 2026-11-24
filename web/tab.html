@@ -6,8 +6,10 @@
 <title>Tab</title>
 <!-- Guitar Practice Studio's tab window. The tab is drawn by alphaTab (MPL-2.0, web/vendor/alphatab).
      Studio passes messages between this page and the practice page:
-       from the practice page: open (the exercise's tab), pos (where the metronome is), theme, none
-       to the practice page:   ready, sel (the bars you selected), track (the track you picked)          -->
+       from the practice page: open (the exercise's tab), pos (where the metronome is), theme, none,
+                               transport (playing or not, and whether Stop does anything)
+       to the practice page:   ready, sel (the bars you selected), track (the track you picked),
+                               transport (Play/Pause or Stop pressed here), edit (Edit pressed here)    -->
 <style>
 :root{--bg:#0d0a07;--card:#17120c;--fg:#f1e6d2;--mut:#a8977a;--line:#3a2c1a;--acc:#d4a64a;--accfg:#1a1205}
 *{box-sizing:border-box}
@@ -17,8 +19,11 @@ html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);font:14px -a
 .st{color:var(--mut)}.st em{color:var(--acc);font-style:normal}
 button,select{background:var(--card);color:var(--fg);border:1px solid var(--line);border-radius:10px;padding:7px 14px;font:inherit;cursor:pointer}
 button:disabled{opacity:.45;cursor:default}
+#play{background:var(--acc);color:var(--accfg);border-color:var(--acc);font-weight:600;min-width:92px}
 #zoom{min-width:52px;text-align:center;color:var(--mut)}
 #page{padding:14px}
+#pick.on{background:var(--acc);color:var(--accfg);border-color:var(--acc)}
+body.picking #at{cursor:crosshair}
 #wrap{position:relative;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:8px;min-height:120px;user-select:none;-webkit-user-select:none;touch-action:none}
 body.paper #wrap{background:#fff;border-color:#d8d2c4}
 #at{position:relative;z-index:1}
@@ -34,7 +39,11 @@ body.paper .sel{background:rgba(212,166,74,.28)}
 </head>
 <body>
 <div class="bar">
-  <b id="title">Tab</b><span class="st" id="status"></span><span class="sp"></span>
+  <button id="play" title="Play and pause the metronome and the practice timer (Space)">▶ Play</button>
+  <button id="stop" title="Stop the metronome and the timer" disabled>■ Stop</button>
+  <b id="title">Tab</b><span class="st" id="tech"></span><span class="sp"></span>
+  <button id="edit" disabled>✎ Edit in tab editor</button>
+  <button id="pick" title="Then click a bar, or drag across bars, to choose what the tempo ladder plays">Select bars</button>
   <button id="clear" disabled>Clear selection</button>
   <select id="track" hidden aria-label="Track"></select>
   <select id="view" aria-label="View"><option value="tab">Tab only</option><option value="both">Tab + notation</option></select>
@@ -76,20 +85,22 @@ function bytesFrom(m){if(m.kind=='tex')return new TextEncoder().encode(m.data);c
 
 function load(m){
   S.ex=m.ex;S.name=m.name||'';S.sel=m.sel||null;S.track=m.track|0;setColors(m.colors);
-  $('title').textContent=S.name||'Tab';document.title=(S.name?S.name+' – ':'')+'Tab';
+  // Edit opens the tab's file in your tab editor; Studio reloads it here when you save it there
+  $('edit').disabled=!m.canEdit;$('edit').title=m.canEdit?'Open this tab in your tab editor (for example Guitar Pro or TuxGuitar). It updates here when you save it.'
+    :m.kind=='tex'?'A typed tab: change it in Edit exercise › Type it…':'This tab is a copy, not linked to a file. Link one with Edit exercise › Open file…';
+  setPicking(false);$('title').textContent=S.name||'Tab';$('tech').textContent=m.technique?'· '+m.technique:'';document.title=(S.name?S.name+' – ':'')+'Tab';
   try{S.score=alphaTab.importer.ScoreLoader.loadScoreFromBytes(bytesFrom(m),new alphaTab.Settings())}
   catch(e){showMsg('Studio couldn’t read this tab.');return}
   const tr=$('track');tr.innerHTML=S.score.tracks.map((t,i)=>'<option value="'+i+'">'+esc(t.name||('Track '+(i+1)))+'</option>').join('');
   tr.hidden=S.score.tracks.length<2;if(S.track>=S.score.tracks.length)S.track=0;tr.value=S.track;
   $('msg').hidden=true;$('wrap').hidden=false;render();status()}
 function render(){if(!S.score)return;const api=makeApi();api.renderScore(S.score,[S.track]);$('zoom').textContent=Math.round(prefs.zoom*100)+'%';$('view').value=prefs.view}
-function showMsg(t){$('msg').textContent=t;$('msg').hidden=false;$('wrap').hidden=true;$('status').textContent='';$('clear').disabled=true}
+function showMsg(t){$('msg').textContent=t;$('msg').hidden=false;$('wrap').hidden=true;$('clear').disabled=true}
 function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 
 function nBars(){return S.score?S.score.masterBars.length:0}
 function selRange(){const n=nBars(),s=S.sel;return s&&s.from>=0&&s.to<n&&s.from<=s.to?s:null}
-function status(){const s=selRange(),n=nBars();
-  $('status').innerHTML=s?'· <em>'+(s.from==s.to?'Bar '+(s.from+1):'Bars '+(s.from+1)+'–'+(s.to+1))+'</em> selected · the tempo ladder uses '+(s.from==s.to?'it':'these'):'· Whole tab · '+n+' bar'+(n==1?'':'s');
+function status(){const s=selRange();
   $('clear').disabled=!s}
 
 // ---- bar positions, selection and cursor ----
@@ -102,12 +113,17 @@ function barAt(x,y){let best=-1,bd=1e9;S.bars.forEach((b,i)=>{if(!b)return;
 function drawMarks(){const m=$('marks');m.innerHTML='';const s=selRange();if(!s)return;
   for(let i=s.from;i<=s.to;i++){const b=S.bars[i];if(!b)continue;const d=document.createElement('div');d.className='sel';
     d.style.cssText='left:'+(b.x+8)+'px;top:'+(b.y+8)+'px;width:'+b.w+'px;height:'+b.h+'px';m.appendChild(d)}}
-let drag=null;
-$('at').addEventListener('pointerdown',e=>{if(e.button!==0||!S.bars.length)return;const r=$('at').getBoundingClientRect(),i=barAt(e.clientX-r.left,e.clientY-r.top);if(i<0)return;
+// Choosing bars takes a click on Select bars first, so a stray click on the tab never changes them.
+// After you click or drag once (Shift+click extends), it goes back to normal. Esc cancels.
+let drag=null,picking=false;
+function setPicking(on){picking=on;$('pick').classList.toggle('on',on);$('pick').textContent=on?'Click or drag bars…':'Select bars';document.body.classList.toggle('picking',on)}
+$('pick').onclick=()=>setPicking(!picking);
+addEventListener('keydown',e=>{if(e.key=='Escape'&&picking)setPicking(false)});
+$('at').addEventListener('pointerdown',e=>{if(e.button!==0||!S.bars.length||!picking)return;const r=$('at').getBoundingClientRect(),i=barAt(e.clientX-r.left,e.clientY-r.top);if(i<0)return;
   const cur=selRange();drag={a:e.shiftKey&&cur?cur.from:i};S.sel={from:Math.min(drag.a,i),to:Math.max(drag.a,i)};drawMarks();status();$('at').setPointerCapture(e.pointerId)});
 $('at').addEventListener('pointermove',e=>{if(!drag)return;const r=$('at').getBoundingClientRect(),i=barAt(e.clientX-r.left,e.clientY-r.top);if(i<0)return;
   const s={from:Math.min(drag.a,i),to:Math.max(drag.a,i)};if(!S.sel||s.from!=S.sel.from||s.to!=S.sel.to){S.sel=s;drawMarks();status()}});
-const endDrag=()=>{if(!drag)return;drag=null;const s=selRange();send({type:'sel',ex:S.ex,from:s?s.from:null,to:s?s.to:null})};
+const endDrag=()=>{if(!drag)return;drag=null;setPicking(false);const s=selRange();send({type:'sel',ex:S.ex,from:s?s.from:null,to:s?s.to:null})};
 $('at').addEventListener('pointerup',endDrag);$('at').addEventListener('pointercancel',endDrag);
 $('clear').onclick=()=>{S.sel=null;drawMarks();status();send({type:'sel',ex:S.ex,from:null,to:null})};
 function cursor(bar,frac){const c=$('cur'),b=S.bars[bar];if(bar<0||!b){c.style.display='none';return}
@@ -121,12 +137,20 @@ $('view').onchange=e=>{prefs.view=e.target.value;savePrefs();render()};
 $('zin').onclick=()=>{prefs.zoom=Math.min(2,Math.round((prefs.zoom+.1)*10)/10);savePrefs();render()};
 $('zout').onclick=()=>{prefs.zoom=Math.max(.5,Math.round((prefs.zoom-.1)*10)/10);savePrefs();render()};
 
+// ---- Play/Pause and Stop: the same as the practice page's buttons, for when it's out of sight ----
+$('play').onclick=()=>send({type:'transport',cmd:'play'});
+$('stop').onclick=()=>send({type:'transport',cmd:'stop'});
+$('edit').onclick=()=>send({type:'edit',ex:S.ex});
+addEventListener('keydown',e=>{if(e.code!='Space'||e.repeat||e.target.tagName=='SELECT'||e.ctrlKey||e.metaKey||e.altKey)return;e.preventDefault();$('play').click()});
+function transport(m){$('play').textContent=m.playing?'⏸ Pause':'▶ Play';$('stop').disabled=!m.canStop}
+
 // ---- messages from the practice page ----
 function onMsg(m){if(!m||!m.type)return;
   if(m.type=='open')load(m);
   else if(m.type=='pos')cursor(m.bar,m.frac);
   else if(m.type=='theme'){setColors(m.colors);render()}
-  else if(m.type=='none'){S.score=null;S.ex=null;$('title').textContent=m.name||'Tab';showMsg('This exercise has no tab. Add one in Edit exercise.')}}
+  else if(m.type=='transport')transport(m)
+  else if(m.type=='none'){S.score=null;S.ex=null;$('edit').disabled=true;$('tech').textContent='';setPicking(false);$('title').textContent=m.name||'Tab';showMsg('This exercise has no tab. Add one in Edit exercise.')}}
 if(isJuce)window.__JUCE__.backend.addEventListener('tab',onMsg);else addEventListener('message',e=>onMsg(e.data));
 addEventListener('beforeunload',()=>send({type:'closed'}));
 send({type:'ready'});

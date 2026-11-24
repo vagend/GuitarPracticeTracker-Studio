@@ -57,6 +57,7 @@ target_compile_definitions(GuitarPracticeStudio
         JUCE_DISPLAY_SPLASH_SCREEN=0
         JUCE_USE_WIN_WEBVIEW2_WITH_STATIC_LINKING=1
         JUCE_ASIO=1                   # Windows: low-latency ASIO audio interfaces
+        JUCE_USE_MP3AUDIOFORMAT=1     # metronome samples you add can be MP3 on Windows too
         STUDIO_BUILD=${STUDIO_BUILD}
         STUDIO_TEST=${STUDIO_TEST}
         STUDIO_FILES="${STUDIO_FILES}"

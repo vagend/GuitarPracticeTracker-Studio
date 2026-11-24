@@ -39,7 +39,7 @@ h1{font:600 22px/1.2 Georgia,serif;margin:0 0 4px}
 button,select{font:inherit;color:var(--fg);background:var(--card);border:1px solid var(--line);border-radius:8px;padding:6px 12px;cursor:pointer}
 button.on{background:var(--acc);border-color:var(--acc);color:var(--accfg,#fff)}
 /* Studio: settings live in the app's Settings page; the trainer listens through Studio */
-html.studio #gear,html.studio #set,html.studio #startmic{display:none!important}
+html.studio #startmic{display:none!important}
 html.setonly main>h1,html.setonly main>.intro,html.setonly main>.card:not(:first-of-type),html.setonly #modes,html.setonly #strs,html.setonly .inp,html.setonly .embnote{display:none!important}
 html.setonly #set{display:block!important;border-top:0!important;margin-top:0!important;padding-top:0!important}
 html.setonly main>.card:first-of-type{border:0;padding:0;background:none;box-shadow:none}
@@ -82,7 +82,7 @@ svg{display:block;min-width:640px;width:100%;height:auto}
 </div>
 <div class="row" style="margin-top:10px" id="strs"></div>
 <div id="set" style="display:none;margin-top:14px;border-top:1px solid var(--line);padding-top:14px">
-<p class="sub embnote">Audio input, channel, boost, noise gate and A4 reference are in the app’s Settings → Audio input.</p>
+<p class="sub embnote">Audio input, boost, noise gate and A4 reference are in the app’s Settings.</p>
 <div class="grid">
 <label class="f inp"><span class="t">Audio input</span><select id="dev" aria-label="Audio input"></select></label>
 <label class="f inp"><span class="t">Channel</span><select id="chan"><option value="mix">Mix (both inputs)</option><option value="0">Input 1 (left)</option><option value="1">Input 2 (right)</option></select></label>

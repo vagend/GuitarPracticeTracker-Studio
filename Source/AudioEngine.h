@@ -2,8 +2,10 @@
 
 #include <array>
 #include <juce_audio_utils/juce_audio_utils.h>
+#include "Metronome.h"
 
-// Plays the guitar input through one hosted plugin (amp sim or effect).
+// Plays the guitar input through one hosted plugin (amp sim or effect), and the metronome,
+// out the same audio interface on one clock.
 // The guitar is the first active input channel chosen in Audio settings.
 class AudioEngine final : public juce::AudioIODeviceCallback
 {
@@ -79,6 +81,23 @@ public:
 
     juce::AudioDeviceManager deviceManager;
     juce::AudioPluginFormatManager formatManager;
+    Metronome metronome;
+
+    // Is the metronome's sound reaching your interface? (Not on a stand-in device, or with no device.)
+    bool isPlayingOnInterface() const noexcept
+    {
+        auto* dev = deviceManager.getCurrentAudioDevice();
+        return deviceOk && ! standIn.load() && dev != nullptr && dev->isPlaying();
+    }
+
+    // How long after the engine works on a sound you hear it (for lighting the beat at the right moment).
+    double outputLatencySeconds() const
+    {
+        auto* dev = deviceManager.getCurrentAudioDevice();
+        if (dev == nullptr || dev->getCurrentSampleRate() <= 0)
+            return 0.0;
+        return (dev->getOutputLatencyInSamples() + dev->getCurrentBufferSizeSamples()) / dev->getCurrentSampleRate();
+    }
     juce::KnownPluginList knownPlugins;
 
     //==============================================================================
@@ -273,8 +292,20 @@ public:
                 if (outputs[ch] != nullptr)
                     juce::FloatVectorOperations::clear (outputs[ch], numSamples);
             inputLevel.store (0.0f);
+            metronome.render (outputs, 0, numSamples, sampleRate);   // the clock runs, silently
             return;
         }
+
+        processGuitar (inputs, numInputs, outputs, numOutputs, numSamples);
+
+        // The metronome plays on top, whether or not the guitar is muted.
+        metronome.render (outputs, numOutputs, numSamples, sampleRate);
+    }
+
+private:
+    void processGuitar (const float* const* inputs, int numInputs,
+                        float* const* outputs, int numOutputs, int numSamples) noexcept
+    {
 
         const float* guitar = (numInputs > 0 && inputOn.load()) ? inputs[0] : nullptr;
 
@@ -347,7 +378,6 @@ public:
                 juce::FloatVectorOperations::copy (outputs[ch], buf.getReadPointer (juce::jmin (ch, pluginOuts - 1)), numSamples);
     }
 
-private:
     void setUpChannels (juce::AudioPluginInstance& p)
     {
         p.enableAllBuses();

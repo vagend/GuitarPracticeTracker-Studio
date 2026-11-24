@@ -493,10 +493,14 @@ private:
         }
         else if (action == "tab")    { tabMessage (msg.getProperty ("msg", {})); return; }
         else if (action == "tabPick") { pickTabFile(); return; }
+        else if (action == "pickFile") { pickFileFor (msg); return; }
         else if (action == "tabEdit") { editTabFile (msg.getProperty ("path", {}).toString()); return; }
         else if (action == "tabWatch") { watchTabFiles (msg.getProperty ("files", {})); return; }
         else if (action == "tabEditorPick") { pickTabEditor (msg.getProperty ("then", {}).toString()); return; }
         else if (action == "tabEditorClear") { settings.setValue ("tabEditor", juce::String()); settings.saveIfNeeded(); }
+        else if (action == "metHits") { scheduleMetronome (msg.getProperty ("hits", {})); return; }
+        else if (action == "metClear") { engine.metronome.clearScheduled(); return; }
+        else if (action == "metSample") { setMetronomeSample (msg); return; }
         else if (action == "showData") appData.revealToUser();
         else if (action == "openSource") juce::URL ("https://github.com/vagend/GuitarPracticeTracker-Studio").launchInDefaultBrowser();
         else if (action == "autoUpdate") { settings.setValue ("autoUpdateCheck", (bool) msg.getProperty ("on", true)); settings.saveIfNeeded(); }
@@ -718,7 +722,7 @@ private:
             {
                 if (safe == nullptr) return;
                 if (latest > STUDIO_BUILD)  safe->sendUpdate ("available", latest);
-                else if (asked)             safe->sendUpdate (latest > 0 ? "none" : "failed", latest,
+                else if (asked)           safe->sendUpdate (latest > 0 ? "none" : "failed", latest,
                                                               latest > 0 ? juce::String() : "Couldn't reach GitHub.");
             });
         });
@@ -867,6 +871,13 @@ private:
 
         auto* obj = new juce::DynamicObject();
         obj->setProperty ("level", juce::jlimit (0.0f, 1.0f, engine.getInputLevel()));
+        // The engine's clock, for the metronome: the page schedules its hits on it. "ok" means the
+        // clock is running and its sound reaches your interface; otherwise the page uses Web Audio.
+        const double clock = engine.metronome.now();
+        obj->setProperty ("t", clock);
+        obj->setProperty ("ok", engine.isPlayingOnInterface() && clock > lastClock);
+        obj->setProperty ("lat", engine.outputLatencySeconds());
+        lastClock = clock;
         web->emitEventIfBrowserIsVisible ("studioLevel", juce::var (obj));
 
         if (listening)
@@ -883,6 +894,36 @@ private:
             in->setProperty ("sr", engine.getTapRate());
             in->setProperty ("d", arr);
             web->emitEventIfBrowserIsVisible ("studioInput", juce::var (in));
+        }
+    }
+
+    // The metronome's hits from the page: [time on the engine's clock, sound, fallback sound, gain].
+    void scheduleMetronome (const juce::var& hits)
+    {
+        if (auto* list = hits.getArray())
+            for (auto& h : *list)
+                if (auto* a = h.getArray(); a != nullptr && a->size() >= 4)
+                    engine.metronome.schedule ((double) (*a)[0], (int) (*a)[1], (int) (*a)[2], (float) (double) (*a)[3]);
+    }
+
+    // Your own sample for a metronome voice ("p", "s" or "m"), as base64 file bytes; empty removes it.
+    void setMetronomeSample (const juce::var& msg)
+    {
+        const auto v = msg.getProperty ("v", {}).toString();
+        const int voice = juce::StringArray { "p", "s", "m" }.indexOf (v);
+        if (voice < 0)
+            return;
+        juce::MemoryOutputStream bytes;
+        const auto data = msg.getProperty ("data", {}).toString();
+        if (data.isNotEmpty() && ! juce::Base64::convertFromBase64 (bytes, data))
+            bytes.reset();
+        const auto error = engine.metronome.setUserSample (voice, bytes.getMemoryBlock());
+        if (error.isNotEmpty() && web != nullptr)
+        {
+            auto* o = new juce::DynamicObject();
+            o->setProperty ("v", v);
+            o->setProperty ("error", error);
+            web->emitEventIfBrowserIsVisible ("studioMet", juce::var (o));
         }
     }
 
@@ -977,6 +1018,7 @@ private:
     juce::var exercisePlugins;
     bool sentFirstStatus = false;
     bool listening = false;
+    double lastClock = -1.0;   // the metronome clock at the last tick (is it moving?)
     bool retryingDevice = false;
     int deviceRetryTicks = 0;
     bool updating = false;
@@ -1019,10 +1061,61 @@ private:
         web->emitEventIfBrowserIsVisible ("studioTabFile", juce::var (o));
     }
 
+    // Each browse button opens in the folder it was last used in ("lastFolder.<button>" in settings).
+    juce::File lastFolder (const juce::String& key, const juce::File& fallback) const
+    {
+        const auto path = settings.getValue ("lastFolder." + key);
+        if (path.isEmpty() || ! juce::File::isAbsolutePath (path))
+            return fallback;
+        const juce::File folder (path);
+        return folder.isDirectory() ? folder : fallback;
+    }
+
+    void rememberFolder (const juce::String& key, const juce::File& chosen)
+    {
+        settings.setValue ("lastFolder." + key, chosen.getParentDirectory().getFullPathName());
+        settings.saveIfNeeded();
+    }
+
+    // A file for one of the page's browse buttons (your metronome samples, restoring a backup), with
+    // Studio's own picker so it can open where that button was last used. The answer goes back as a
+    // "studioPickedFile" event: { key, name, data (base64) }, { key, cancel } or { key, error }.
+    void pickFileFor (const juce::var& msg)
+    {
+        const auto key = msg.getProperty ("key", {}).toString();
+        if (key.isEmpty())
+            return;
+        const auto maxBytes = (juce::int64) (double) msg.getProperty ("max", 20.0 * 1024 * 1024);
+        chooser = std::make_unique<juce::FileChooser> (msg.getProperty ("title", "Choose a file").toString(),
+                      lastFolder (key, juce::File::getSpecialLocation (juce::File::userDocumentsDirectory)),
+                      msg.getProperty ("patterns", "*").toString());
+        const juce::Component::SafePointer<MainComponent> self (this);
+        chooser->launchAsync (juce::FileBrowserComponent::openMode | juce::FileBrowserComponent::canSelectFiles,
+                              [self, key, maxBytes] (const juce::FileChooser& fc)
+        {
+            if (self == nullptr) return;
+            auto* o = new juce::DynamicObject();
+            o->setProperty ("key", key);
+            const auto f = fc.getResult();
+            juce::MemoryBlock mb;
+            if (f == juce::File())                 o->setProperty ("cancel", true);
+            else if (f.getSize() > maxBytes)       o->setProperty ("error", "big");
+            else if (! f.loadFileAsData (mb))      o->setProperty ("error", "read");
+            else
+            {
+                o->setProperty ("name", f.getFileName());
+                o->setProperty ("data", juce::Base64::toBase64 (mb.getData(), mb.getSize()));
+            }
+            if (f != juce::File())
+                self->rememberFolder (key, f);
+            self->web->emitEventIfBrowserIsVisible ("studioPickedFile", juce::var (o));
+        });
+    }
+
     void pickTabFile()
     {
         chooser = std::make_unique<juce::FileChooser> ("Open a tab",
-                      juce::File::getSpecialLocation (juce::File::userDocumentsDirectory),
+                      lastFolder ("tab", juce::File::getSpecialLocation (juce::File::userDocumentsDirectory)),
                       "*.gp;*.gp3;*.gp4;*.gp5;*.gpx;*.xml;*.musicxml;*.mxl;*.capx");
         const juce::Component::SafePointer<MainComponent> self (this);
         chooser->launchAsync (juce::FileBrowserComponent::openMode | juce::FileBrowserComponent::canSelectFiles,
@@ -1037,6 +1130,7 @@ private:
                 self->web->emitEventIfBrowserIsVisible ("studioTabFile", juce::var (o));
                 return;
             }
+            self->rememberFolder ("tab", f);
             self->sendTabFile (f, {}, false);
         });
     }
@@ -1086,7 +1180,7 @@ private:
         const auto start = juce::File::getSpecialLocation (juce::File::globalApplicationsDirectory);
         const juce::String pattern ("*.exe");
        #endif
-        chooser = std::make_unique<juce::FileChooser> ("Choose your tab editor", start, pattern);
+        chooser = std::make_unique<juce::FileChooser> ("Choose your tab editor", lastFolder ("tabEditor", start), pattern);
         const juce::Component::SafePointer<MainComponent> self (this);
         chooser->launchAsync (juce::FileBrowserComponent::openMode | juce::FileBrowserComponent::canSelectFiles,
                               [self, thenOpen] (const juce::FileChooser& fc)
@@ -1095,6 +1189,7 @@ private:
             const auto f = fc.getResult();
             if (f != juce::File())
             {
+                self->rememberFolder ("tabEditor", f);
                 self->settings.setValue ("tabEditor", f.getFullPathName());
                 self->settings.saveIfNeeded();
             }

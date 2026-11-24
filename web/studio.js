@@ -182,9 +182,18 @@ window.STUDIO_CHANGES = [
   }
 
   // ---- updates (Settings → Studio) ----
+  // A copy built on this computer (Build Studio Test (Mac).command) has no build number; the script
+  // writes when it was built into local-build.txt, so you can tell which build you're running.
+  var builtHere = '', builtHereAsked = false;
+  function askBuiltHere(done) {
+    if (builtHereAsked) return done();
+    builtHereAsked = true;
+    fetch('local-build.txt').then(function (r) { return r.ok ? r.text() : ''; })
+      .then(function (t) { builtHere = String(t || '').trim().slice(0, 40); done(); }, done);
+  }
   function renderUpdate() {
     var t = el('stUpd'), b = el('stUpdBtn'); if (!t || !b) return;
-    var cur = st.build ? 'Build ' + st.build : 'Built on this computer';
+    var cur = st.build ? 'Build ' + st.build : 'Built on this computer' + (builtHere ? ' (' + builtHere + ')' : '');
     b.disabled = upd.state === 'checking' || upd.state === 'downloading' || !st.build;
     b.textContent = upd.state === 'available' ? 'Update to build ' + upd.build : 'Check for updates';
     t.textContent = {
@@ -329,11 +338,17 @@ window.STUDIO_CHANGES = [
         '<button id="stScan">Scan for plugins…</button></div>' +
         '<p class="sub" id="stDev" style="margin:10px 0 0"></p>' +
         '<div class="row" style="gap:10px;align-items:center;margin-top:8px"><span class="sub">Input level</span>' +
-        '<span class="fxmeter" style="max-width:260px" title="Input level"><i id="fxLvl"></i></span></div>' +
-        '<h2 style="margin:18px 0 6px">Studio</h2>' +
-        '<div class="row" style="gap:10px;flex-wrap:wrap;align-items:center"><button id="stUpdBtn">Check for updates</button>' +
-        '<span class="sub" id="stUpd"></span></div>';
+        '<span class="fxmeter" style="max-width:260px" title="Input level"><i id="fxLvl"></i></span></div>';
       audio.parentNode.insertBefore(card, audio);
+      // Check for updates sits in What's new (where clicking the version takes you)
+      var about = el('about');
+      if (about) {
+        var ur = document.createElement('div');
+        ur.className = 'row'; ur.style.cssText = 'gap:10px;flex-wrap:wrap;align-items:center;margin:0 0 12px';
+        ur.innerHTML = '<button id="stUpdBtn">Check for updates</button><span class="sub" id="stUpd"></span>';
+        var ah2 = about.querySelector('h2');
+        about.insertBefore(ur, ah2 ? ah2.nextSibling : about.firstChild);
+      }
 
       // Privacy: what Studio uses, in plain words.
       var row = function (t, d) { return '<div class="pvrow"><b>' + t + '</b><div class="sub">' + d + '</div></div>'; };
@@ -367,7 +382,12 @@ window.STUDIO_CHANGES = [
         var vt = document.getElementById('verTag');
         if (vt && s.test) {
           if (!vt.dataset.v) vt.dataset.v = vt.textContent;
-          vt.innerHTML = vt.dataset.v + ' \u00b7 <b style="color:var(--acc)">TEST</b> build ' + (st.build || '?');
+          var showTag = function () {
+            vt.innerHTML = vt.dataset.v + ' \u00b7 <b style="color:var(--acc)">TEST</b> '
+              + (st.build ? 'build ' + st.build : 'built here' + (builtHere ? ' ' + builtHere.replace(/[<>&]/g, '') : ''));
+            renderUpdate();
+          };
+          if (st.build) showTag(); else askBuiltHere(showTag);
         }
         studioMuteListeners.forEach(function (f) { try { f(st.muted); } catch (e) {} });
         if (pick.open) { el('fxRemove').disabled = !st.plugin; renderList(); }
@@ -402,8 +422,8 @@ window.STUDIO_CHANGES = [
     }
     applyViewMute(typeof view !== 'undefined' ? view : 'practice');
 
-    // Fretboard Trainer settings live in Settings, with everything else.
-    var tt = el('audioCard');
+    // Fretboard Trainer settings are on the trainer page (its ⚙ Settings button), next to what they change.
+    var tt = null;
     if (tt) {
       var fc = document.createElement('div');
       fc.className = 'card'; fc.style.marginTop = '16px';

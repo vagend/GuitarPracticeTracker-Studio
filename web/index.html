@@ -105,6 +105,15 @@ nav#tabs .tabgap{flex:1;min-width:12px}
 main{max-width:1100px;margin:0 auto;padding:16px}
 .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:16px}
 .card h2{font:600 16px/1.3 system-ui,sans-serif;margin:0 0 10px}
+/* Settings: click a section's heading to fold it away (remembered) */
+#v-settings .card>h2:first-child,#v-settings .card>.row:first-child>h2{cursor:pointer;user-select:none}
+#v-settings .card>h2:first-child::before,#v-settings .card>.row:first-child>h2::before{content:'▾';display:inline-block;width:1.1em;color:var(--mut);transition:transform .12s}
+#v-settings .card.folded>h2:first-child::before,#v-settings .card.folded>.row:first-child>h2::before{transform:rotate(-90deg)}
+#v-settings .card.folded>:not(:first-child){display:none!important}
+#v-settings .card.folded>h2:first-child,#v-settings .card.folded>.row:first-child>h2{margin-bottom:0!important}
+/* Exercises: the column headings stay in view below the app's header while you scroll */
+.tscroll.sticky{overflow:visible}
+#exTable thead th{position:sticky;top:var(--hdrH,0px);z-index:3;background:var(--card)}
 .grid2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);gap:16px}
 .grid2>.card{margin-bottom:0}
 @media(max-width:820px){.grid2{grid-template-columns:1fr}#v-practice .grid2:not(.tools)>.card:last-child{order:-1}}
@@ -125,6 +134,9 @@ label.f>*{color:var(--fg)}
 .chips{display:flex;flex-wrap:wrap;gap:6px}
 .chip{border-radius:999px;padding:5px 11px;font-size:13px;background:var(--soft);border:1px solid var(--line)}
 .chip.on{background:var(--acc);border-color:var(--acc);color:var(--accfg)}
+/* Practice › Today: the exercises scheduled for today and their time goals */
+.due{display:flex;align-items:center;gap:10px;width:100%;text-align:left;padding:8px 10px;margin:0 0 6px;border-radius:10px;background:var(--soft);border:1px solid var(--line);cursor:pointer;color:var(--fg)}
+.due .nm{flex:1;font-weight:600}.due .sub{font-weight:400}.due.done .nm::after{content:' ✓';color:var(--ok)}.due.cur{border-color:var(--acc)}
 .tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px}
 .tile{background:var(--soft);border-radius:10px;padding:10px 12px}
 .tile .k{font-size:12px;color:var(--mut)}
@@ -338,7 +350,7 @@ iframe#trFrame{width:100%;border:0;height:900px;display:block;border-radius:10px
         <button id="bm5" aria-label="minus 5">−5</button><button id="bm1" aria-label="minus 1">−1</button>
         <input id="bpm" type="number" inputmode="decimal" min="20" max="400" step="any" placeholder="100" aria-label="Metronome tempo in BPM">
         <button id="bp1" aria-label="plus 1">+1</button><button id="bp5" aria-label="plus 5">+5</button>
-        <span class="sub">BPM</span>
+        <span class="sub">BPM</span><span class="sub" id="bpmNow"></span>
       </div>
       <div class="ladrun" id="ladPanel"><div class="lpL"><div class="lpBig" id="lpBig"></div><div class="sub" id="lpSub"></div><div class="lpReps" id="lpReps"></div></div><div class="stairs" id="lpBars"></div></div>
       <div class="row curve" style="margin-top:10px">
@@ -378,6 +390,16 @@ iframe#trFrame{width:100%;border:0;height:900px;display:block;border-radius:10px
           <input type="file" id="metFile" accept="audio/*,.wav,.aif,.aiff,.mp3,.m4a,.ogg,.flac" hidden>
         </div>
       </details>
+      <details id="cvSec" style="margin-top:8px">
+        <summary>Tempo converter</summary>
+        <div class="row" style="align-items:flex-end;margin-top:10px">
+          <label class="f">BPM<input id="cvBpm" type="number" value="120" step="any"></label>
+          <label class="f">From<select id="cvFrom"></select></label>
+          <label class="f">To<select id="cvTo"></select></label>
+        </div>
+        <p id="cvOut" style="font-size:18px;margin:12px 0 4px"></p>
+        <p class="sub" id="cvNps" style="margin:0"></p>
+      </details>
     </div>
 
   </div>
@@ -385,6 +407,7 @@ iframe#trFrame{width:100%;border:0;height:900px;display:block;border-radius:10px
 
   <div class="card" style="margin-top:16px">
     <div class="row"><h2 style="margin:0">Today</h2><span class="sp"></span><button id="addToday">+ Add entry</button></div>
+    <div id="dueList" style="margin-top:10px"></div>
     <div id="todayList" style="margin-top:8px"></div>
   </div>
 </section>
@@ -444,24 +467,7 @@ iframe#trFrame{width:100%;border:0;height:900px;display:block;border-radius:10px
       <label class="sub row" style="gap:6px"><input type="checkbox" id="showArch"> Show archived</label>
       <button id="addEx" class="primary">+ Add exercise</button>
     </div>
-    <div class="tscroll"><table id="exTable"></table></div>
-  </div>
-  <div class="grid2">
-    <div class="card">
-      <h2>Tempo converter</h2>
-      <div class="row" style="align-items:flex-end">
-        <label class="f">BPM<input id="cvBpm" type="number" value="120" step="any"></label>
-        <label class="f">From<select id="cvFrom"></select></label>
-        <label class="f">To<select id="cvTo"></select></label>
-      </div>
-      <p id="cvOut" style="font-size:18px;margin:12px 0 4px"></p>
-      <p class="sub" id="cvNps" style="margin:0"></p>
-    </div>
-    <div class="card">
-      <h2>Effort key</h2>
-      <div id="effKey"></div>
-      <p class="sub" style="margin:8px 0 0">Edit these in Settings.</p>
-    </div>
+    <div class="tscroll sticky"><table id="exTable"></table></div>
   </div>
 </section>
 
@@ -470,7 +476,8 @@ iframe#trFrame{width:100%;border:0;height:900px;display:block;border-radius:10px
   <div class="card">
     <div class="row" style="margin-bottom:12px">
       <select id="sRange" aria-label="Date range"><option value="30">Last 30 days</option><option value="90" selected>Last 90 days</option><option value="365">Last year</option><option value="all">All time</option></select>
-      <span class="sub" id="sRangeNote"></span>
+      <span class="sub" id="sRangeNote"></span><span class="sp"></span>
+      <label class="sub row" style="gap:6px"><input type="checkbox" id="sArch"> Include archived exercises</label>
     </div>
     <div class="tiles" id="sTiles"></div>
   </div>
@@ -586,6 +593,8 @@ iframe#trFrame{width:100%;border:0;height:900px;display:block;border-radius:10px
       <label class="f">Length (measures)<input id="dxLen" type="number" min="1" max="64" step="1" placeholder="1"></label>
       <label class="f">Ladder repeats per tempo<input id="dxReps" type="number" min="1" max="64" step="1" placeholder="4"></label>
       <label class="f">Measure label<input id="dxMetric" type="text" placeholder="BPM"></label>
+      <label class="f">Time goal (minutes a day)<input id="dxTime" type="number" min="0" max="600" step="1" placeholder="none"></label>
+      <div class="f w">Practice on<div class="chips" id="dxDays"></div></div>
       <label class="f w">Notes<textarea id="dxNotes" rows="2"></textarea></label>
       <div class="f w">Tab
         <div class="tabsec"><div class="src" id="dxTabInfo"></div>
@@ -593,12 +602,13 @@ iframe#trFrame{width:100%;border:0;height:900px;display:block;border-radius:10px
         <input type="file" id="dxTabPick" hidden accept=".gp,.gp3,.gp4,.gp5,.gpx,.xml,.musicxml,.mxl,.capx,.atex,.alphatex,.txt">
       </div>
       <div class="opts">
-        <label class="chk"><input type="checkbox" id="dxMet"><span>Metronome<small>Off: Play starts only the practice timer.</small></span></label>
+        <label class="chk"><input type="checkbox" id="dxMet"><span>Metronome<small>Off: Practice timer does not start the Metronome</small></span></label>
         <label class="chk"><input type="checkbox" id="dxArch"><span>Archived<small>Hides it from the exercise list. Its practice history is kept.</small></span></label>
       </div>
     </div>
     <div class="row" style="margin-top:16px">
       <button value="save" class="primary">Save</button>
+      <button value="saveNew" id="dxSaveNew" title="Keep this exercise as it was and add a new one with these settings">Save as new exercise</button>
       <button value="cancel" formnovalidate>Cancel</button>
       <span class="sp"></span>
       <button value="delete" class="danger" id="dxDel" formnovalidate>Delete</button>
@@ -665,10 +675,27 @@ let D=LS.get('gp.data',null);
 if(!D||!Array.isArray(D.entries)||!Array.isArray(D.exercises)){D=fresh();LS.set('gp.data',D)}
 D.settings=Object.assign({},DEFSET,D.settings||{});
 D.efforts=D.efforts||clone(SEED.efforts);D.techniques=D.techniques||clone(SEED.techniques);
-// exactly one exercise opens the fretboard trainer; on first run it is renamed "Fretboard Trainer"
+// The Fretboard Trainer is built in: using it is the practice. Its log entries need an exercise to belong to,
+// so there is always exactly one, kept out of sight (not on the Exercises page or the exercise picker).
+// Older data may not have one (it could be deleted before): it's made here, and the days the trainer was used
+// meanwhile are logged from the trainer's own record.
 function fixTrainerEx(){let t=D.exercises.find(e=>/^fretboard (notes|trainer)$/i.test(e.name))||D.exercises.find(e=>e.trainer);
-  D.exercises.forEach(e=>{e.trainer=e===t});
-  if(t&&!D.settings.trainerRenamed&&/^fretboard notes$/i.test(t.name))t.name='Fretboard Trainer';D.settings.trainerRenamed=true}
+  if(!t){const id=Math.max(0,...D.exercises.map(x=>+x.id||0),...D.entries.map(x=>+x.ex||0))+1;
+    t={id,name:'Fretboard Trainer',technique:'Fretboard Trainer',sub:'',goal:null,metric:'Score',trainer:true,archived:false,notes:''};D.exercises.push(t);
+    // log the days the trainer was used while it had no exercise, from its own time and answers
+    let pt=null,h=[];try{pt=JSON.parse(localStorage.getItem('fbtime')||'null');h=JSON.parse(localStorage.getItem('fbhist')||'[]')}catch(e){}
+    const k=ms=>{const d=new Date(ms);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
+    if(pt&&pt.days)Object.entries(pt.days).forEach(([day,sec])=>{if(!(sec>=6))return;
+      const sc=h.filter(x=>x.ok&&x.c&&x.m!='tune'&&k(x.d)==day).length;
+      D.entries.push({id:'tr'+day+Math.random().toString(36).slice(2,6),date:day,ex:id,bpm:sc||null,min:Math.round(sec/6)/10,effort:null,note:'',t:Date.now(),auto:true,ms:sec*1000})});
+    LS.set('gp.data',D)}
+  D.exercises.forEach(e=>{e.trainer=e===t});t.archived=false;   // nowhere to un-archive it now
+  // Its time shows as "Fretboard Trainer" in Stats › Time by technique. It isn't one of your techniques:
+  // the old "Fretboard Notes" leaves the list unless one of your own exercises uses it.
+  t.technique='Fretboard Trainer';
+  if(!D.exercises.some(e=>!e.trainer&&/^fretboard notes$/i.test(e.technique||'')))D.techniques=D.techniques.filter(x=>!/^fretboard notes$/i.test(x));
+  if(t&&!D.settings.trainerRenamed&&/^fretboard notes$/i.test(t.name))t.name='Fretboard Trainer';D.settings.trainerRenamed=true;
+  LS.set('gp.data',D)}
 fixTrainerEx();
 function save(){LS.set('gp.data',D);if(typeof syncTabWatch=='function')syncTabWatch()}
 
@@ -793,7 +820,9 @@ function renderTimer(){
 }
 $('#pill').onclick=()=>show('practice');
 $('#bStart').onclick=startPause;
-$('#bFinish').onclick=()=>{if(elapsed()<1000){toast('Nothing to log yet');return}pause();openLog()};
+// Logging ends the practice: the metronome (and a tempo ladder) stop too, not just the timer
+function stopForLog(){if(CURVE.on||CURVE.hold)curveEnd();else if(MET.on)metStop();pause();renderMetBtn()}
+$('#bFinish').onclick=()=>{if(elapsed()<1000){toast('Nothing to log yet');return}stopForLog();openLog()};
 async function discardSession(after){
   if(elapsed()>60000&&!await ask('Discard practice?','Discard '+fmtMin(elapsed()/60000)+' of practice without logging it?'+(after?' '+after:''),{ok:'Discard',cancel:'Keep it',danger:true}))return false;
   $('#logForm').hidden=true;pendingEx=null;resetTimer();syncExSel();return true}
@@ -829,7 +858,7 @@ function renderPractice(){
     '<div class="tile"><div class="k">All time</div><div class="v">'+fmtH(total)+' <small>· '+st.days+' days</small></div></div>';
   syncExSel();
   const ex=exById(T.ex),s=exStats(T.ex),m=metricOf(ex);
-  $('#exSub').innerHTML=ex?'<span>'+esc([ex.technique,ex.sub].filter(Boolean).join(' · '))+'</span>'+(ex.trainer?'':(ex.tab?'<label class="sw'+(tabOn(ex)?' on':'')+'" id="swTab" title="On: the tab sets the goal, the tempo ladder length and the metronome’s time signature"><i></i>Use tab</label>':'')+'<label class="sw'+(usesMet(ex)?' on':'')+'" id="swMet" title="Off: Play starts only the practice timer"><i></i>Metronome</label>'):'';
+  $('#exSub').innerHTML=ex?'<span>'+esc([ex.technique,ex.sub].filter(Boolean).join(' · '))+'</span>'+(ex.trainer?'':(ex.tab?'<label class="sw'+(tabOn(ex)?' on':'')+'" id="swTab" title="On: the tab sets the goal, the tempo ladder length and the metronome’s time signature"><i></i>Use tab</label>':'')+'<label class="sw'+(usesMet(ex)?' on':'')+'" id="swMet" title="Off: Practice timer does not start the Metronome"><i></i>Metronome</label>'):'';
   const stb=$('#swTab');if(stb)stb.onclick=e=>{e.preventDefault();ex.useTab=!ex.useTab;if(CURVE.on||CURVE.hold)curveCancel();TABPTR=null;save();render()};
   const sm=$('#swMet');if(sm)sm.onclick=e=>{e.preventDefault();ex.metronome=!usesMet(ex);
     if(!ex.metronome){if(CURVE.on||CURVE.hold)curveCancel();if(MET.on)metHalt()}   // off: stop it, not just its sound
@@ -840,7 +869,8 @@ function renderPractice(){
     ['Best',s.best!=null?trim(s.best):'—'],
     ['Last time',s.last?(s.last.bpm!=null?trim(s.last.bpm)+' · ':'')+fmtDate(s.last.date):'—'],
     ['Total',fmtMin(s.tot)]
-  ].map(([k,v])=>'<div><span>'+k+'</span><b>'+v+'</b></div>').join('')+(s.last&&s.last.effort?'<div><span>Last effort</span><b style="font-size:15px">'+effHtml(s.last.effort)+'</b></div>':'')+(ex.notes?'<div style="grid-column:1/-1"><span>Notes</span><div>'+esc(ex.notes)+'</div></div>':''):(hasPracticeEx()?'<div>No exercise selected</div>':'<div class="firstex" style="grid-column:1/-1"><b>No exercises yet</b><p class="sub">Add the things you practice — a lick, a scale, a song — with a goal tempo if it has one. The Fretboard tab is ready to use any time.</p><button class="primary" id="exFirst">+ Add your first exercise</button></div>');
+  ].concat(ex.timeGoal?[['Today',trim(Math.round(minToday(ex.id)*10)/10)+' / '+trim(ex.timeGoal)+' <small class="sub">min</small>']]:[])
+   .concat(schedDays(ex)?[['Schedule',esc(schedDays(ex))]]:[]).map(([k,v])=>'<div><span>'+k+'</span><b>'+v+'</b></div>').join('')+(s.last&&s.last.effort?'<div><span>Last effort</span><b style="font-size:15px">'+effHtml(s.last.effort)+'</b></div>':'')+(ex.notes?'<div style="grid-column:1/-1"><span>Notes</span><div>'+esc(ex.notes)+'</div></div>':''):(hasPracticeEx()?'<div>No exercise selected</div>':'<div class="firstex" style="grid-column:1/-1"><b>No exercises yet</b><p class="sub">Add the things you practice — a lick, a scale, a song — with a goal tempo if it has one. The Fretboard tab is ready to use any time.</p><button class="primary" id="exFirst">+ Add your first exercise</button></div>');
   $('#exSel').hidden=!hasPracticeEx();$('#editEx').hidden=!ex;$('#openTab').hidden=!ex||ex.trainer||!ex.tab;const fx=$('#exFirst');if(fx)fx.onclick=()=>editEx(null);
   const ls=$('#ladSec');ls.hidden=!ex||ex.trainer||!usesMet(ex);
   if(ex&&!ex.trainer){if(ls.open!=(D.settings.ladOpen!==false))ls.open=D.settings.ladOpen!==false;
@@ -853,13 +883,14 @@ function renderPractice(){
     if(TABWIN.open){if(ex&&ex.tab)openTab();else tabSend({type:'none',name:ex?ex.name:''})}}
   renderLadder();
   renderCurve();
+  renderDue();
   // today list
   const te=D.entries.filter(e=>e.date==dkey()).sort(cmpEntry);
   $('#todayList').innerHTML=te.length?te.map(entRow).join(''):'<p class="sub" style="margin:4px 0">Nothing logged yet today.</p>';
   bindEnt($('#todayList'));
   if(!$('#presets').children.length)buildPresets();
 }
-function entRow(e){const x=exById(e.ex);return'<div class="ent" data-id="'+e.id+'"><div class="nm">'+esc(exName(x))+'<small>'+esc([x&&x.technique,x&&x.sub,e.note].filter(Boolean).join(' · '))+'</small></div><div class="n">'+(e.bpm!=null?trim(e.bpm)+' <span class="sub">'+esc(metricOf(x))+'</span>':'<span class="sub">—</span>')+'</div><div class="n">'+trim(e.min)+' <span class="sub">min</span></div><div class="eff">'+effHtml(e.effort)+'</div></div>'}
+function entRow(e){const x=exById(e.ex);return'<div class="ent" data-id="'+e.id+'"><div class="nm">'+esc(exName(x))+'<small>'+esc([x&&!x.trainer&&x.technique,x&&x.sub,e.note].filter(Boolean).join(' · '))+'</small></div><div class="n">'+(e.bpm!=null?trim(e.bpm)+' <span class="sub">'+esc(metricOf(x))+'</span>':'<span class="sub">—</span>')+'</div><div class="n">'+trim(e.min)+' <span class="sub">min</span></div><div class="eff">'+effHtml(e.effort)+'</div></div>'}
 function bindEnt(root){root.querySelectorAll('.ent').forEach(r=>r.onclick=()=>editEntry(r.dataset.id))}
 // Switching exercises with time on the clock asks what to do with that time, in a dialog you can't miss.
 async function chooseEx(id){
@@ -867,7 +898,7 @@ async function chooseEx(id){
   if(T.acc>0||running()){syncExSel();
     const c=await choose('Switch to '+exName(exById(id))+'?','You have '+clockStr(elapsed(),true)+' on the timer for '+exName(exById(T.ex))+'. Log it before switching, or discard it.',
       [{label:'Cancel',value:'cancel'},{label:'Discard and switch',value:'discard',cls:'danger'},{label:'Log it',value:'log',cls:'primary'}]);
-    if(c=='log'){pause();pendingEx=id;openLog()}
+    if(c=='log'){stopForLog();pendingEx=id;openLog()}
     else if(c=='discard'){resetTimer();T.ex=id;saveT();onExChanged();syncExSel()}
     return}
   T.ex=id;saveT();onExChanged()}
@@ -906,7 +937,7 @@ function lfLadApply(){if(!LOGLAD)return;const on=$('#lfLad').checked,f=D.efforts
   $('#lfBpm').value=on?LOGLAD.top:LOGLAD.met;
   if(f){if(on)lfEffort=f.id;else if(lfEffort==f.id)lfEffort=null}renderEffBtns()}
 $('#lfLad').onchange=lfLadApply;
-function renderEffBtns(){$('#lfEff').innerHTML=D.efforts.map(f=>'<button data-id="'+f.id+'" title="'+esc(f.desc||'')+'" class="'+(f.id==lfEffort?'on':'')+'"><span class="ed ed'+f.id+'"></span>'+esc(f.name)+'</button>').join('');
+function renderEffBtns(){$('#lfEff').innerHTML=D.efforts.map(f=>'<button data-id="'+f.id+'" class="'+(f.id==lfEffort?'on':'')+'"><span class="ed ed'+f.id+'"></span>'+esc(f.name)+'</button>').join('');
   $$('#lfEff button').forEach(b=>{b.onclick=()=>{lfEffort=lfEffort==+b.dataset.id?null:+b.dataset.id;renderEffBtns()};
     b.onmouseenter=b.onfocus=()=>feelHint(+b.dataset.id);b.onmouseleave=b.onblur=()=>feelHint(lfEffort)});feelHint(lfEffort)}
 function feelHint(id){const f=effById(id),el=$('#lfFeel');if(!el)return;
@@ -1024,14 +1055,33 @@ function csv(list){
 function download(name,text,type){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([text],{type}));a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500)}
 $('#csvBtn').onclick=()=>csv(filteredEntries());
 
+// ---------- schedule and time goal ----------
+// Each exercise can be scheduled on days of the week (ex.days: 0 = Sunday … 6 = Saturday) and have a time
+// goal in minutes a day (ex.timeGoal). Practice › Today lists what's scheduled today, with the time so far.
+const DAYN=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'],DAYORD=[1,2,3,4,5,6,0];
+function schedDays(e){const d=(e&&e.days)||[];return !d.length?'':d.length==7?'Every day':DAYORD.filter(i=>d.includes(i)).map(i=>DAYN[i]).join(' ')}
+function schedText(e){const t=schedDays(e);return t+(e&&e.timeGoal?(t?' · ':'')+trim(e.timeGoal)+' min':'')}
+function dueToday(e){return !!e&&!e.archived&&!e.trainer&&(e.days||[]).includes(new Date().getDay())}
+function minToday(id){return D.entries.filter(x=>x.ex==id&&x.date==dkey()).reduce((s,x)=>s+(+x.min||0),0)}
+function renderDue(){const due=D.exercises.filter(dueToday);const el=$('#dueList');if(!el)return;
+  if(!due.length){el.innerHTML='';return}
+  el.innerHTML='<div class="sub" style="margin-bottom:6px">Scheduled today</div>'+due.map(e=>{const m=minToday(e.id),g=+e.timeGoal||0,ok=g?m>=g:m>0;
+    return'<button type="button" class="due'+(ok?' done':'')+(e.id==T.ex?' cur':'')+'" data-id="'+e.id+'"><span class="nm">'+esc(exName(e))+'</span>'+
+      (g?'<span class="pct"><i style="width:'+Math.min(100,100*m/g)+'%"></i></span><span class="sub">'+trim(Math.round(m*10)/10)+' / '+trim(g)+' min</span>':'<span class="sub">'+(m?trim(Math.round(m*10)/10)+' min':'not yet')+'</span>')+'</button>'}).join('');
+  el.querySelectorAll('.due').forEach(b=>b.onclick=()=>{const id=+b.dataset.id;if(id==T.ex)return;$('#exSel').value=id;$('#exSel').onchange({target:$('#exSel')})})}
+function renderDays(days){$('#dxDays').innerHTML=DAYORD.map(i=>'<button type="button" class="chip'+(days.includes(i)?' on':'')+'" data-d="'+i+'">'+DAYN[i]+'</button>').join('')+
+  '<button type="button" class="chip" data-d="all" style="margin-left:8px">'+(days.length==7?'Clear':'Every day')+'</button>';
+  $$('#dxDays .chip').forEach(c=>c.onclick=()=>{let d=$$('#dxDays .chip.on').map(x=>+x.dataset.d);
+    if(c.dataset.d=='all')d=d.length==7?[]:DAYORD.slice();else{const i=+c.dataset.d;d=d.includes(i)?d.filter(x=>x!=i):d.concat(i)}renderDays(d)})}
+
 // ---------- exercises view ----------
 const SUBS=[['Quarter notes',1],['8ths',2],['8th triplets',3],['16ths',4],['16th triplets',6],['32nds',8]];
 // Click a column heading to sort by it; click again to reverse. Ties are sorted by name, so
 // exercises with the same name end up next to each other.
-const EXCOLS=[['name','Exercise',''],['tech','Technique',''],['sub','Subdivision',''],['best','Best / Goal','n'],['prog','Progress',''],['last','Last practiced',''],['tot','Total','n']];
+const EXCOLS=[['name','Exercise',''],['tech','Technique',''],['sub','Subdivision',''],['best','Best / Goal','n'],['prog','Progress',''],['sched','Schedule',''],['last','Last practiced',''],['tot','Total','n']];
 function exSortKey(e,k,s){switch(k){
   case'name':return(e.name||'').toLowerCase();case'tech':return(e.technique||'').toLowerCase()||null;case'sub':return(e.sub||'').toLowerCase()||null;
-  case'best':return s.best;case'prog':return e.goal&&s.best!=null?s.best/e.goal:null;case'last':return s.last?s.last.date+' '+(s.last.time||''):null;case'tot':return s.tot||0}}
+  case'best':return s.best;case'prog':return e.goal&&s.best!=null?s.best/e.goal:null;case'last':return s.last?s.last.date+' '+(s.last.time||''):null;case'tot':return s.tot||0;case'sched':return schedText(e)?((e.days||[]).length*1000+(+e.timeGoal||0)):null}}
 function sortExRows(rows){const o=D.settings.exSort;if(!o||!o.k)return rows;const dir=o.desc?-1:1,col=new Intl.Collator(undefined,{numeric:true,sensitivity:'base'});
   const cmp=(a,b)=>a==null&&b==null?0:a==null?1:b==null?-1:typeof a=='number'&&typeof b=='number'?a-b:col.compare(String(a),String(b));
   return rows.map(e=>({e,s:exStats(e.id)})).sort((x,y)=>{const ka=exSortKey(x.e,o.k,x.s),kb=exSortKey(y.e,o.k,y.s);
@@ -1039,48 +1089,54 @@ function sortExRows(rows){const o=D.settings.exSort;if(!o||!o.k)return rows;cons
     return c||col.compare(x.e.name||'',y.e.name||'')}).map(x=>x.e)}
 function renderExercises(){
   const arch=$('#showArch').checked;
-  const rows=sortExRows(D.exercises.filter(e=>arch||!e.archived)),o=D.settings.exSort||{};
+  const rows=sortExRows(D.exercises.filter(e=>!e.trainer&&(arch||!e.archived))),o=D.settings.exSort||{};
   $('#exTable').innerHTML='<thead><tr>'+EXCOLS.map(([k,t,c])=>'<th class="sort'+(c?' '+c:'')+(o.k==k?' on':'')+'" data-k="'+k+'">'+t+'<span class="ar">'+(o.k==k&&o.desc?'▼':'▲')+'</span></th>').join('')+'</tr></thead><tbody>'+
     rows.map(e=>{const s=exStats(e.id),p=e.goal&&s.best!=null?Math.min(1,s.best/e.goal):null;
-      return'<tr class="click" data-id="'+e.id+'"><td>'+esc(e.name)+(e.trainer?' <span title="Uses the fretboard trainer">🎸</span>':'')+(e.archived?' <span class="sub">(archived)</span>':'')+'</td><td>'+esc(e.technique||'')+'</td><td class="nw">'+esc(e.sub||'')+'</td><td class="n">'+(s.best!=null?trim(s.best):'—')+(e.goal?' / '+trim(e.goal):'')+(metricOf(e)!='BPM'?' <span class="sub">'+esc(metricOf(e))+'</span>':'')+'</td><td class="nw">'+(p!=null?'<span class="pct"><i style="width:'+(100*p)+'%"></i></span>'+Math.round(100*p)+'%':'<span class="sub">—</span>')+'</td><td class="nw">'+(s.last?fmtDate(s.last.date,{month:'short',day:'numeric',year:'numeric'})+' '+(s.last.effort?effHtml(s.last.effort):''):'<span class="sub">never</span>')+'</td><td class="n">'+fmtMin(s.tot)+'</td></tr>'}).join('')+'</tbody>';
+      return'<tr class="click" data-id="'+e.id+'"><td>'+esc(e.name)+(e.trainer?' <span title="Uses the fretboard trainer">🎸</span>':'')+(e.archived?' <span class="sub">(archived)</span>':'')+'</td><td>'+esc(e.technique||'')+'</td><td class="nw">'+esc(e.sub||'')+'</td><td class="n">'+(s.best!=null?trim(s.best):'—')+(e.goal?' / '+trim(e.goal):'')+(metricOf(e)!='BPM'?' <span class="sub">'+esc(metricOf(e))+'</span>':'')+'</td><td class="nw">'+(p!=null?'<span class="pct"><i style="width:'+(100*p)+'%"></i></span>'+Math.round(100*p)+'%':'<span class="sub">—</span>')+'</td><td class="nw">'+(schedText(e)?esc(schedText(e)):'<span class="sub">—</span>')+'</td><td class="nw">'+(s.last?fmtDate(s.last.date,{month:'short',day:'numeric',year:'numeric'})+' '+(s.last.effort?effHtml(s.last.effort):''):'<span class="sub">never</span>')+'</td><td class="n">'+fmtMin(s.tot)+'</td></tr>'}).join('')+'</tbody>';
   $$('#exTable tr.click').forEach(r=>r.onclick=()=>editEx(+r.dataset.id));
   $$('#exTable th.sort').forEach(h=>h.onclick=()=>{const k=h.dataset.k,o=D.settings.exSort||{};D.settings.exSort={k,desc:o.k==k?!o.desc:false};save();renderExercises()});
-  if(!$('#cvFrom').options.length){const o=SUBS.map(([n,v])=>'<option value="'+v+'">'+n+'</option>').join('');$('#cvFrom').innerHTML=o;$('#cvTo').innerHTML=o;$('#cvFrom').value='4';$('#cvTo').value='3'}
-  convert();
-  $('#effKey').innerHTML='<table>'+D.efforts.map(f=>'<tr><td style="white-space:nowrap">'+effHtml(f.id)+'</td><td class="sub">'+esc(f.desc||'')+'</td></tr>').join('')+'</table>';
 }
 function convert(){const b=num($('#cvBpm').value),f=+$('#cvFrom').value,t=+$('#cvTo').value;if(!(b>0)){$('#cvOut').textContent='';$('#cvNps').textContent='';return}
   const r=b*f/t,fn=$('#cvFrom').selectedOptions[0].text,tn=$('#cvTo').selectedOptions[0].text;
   $('#cvOut').innerHTML=trim(b)+' BPM in '+esc(fn)+' = <b>'+trim(r)+' BPM</b> in '+esc(tn);
   $('#cvNps').textContent='Same speed: '+trim(b*f/60)+' notes per second.'}
 ['cvBpm','cvFrom','cvTo'].forEach(id=>$('#'+id).oninput=convert);
+{const o=SUBS.map(([n,v])=>'<option value="'+v+'">'+n+'</option>').join('');$('#cvFrom').innerHTML=o;$('#cvTo').innerHTML=o;$('#cvFrom').value='4';$('#cvTo').value='3';convert()}
 $('#showArch').onchange=renderExercises;
 let editingEx=null;
 function editEx(id){
   const e=id!=null?exById(id):{name:'',technique:'',sub:'',goal:null,metric:'BPM',trainer:false,archived:false,notes:''};
   editingEx=id;$('#dxTitle').textContent=id!=null?'Edit exercise':'New exercise';
+  $('#dxTime').value=e.timeGoal??'';renderDays(e.days||[]);
   $('#dxName').value=e.name;$('#dxSub').value=e.sub||'';$('#dxGoal').value=e.goal??'';$('#dxMax').value=e.curveMax??'';$('#dxLen').value=e.lenBars??'';$('#dxReps').value=e.curveBars??'';$('#dxMetric').value=e.metric||'BPM';
   const techs=[...new Set([...D.techniques,e.technique].filter(Boolean))];
   $('#dxTech').innerHTML='<option value="">— None —</option>'+techs.map(t=>'<option'+(t==e.technique?' selected':'')+'>'+esc(t)+'</option>').join('');
   $('#dxNotes').value=e.notes||'';$('#dxArch').checked=!!e.archived;$('#dxMet').checked=e.metronome!==false;
   dxTab=e.tab||null;renderDxTab();
-  $('#dxDel').hidden=id==null;$('#dlgEx').showModal()}
+  $('#dxDel').hidden=id==null;$('#dxSaveNew').hidden=id==null;$('#dlgEx').showModal()}
 $('#addEx').onclick=()=>editEx(null);
 $('#dlgEx').addEventListener('close',async()=>{
   const r=$('#dlgEx').returnValue;
   if(r=='delete'&&editingEx!=null){const exId=editingEx,n=D.entries.filter(x=>x.ex==exId).length;
     if(n){tell('This exercise has '+n+' log entries, so it can’t be deleted. Tick “Archived” to hide it instead.');return}
     if(!await ask('','Delete this exercise?',{ok:'Delete',danger:true}))return;D.exercises=D.exercises.filter(x=>x.id!=exId);save();render();return}
-  if(r!='save')return;
+  if(r!='save'&&r!='saveNew')return;
+  // Save as new exercise: the one you opened stays as it was (with its history); the new one starts from a copy
+  // of it (pattern, tab, ladder settings…) with what's in the dialog, and no history
+  const base=r=='saveNew'&&editingEx!=null?clone(exById(editingEx)):null;if(base)editingEx=null;
   const v={name:$('#dxName').value.trim(),technique:$('#dxTech').value,sub:$('#dxSub').value.trim(),goal:num($('#dxGoal').value),curveMax:num($('#dxMax').value),lenBars:(v=>v>0?Math.min(64,Math.round(v)):null)(num($('#dxLen').value)),curveBars:(v=>v>0?Math.min(64,Math.round(v)):null)(num($('#dxReps').value)),metric:$('#dxMetric').value.trim()||'BPM',notes:$('#dxNotes').value.trim(),archived:$('#dxArch').checked,metronome:$('#dxMet').checked};
   if(!v.name){toast('The exercise needs a name');return}
-  {const old=editingEx!=null?exById(editingEx).tab||null:null;v.tab=dxTab;
+  v.timeGoal=(n=>n>0?Math.min(600,Math.round(n)):null)(num($('#dxTime').value));
+  v.days=$$('#dxDays .chip.on').map(x=>+x.dataset.d).filter(x=>x>=0&&x<=6).sort();
+  {const old=base?base.tab||null:editingEx!=null?exById(editingEx).tab||null:null;v.tab=dxTab;
    if(dxTab!==old){v.tabSel=null;v.tabTrack=null;v.useTab=!!dxTab;if(CURVE.on||CURVE.hold)curveCancel()}}
   // no two exercises with the same name, technique and subdivision
   const same=D.exercises.find(x=>x.id!==editingEx&&(x.name||'').trim().toLowerCase()==v.name.toLowerCase()&&(x.technique||'')==(v.technique||'')&&(x.sub||'').trim().toLowerCase()==(v.sub||'').toLowerCase());
-  if(same){tell('There’s already an exercise called “'+v.name+'” with the same technique and subdivision.');return}
+  // refused: back to the dialog with what you typed, to change the name, technique or subdivision
+  if(same){if(base)editingEx=base.id;await tell('There’s already an exercise called “'+v.name+'” with the same technique and subdivision.');$('#dlgEx').showModal();return}
   if(editingEx!=null){Object.assign(exById(editingEx),v);if(editingEx==T.ex&&!v.metronome&&(CURVE.on||CURVE.hold))curveCancel()}
-  else{const id=Math.max(0,...D.exercises.map(x=>x.id))+1;D.exercises.push(Object.assign({id},v));if(!running()&&T.acc==0){T.ex=id;saveT()}}
+  else{const id=Math.max(0,...D.exercises.map(x=>x.id))+1;D.exercises.push(Object.assign(base||{},{id},v));if(!running()&&T.acc==0){T.ex=id;saveT()}
+    if(base)toast('Added “'+v.name+'” as a new exercise')}
   save();render();
 });
 
@@ -1128,10 +1184,14 @@ function chartTempo(el,ex){
   el.innerHTML=s+'</svg>';bindTips(el)}
 
 // ---------- stats view ----------
+let exAll=false;   // Stats › Time by exercise: all exercises, not just the top 12
+$('#sArch').onchange=e=>{D.settings.statsArch=e.target.checked;save();renderStats()};
 function renderStats(){
   const r=$('#sRange').value,today=dkey();
   let from=r=='all'?(D.entries.map(e=>e.date).sort()[0]||today):addDays(today,-(+r-1));
-  const list=D.entries.filter(e=>e.date>=from&&e.date<=today),tt=dayTotals(list);
+  // Include archived exercises (remembered): off leaves out the practice logged on exercises you've archived
+  const arch=D.settings.statsArch!==false;$('#sArch').checked=arch;const shown=e=>{const x=exById(e.ex);return arch||!x||!x.archived};
+  const list=D.entries.filter(e=>e.date>=from&&e.date<=today&&shown(e)),tt=dayTotals(list);
   const days=[];for(let k=from;k<=today;k=addDays(k,1)){const es=list.filter(e=>e.date==k);days.push({k,v:tt[k]||0,tip:'<b>'+fmtDate(k,{weekday:'short',month:'short',day:'numeric'})+'</b><br>'+(tt[k]?fmtMin(tt[k])+es.map(e=>'<br>· '+esc(exName(exById(e.ex)))+' — '+trim(e.min)+' min').join(''):'No practice')})}
   const tot=list.reduce((s,e)=>s+(+e.min||0),0),pd=Object.keys(tt).filter(k=>tt[k]>0).length,st=streaks();
   $('#sRangeNote').textContent=fmtDate(from,{month:'short',day:'numeric',year:'numeric'})+' – today';
@@ -1140,9 +1200,11 @@ function renderStats(){
   const bt={},bx={};list.forEach(e=>{const x=exById(e.ex)||{technique:'?'};bt[x.technique||'No technique']=(bt[x.technique||'No technique']||0)+(+e.min||0);bx[e.ex]=(bx[e.ex]||0)+(+e.min||0)});
   chartH($('#chTech'),Object.entries(bt).sort((a,b)=>b[1]-a[1]).map(([l,v])=>({l,v,vs:fmtH(v),tip:'<b>'+esc(l)+'</b><br>'+fmtMin(v)+' · '+Math.round(100*v/tot)+'% of time'})));
   const xr=Object.entries(bx).sort((a,b)=>b[1]-a[1]);
-  chartH($('#chEx'),xr.slice(0,12).map(([id,v])=>{const x=exById(id);return{l:exShort(x,22),v,vs:fmtH(v),tip:'<b>'+esc(exName(x))+'</b><br>'+esc(x?x.technique:'')+'<br>'+fmtMin(v)}}));
-  if(xr.length>12)$('#chEx').insertAdjacentHTML('beforeend','<p class="sub">+ '+(xr.length-12)+' more</p>');
-  const sel=$('#sEx').value||T.ex,withB=D.exercises.filter(e=>!e.trainer&&D.entries.some(x=>x.ex==e.id&&x.bpm!=null)),tr=D.exercises.find(e=>e.trainer);
+  chartH($('#chEx'),(exAll?xr:xr.slice(0,12)).map(([id,v])=>{const x=exById(id);return{l:exShort(x,22),v,vs:fmtH(v),tip:'<b>'+esc(exName(x))+'</b><br>'+esc(x?x.technique:'')+'<br>'+fmtMin(v)}}));
+  // "+ N more" shows the rest; "Show fewer" goes back to the top 12
+  if(xr.length>12){$('#chEx').insertAdjacentHTML('beforeend','<p style="margin:8px 0 0"><a href="#" id="exMore">'+(exAll?'Show fewer':'+ '+(xr.length-12)+' more')+'</a></p>');
+    $('#exMore').onclick=e=>{e.preventDefault();exAll=!exAll;renderStats()}}
+  const sel=$('#sEx').value||T.ex,withB=D.exercises.filter(e=>!e.trainer&&(arch||!e.archived)&&D.entries.some(x=>x.ex==e.id&&x.bpm!=null)),tr=D.exercises.find(e=>e.trainer);
   $('#sEx').innerHTML=(withB.length?'<optgroup label="Tempo">'+withB.map(e=>'<option value="'+e.id+'">'+esc(exName(e))+'</option>').join('')+'</optgroup>':'')+(tr?'<optgroup label="Fretboard"><option value="'+tr.id+'">'+esc(exName(tr))+'</option></optgroup>':'');
   if([...withB,tr].some(e=>e&&e.id==sel))$('#sEx').value=sel;
   renderProgress();
@@ -1187,7 +1249,7 @@ function renderSettings(){
   renderSkins();
   $('#stGoal').value=s.goal;$('#stTabCol').value=s.tabColors=='paper'?'paper':'theme';$('#stPresets').value=s.presets.join(', ');$('#stVol').value=s.chimeVol;
   $('#stNotify').checked=!!s.notify;
-  $('#bkInfo').innerHTML=D.entries.length+' entries, '+D.exercises.length+' exercises. Last backup: '+(s.lastBackup?new Date(s.lastBackup).toLocaleDateString():'never')+'. <span id="persist"></span>';
+  $('#bkInfo').innerHTML=D.entries.length+' entries, '+D.exercises.filter(x=>!x.trainer).length+' exercises. Last backup: '+(s.lastBackup?new Date(s.lastBackup).toLocaleDateString():'never')+'. <span id="persist"></span>';
   try{navigator.storage&&navigator.storage.persisted&&navigator.storage.persisted().then(p=>{const e=$('#persist');if(e)e.textContent=p?'Storage is marked persistent.':''})}catch(e){}
   $('#effEdit').innerHTML=D.efforts.map(f=>'<div class="erow" data-id="'+f.id+'"><span class="ed ed'+f.id+'" style="margin:0 auto"></span><input type="text" class="en" value="'+esc(f.name)+'" aria-label="Name"><input type="text" class="ex" value="'+esc(f.desc||'')+'" aria-label="Description"><button class="ex-del" title="Remove">✕</button></div>').join('');
   $$('#effEdit .erow').forEach(r=>{const f=effById(+r.dataset.id);
@@ -1196,8 +1258,8 @@ function renderSettings(){
     r.querySelector('.ex-del').onclick=()=>{const n=D.entries.filter(x=>x.effort==f.id).length;if(n){tell(n+' entries use “'+f.name+'”, so it can’t be removed. You can rename it.');return}D.efforts=D.efforts.filter(x=>x!==f);save();renderSettings()}});
   $('#techEdit').innerHTML=D.techniques.map((t,i)=>'<div class="row" style="margin-bottom:6px" data-i="'+i+'"><input type="text" value="'+esc(t)+'" style="flex:1" aria-label="Technique"><button title="Remove">✕</button></div>').join('');
   $$('#techEdit .row').forEach(r=>{const i=+r.dataset.i,old=D.techniques[i];
-    r.querySelector('input').onchange=e=>{const v=e.target.value.trim();if(!v)return;D.techniques[i]=v;D.exercises.forEach(x=>{if(x.technique==old)x.technique=v});save();renderSettings()};
-    r.querySelector('button').onclick=()=>{const n=D.exercises.filter(x=>x.technique==old).length;if(n){tell(n+' exercise(s) use “'+old+'”. Change them first.');return}D.techniques.splice(i,1);save();renderSettings()}});
+    r.querySelector('input').onchange=e=>{const v=e.target.value.trim();if(!v)return;D.techniques[i]=v;D.exercises.forEach(x=>{if(x.technique==old&&!x.trainer)x.technique=v});save();renderSettings()};
+    r.querySelector('button').onclick=()=>{const n=D.exercises.filter(x=>x.technique==old&&!x.trainer).length;if(n){tell(n+' exercise(s) use “'+old+'”. Change them first.');return}D.techniques.splice(i,1);save();renderSettings()}});
 }
 $('#stGoal').onchange=e=>{D.settings.goal=Math.max(0,num(e.target.value)||0);save()};
 $('#stPresets').onchange=e=>{const a=e.target.value.split(/[,\s]+/).map(num).filter(v=>v>0).slice(0,12);if(a.length){D.settings.presets=a;save();buildPresets()}e.target.value=D.settings.presets.join(', ')};
@@ -1209,12 +1271,34 @@ $('#techAdd').onclick=()=>{const v=$('#techNew').value.trim();if(v&&!D.technique
 function backup(){D.settings.lastBackup=Date.now();save();download('guitar-practice-backup-'+dkey()+'.json',JSON.stringify(D,null,1),'application/json');renderSettings()}
 $('#bkExport').onclick=backup;
 $('#bkCsv').onclick=()=>csv(D.entries);
-$('#bkImport').onclick=()=>$('#bkFile').click();
-$('#bkFile').onchange=async e=>{const f=e.target.files[0];e.target.value='';if(!f)return;
+$('#bkImport').onclick=()=>pickFile('backup','Import a backup','*.json',50*1024*1024,$('#bkFile'),restoreBackup);
+$('#bkFile').onchange=e=>{const f=e.target.files[0];e.target.value='';if(f)restoreBackup(f)};
+// Merge a backup into the current data. Exercises are the same when name, technique and subdivision match
+// (the rule that stops duplicates); others are added. Entries are added unless they're already here (the same
+// entry, or one with the same day, exercise, minutes, tempo and time). The trainer's entries go to the trainer.
+// Your settings stay as they are; techniques and effort levels the backup has and you don't are added.
+function mergeBackup(o){
+  const key=e=>(e.name||'').trim().toLowerCase()+'|'+(e.technique||'')+'|'+(e.sub||'').trim().toLowerCase();
+  const tx=trainerEx(),map={};let next=Math.max(0,...D.exercises.map(x=>+x.id||0),...D.entries.map(x=>+x.ex||0))+1,newEx=0,newEn=0,had=0;
+  o.exercises.forEach(e=>{
+    if(e.trainer||/^fretboard (notes|trainer)$/i.test(e.name||'')){if(tx)map[e.id]=tx.id;return}
+    const m=D.exercises.find(x=>!x.trainer&&key(x)==key(e));if(m){map[e.id]=m.id;return}
+    const n=clone(e);n.id=next++;n.trainer=false;D.exercises.push(n);map[e.id]=n.id;newEx++});
+  const sig=x=>[x.date,x.ex,x.min,x.bpm,x.t].join('|'),ids=new Set(D.entries.map(x=>x.id)),sigs=new Set(D.entries.map(sig));
+  o.entries.forEach(e=>{if(map[e.ex]==null)return;const n=Object.assign(clone(e),{ex:map[e.ex]});
+    if(ids.has(n.id)||sigs.has(sig(n))){had++;return}D.entries.push(n);ids.add(n.id);sigs.add(sig(n));newEn++});
+  (o.techniques||[]).forEach(t=>{if(t&&!D.techniques.includes(t)&&!/^fretboard notes$/i.test(t))D.techniques.push(t)});
+  (o.efforts||[]).forEach(f=>{if(f&&!D.efforts.some(x=>x.id==f.id))D.efforts.push(clone(f))});
+  fixTrainerEx();save();buildPresets();render();
+  tell('Backup merged: '+newEn+' new entr'+(newEn==1?'y':'ies')+' and '+newEx+' new exercise'+(newEx==1?'':'s')+' added.'+(had?' '+had+' entr'+(had==1?'y was':'ies were')+' already here.':''))}
+async function restoreBackup(f){
   try{const o=JSON.parse(await f.text());if(!Array.isArray(o.entries)||!Array.isArray(o.exercises))throw 0;
-    if(!await ask('Restore backup?','Replace all current data with this backup ('+o.entries.length+' entries, '+o.exercises.length+' exercises)?',{ok:'Replace',danger:true}))return;
+    const c=await choose('Import backup','This backup has '+o.entries.length+' entries and '+o.exercises.filter(x=>!x.trainer).length+' exercises.\n\nMerge adds the exercises and entries that aren’t here yet and keeps everything you have. Replace swaps all your current data for the backup.',
+      [{label:'Cancel',value:'cancel'},{label:'Replace',value:'replace',cls:'danger'},{label:'Merge',value:'merge',cls:'primary'}]);
+    if(c=='merge'){mergeBackup(o);return}
+    if(c!='replace')return;
     const keepMet=D.settings.metro;D=o;D.settings=Object.assign({},DEFSET,D.settings||{});D.settings.metro=Object.assign(clone(MDEF),D.settings.metro||keepMet||{});D.efforts=D.efforts||clone(SEED.efforts);D.techniques=D.techniques||clone(SEED.techniques);fixTrainerEx();save();resetTimer();T.ex=(activeExercises().find(e=>!e.trainer)||{}).id;saveT();buildPresets();render();toast('Backup restored')}
-  catch(x){tell('That file doesn’t look like a Guitar Practice backup.')}};
+  catch(x){tell('That file doesn’t look like a Guitar Practice backup.')}}
 
 
 // ---------- tab (Guitar Practice Studio) ----------
@@ -1264,7 +1348,7 @@ function tabBarStart(){const ex=exById(T.ex);if(!tabOn(ex))return null;const I=e
   // x/8 bars click on every eighth note; the subdivision under each click halves to match
   const sub=den>=8?Math.max(1,Math.round(M.sub/2)):M.sub;
   let pat=M.pat;if(num!=M.beats||sub!=M.sub){const k=num+'/'+sub+'/'+(patState().kind=='backbeat'?'rock':'basic');pat=TABPAT[k]||(TABPAT[k]=defPattern(num,sub,patState().kind=='backbeat'?'rock':'basic'))}
-  return{bar:b,beats:num,sub,pat,mult:(t/base)*(den/4)}}
+  return{bar:b,beats:num,sub,pat,mult:(t/base)*(den/4),tr:t/base}}
 
 // ---- the tab window (a separate window: Studio passes messages between it and this page) ----
 const TABWIN={open:false,ex:null,lastPos:''};
@@ -1275,15 +1359,22 @@ function tabSend(m){try{if(window.__JUCE__&&window.__JUCE__.backend){window.__JU
 function tabColors(){const cs=getComputedStyle(document.documentElement),v=n=>cs.getPropertyValue(n).trim();
   return{paper:D.settings.tabColors=='paper',bg:v('--bg'),card:v('--card'),fg:v('--fg'),mut:v('--mut'),line:v('--line'),acc:v('--acc'),accfg:v('--accfg')}}
 function openTab(){const ex=exById(T.ex);if(!ex||!ex.tab)return;TABWIN.open=true;TABWIN.ex=ex.id;TABWIN.lastPos='';
-  tabSend({type:'open',ex:ex.id,name:ex.name,kind:ex.tab.kind,data:ex.tab.data,sel:ex.tabSel||null,track:ex.tabTrack||0,colors:tabColors()})}
+  tabSend({type:'open',ex:ex.id,name:ex.name,technique:ex.technique||'',kind:ex.tab.kind,data:ex.tab.data,sel:ex.tabSel||null,track:ex.tabTrack||0,colors:tabColors(),canEdit:!!(STUDIO_APP&&ex.tab.path)});
+  TABWIN.lastTr='';tabTransport()}
+// keeps the tab window's Play/Pause and Stop showing the same as this page's
+function tabTransport(){if(!TABWIN.open)return;const playing=/Pause/.test($('#metGo').textContent),canStop=!$('#metStop').disabled,k=playing+'|'+canStop;
+  if(k==TABWIN.lastTr)return;TABWIN.lastTr=k;tabSend({type:'transport',playing,canStop})}
 function tabTheme(){if(TABWIN.open)tabSend({type:'theme',colors:tabColors()})}
 function tabPos(bar,frac){if(!TABWIN.open)return;const k=bar+':'+frac.toFixed(3);if(k==TABWIN.lastPos)return;TABWIN.lastPos=k;tabSend({type:'pos',bar,frac})}
 function tabFromWindow(m){if(!m||!m.type)return;
   if(m.type=='ready'){TABWIN.wReady=true;const q=TABWIN.queue||[];TABWIN.queue=[];if(TABWIN.open&&!q.some(x=>x.type=='open'))openTab();else q.forEach(x=>tabSend(x));return}
   if(m.type=='closed'){TABWIN.open=false;TABWIN.wReady=false;return}
+  // the tab window's own Play/Pause and Stop: the same as pressing them here
+  if(m.type=='transport'){if(m.cmd=='stop')$('#metStop').click();else $('#metGo').click();return}
   const ex=exById(m.ex);if(!ex||!ex.tab)return;
   if(m.type=='sel'){ex.tabSel=m.from==null?null:{from:m.from,to:m.to};save();if(CURVE.on&&tabOn(ex))CURVE.len=tabLen(ex);render()}
-  else if(m.type=='track'){ex.tabTrack=m.track|0;save()}}
+  else if(m.type=='track'){ex.tabTrack=m.track|0;save()}
+  else if(m.type=='edit'){if(STUDIO_APP&&ex.tab.path)studioSend({action:'tabEdit',path:ex.tab.path})}}
 addEventListener('message',e=>{if(TABWIN.w&&e.source===TABWIN.w)tabFromWindow(e.data)});
 try{if(window.__JUCE__&&window.__JUCE__.backend)window.__JUCE__.backend.addEventListener('studioTab',m=>tabFromWindow(m))}catch(e){}
 $('#openTab').onclick=openTab;
@@ -1293,6 +1384,15 @@ $('#stTabCol').onchange=e=>{D.settings.tabColors=e.target.value;save();tabTheme(
 let dxTab=null;
 const STUDIO_APP=!!(window.__JUCE__&&window.__JUCE__.backend);
 function studioSend(o){try{window.__JUCE__.backend.emitEvent('studio',o)}catch(e){}}
+// Browse buttons: in Studio they use Studio's own file picker, which opens in the folder that button was
+// last used in. In a plain browser they use the page's hidden file input, as before.
+const PICKS={};
+function pickFile(key,title,patterns,max,input,then){if(!STUDIO_APP){input.click();return}
+  PICKS[key]=then;studioSend({action:'pickFile',key,title,patterns,max})}
+if(STUDIO_APP)try{window.__JUCE__.backend.addEventListener('studioPickedFile',m=>{const then=m&&PICKS[m.key];if(!then)return;delete PICKS[m.key];
+  if(m.cancel)return;
+  if(m.error){tell(m.error=='big'?'That file is too big.':'Studio couldn’t read that file.');return}
+  then(new File([bytesFromB64(m.data)],m.name))})}catch(e){}
 function shortPath(p){return String(p||'').replace(/^\/Users\/[^/]+/,'~').replace(/^[A-Za-z]:\\Users\\[^\\]+/,'~')}
 function renderDxTab(){const t=dxTab;
   $('#dxTabInfo').innerHTML=t?'<b>'+esc(t.kind=='tex'?(t.info.title||'Typed tab'):t.name)+'</b>'+esc(tabDesc(t))+
@@ -1381,16 +1481,41 @@ function syncPat(){const M=MC(),st=patState(),n=M.beats*M.sub;
 function keepCustom(){const M=MC(),st=patState();st.kind='custom';st.custom={beats:M.beats,sub:M.sub,p:M.pat.p.slice(),s:M.pat.s.slice(),m:M.pat.m.slice()};save()}
 function subFromText(t){t=(t||'').toLowerCase();if(!t.trim())return 0;const tri=/trip/.test(t);
   if(/32/.test(t))return 8;if(/16/.test(t))return tri?6:4;if(/\b8|eighth/.test(t))return tri?3:2;if(/quarter|\b4/.test(t))return tri?3:1;return 0}
-const MET={on:false,step:0,next:0,w:null,iv:null,q:[],taps:[],lit:[]};
+const MET={on:false,step:0,next:0,w:null,iv:null,q:[],taps:[],lit:[],eng:false,out:[],sent:{}};
+// In Studio the metronome plays in Studio's audio engine: out your audio interface, on the engine's clock (the
+// same one as your guitar). This page still decides what plays when (pattern, ladder, tab bars), a quarter of a
+// second ahead, and sends each hit with its time on that clock. Studio reports the clock with the input level
+// (about 20 times a second); in between, the page counts on from the last report. Without your interface (or in
+// a plain browser) the metronome plays with Web Audio, as before.
+const ENG={t:0,p:0,ok:false,lat:0,seen:-1e9},ENGSND={drums:{p:0,s:1,m:2},click:{p:3,s:4,m:5}},ENGUSER={p:8,s:9,m:10};
+if(STUDIO_APP)try{window.__JUCE__.backend.addEventListener('studioLevel',l=>{if(!l||l.t==null)return;ENG.p=performance.now();ENG.t=+l.t;ENG.ok=!!l.ok;ENG.lat=+l.lat||0;ENG.seen=ENG.p});
+  window.__JUCE__.backend.addEventListener('studioMet',m=>{if(!m||!m.error)return;const n=(VOICES.find(x=>x[0]==m.v)||[,'a'])[1].toLowerCase();
+    toast(m.error=='long'?'Your '+n+' sample is too long for Studio (5 s at most); using the built-in sound':'Studio couldn’t play your '+n+' sample; using the built-in sound')})}catch(e){}
+function engNow(){return ENG.t+(performance.now()-ENG.p)/1000}
+function engReady(){return STUDIO_APP&&ENG.ok&&performance.now()-ENG.seen<1000}
+function useEng(){return MET.on?MET.eng:engReady()}
+function mNow(){return useEng()?engNow():(actx?actx.currentTime:0)}
+function engHit(t,snd,fb,g){MET.out.push([Math.round(t*1e5)/1e5,snd,fb,Math.round(g*1000)/1000])}
+function engFlush(){if(MET.out.length){studioSend({action:'metHits',hits:MET.out});MET.out=[]}}
+function engClear(){MET.out=[];if(MET.eng)studioSend({action:'metClear'})}
+// Studio gets its own copy of your samples (from this page's sample store) to play them itself
+function engSendSample(v,name,buf){MET.sent[v]=name;studioSend({action:'metSample',v,data:buf?b64FromBytes(new Uint8Array(buf)):''})}
+function engSyncSamples(){if(!STUDIO_APP)return;const M=MC();
+  for(const v of['p','s','m']){const want=(M.samples||{})[v]||null;if(MET.sent[v]===want)continue;
+    if(!want){engSendSample(v,null,null);continue}
+    MET.sent[v]=want;IDB.get(v).then(buf=>{if(buf&&MET.sent[v]===want)engSendSample(v,want,buf)}).catch(()=>{})}}
 function metTempo(){const v=num($('#bpm').value);return Math.min(400,Math.max(20,v>0?v:100))}
 let noiseBuf=null;
 function noise(a){if(!noiseBuf||noiseBuf.sampleRate!=a.sampleRate){noiseBuf=a.createBuffer(1,Math.floor(a.sampleRate*.5),a.sampleRate);const d=noiseBuf.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1}return noiseBuf}
 const SAMP={};
 function env(a,node,t,peak,dur){const e=a.createGain();e.gain.setValueAtTime(.0001,t);e.gain.exponentialRampToValueAtTime(Math.max(.0002,peak),t+.003);e.gain.exponentialRampToValueAtTime(.0001,t+dur);node.connect(e);return e}
-function readyClick(t,accent){const a=actx;if(!a)return;const M=MC(),g=a.createGain();g.gain.value=(accent?.9:.65)*(+M.master);g.connect(a.destination);
+function readyClick(t,accent){const M=MC();if(useEng()){engHit(t,accent?6:7,accent?6:7,(accent?.9:.65)*(+M.master));return}
+  const a=actx;if(!a)return;const g=a.createGain();g.gain.value=(accent?.9:.65)*(+M.master);g.connect(a.destination);
   const o=a.createOscillator();o.type='sine';o.frequency.value=accent?2000:1500;env(a,o,t,1,.035).connect(g);o.start(t);o.stop(t+.05)}
 function voice(v,t){
-  const a=actx;if(!a||!usesMet(exById(T.ex)))return;const M=MC(),g=a.createGain();g.gain.value=(M.vol[v]??1)*(+M.master);g.connect(a.destination);
+  if(!usesMet(exById(T.ex)))return;const M=MC();
+  if(useEng()){const b=ENGSND[M.kit=='click'?'click':'drums'][v];engHit(t,M.samples&&M.samples[v]?ENGUSER[v]:b,b,(M.vol[v]??1)*(+M.master));return}
+  const a=actx;if(!a)return;const g=a.createGain();g.gain.value=(M.vol[v]??1)*(+M.master);g.connect(a.destination);
   if(SAMP[v]){const s=a.createBufferSource();s.buffer=SAMP[v];s.connect(g);s.start(t);return}
   if(M.kit=='click'){const o=a.createOscillator();o.frequency.value={p:1600,s:1100,m:800}[v];env(a,o,t,v=='m'?.35:.6,v=='m'?.03:.05).connect(g);o.start(t);o.stop(t+.08);return}
   if(v=='p'){const o=a.createOscillator();o.type='sine';o.frequency.setValueAtTime(150,t);o.frequency.exponentialRampToValueAtTime(45,t+.12);env(a,o,t,1,.35).connect(g);o.start(t);o.stop(t+.4);return}
@@ -1399,33 +1524,39 @@ function voice(v,t){
   else{f.frequency.value=7000;env(a,f,t,.35,.045).connect(g);n.start(t);n.stop(t+.06)}
 }
 function metPump(){
-  if(!MET.on||!actx)return;const a=actx,M=MC();
-  if(MET.next<a.currentTime-.2)MET.next=a.currentTime+.05;
-  while(MET.next<a.currentTime+.12){
+  if(!MET.on||(!MET.eng&&!actx))return;const M=MC(),now=mNow(),ahead=MET.eng?.25:.12;
+  if(MET.next<now-.2)MET.next=now+.05;
+  while(MET.next<now+ahead){
     if(MET.step==0){if(CURVE.on&&!CURVE.paused)curveBar();MET.bar=tabBarStart()}   // a new bar (from the tab when it's in use)
     const B=MET.bar,sub=B?B.sub:M.sub,n=(B?B.beats:M.beats)*sub,i=MET.step%n,P=B?B.pat:M.pat;const dur=60/(metTempo()*(B?B.mult:1))/sub;
     const gr=CURVE.on&&CURVE.counting;
     if(CURVE.on&&(CURVE.counting||CURVE.first)){if(CURVE.counting&&i%sub==0)readyClick(MET.next,i==0)}
     else for(const v of['p','s','m'])if(P[v][i])voice(v,MET.next);
-    MET.q.push({i,t:MET.next,g:gr,tb:B&&!gr?B.bar:-1,f:i/n,sub,B:!!B});MET.next+=dur;MET.step=(i+1)%n}
-}
+    MET.q.push({i,t:MET.next,g:gr,tb:B&&!gr?B.bar:-1,f:i/n,sub,B:!!B,bpm:metTempo()*(B?B.tr:1)});MET.next+=dur;MET.step=(i+1)%n}
+  if(MET.eng)engFlush()}
 function metDraw(){
-  if(!MET.on)return;const now=actx.currentTime;let cur=null;
+  if(!MET.on)return;const now=MET.eng?engNow()-ENG.lat:actx.currentTime;let cur=null;
   while(MET.q.length&&MET.q[0].t<=now+.005)cur=MET.q.shift();
-  if(cur){lightStep(cur.i,cur);$('#metCard').classList.toggle('gr',!!cur.g);if(cur.tb!=null)tabPos(cur.tb,cur.f)}
+  if(cur){lightStep(cur.i,cur);$('#metCard').classList.toggle('gr',!!cur.g);if(cur.tb!=null)tabPos(cur.tb,cur.f);showNowTempo(cur)}
   requestAnimationFrame(metDraw)}
+// A tab with tempo changes plays some bars faster or slower than the tempo you set (scaled with it, so the
+// ladder still works). While a bar plays at another tempo, that tempo shows next to it.
+let NOWBPM=null;
+function showNowTempo(q){let v=q&&q.B?Math.round(q.bpm):null;if(v!=null&&v==Math.round(metTempo()))v=null;if(v===NOWBPM)return;NOWBPM=v;
+  $('#bpmNow').innerHTML=v!=null?'· <b style="color:var(--acc)">♩ = '+v+'</b>':''}
 function lightStep(i,q){MET.lit.forEach(e=>e.classList.remove('now'));const M=MC(),sub=q&&q.B?q.sub:M.sub;
   // a tab bar in another meter than the metronome's grid lights only the beat dots
   MET.lit=q&&q.B&&sub!=M.sub?[]:[...document.querySelectorAll('#metGrid [data-i="'+i+'"]')];
   if(i%sub==0){const d=$('#metDots').children[i/sub];if(d)MET.lit.push(d)}MET.lit.forEach(e=>e.classList.add('now'))}
 function metStart(){
   if(!usesMet(exById(T.ex)))return;   // metronome switched off for this exercise: no clicks and no beat lights
-  const a=audio();if(!a)return;loadSamples();MET.on=true;MET.step=0;MET.next=a.currentTime+.08;MET.q=[];TABPTR=null;MET.bar=null;
+  const a=audio(),eng=engReady();if(!a&&!eng)return;MET.eng=eng;if(eng)engSyncSamples();else loadSamples();
+  MET.on=true;MET.step=0;MET.next=mNow()+(eng?.15:.08);MET.q=[];TABPTR=null;MET.bar=null;
   if(!MET.w){try{MET.w=new Worker(URL.createObjectURL(new Blob(["let t=null;onmessage=e=>{clearInterval(t);if(e.data=='start')t=setInterval(()=>postMessage(0),25)}"],{type:'text/javascript'})));MET.w.onmessage=metPump}catch(e){MET.w=null}}
   if(MET.w)MET.w.postMessage('start');else MET.iv=setInterval(metPump,25);
   metPump();requestAnimationFrame(metDraw);renderMetBtn()}
 function metStop(){curveCancel();metHalt()}
-function metHalt(){$('#metCard').classList.remove('gr');MET.on=false;tabPos(-1,0);if(MET.w)MET.w.postMessage('stop');clearInterval(MET.iv);MET.q=[];MET.lit.forEach(e=>e.classList.remove('now'));MET.lit=[];renderMetBtn()}
+function metHalt(){$('#metCard').classList.remove('gr');showNowTempo(null);if(MET.on)engClear();MET.on=false;tabPos(-1,0);if(MET.w)MET.w.postMessage('stop');clearInterval(MET.iv);MET.q=[];MET.lit.forEach(e=>e.classList.remove('now'));MET.lit=[];renderMetBtn()}
 const PCTS=[70,75,80,85,90,95,100,105,110];
 // a bar clicked before Play: the ladder starts there
 let LADSTART=null;
@@ -1463,7 +1594,7 @@ function curveStart(){const ex=exById(T.ex),c=curveSteps(ex);if(!c)return;
   const s0=LADSTART&&LADSTART.ex==T.ex&&LADSTART.i<c.steps.length?LADSTART.i:0;LADSTART=null;
   Object.assign(CURVE,{on:true,hold:false,counting:false,steps:c.steps,pcts:c.pcts,ref:c.ref,max:c.max,idx:s0,start:s0,bar:0,bars:curveBarsVal(),len:curveLenVal(),rep:1,paused:false,resume:false,stay:false,jump:0,repReady:exRepReady(ex),kind:'tempo',readyN:0,ready:exReady(ex),readyBar:0,first:true,top:0,ex:T.ex,t0:Date.now()});
   setTempo(c.steps[s0]);renderLadder();
-  if(MET.on){MET.step=0;MET.q=[];MET.next=actx.currentTime+.08}else metStart();
+  if(MET.on){engClear();MET.step=0;MET.q=[];MET.next=mNow()+(MET.eng?.15:.08)}else metStart();
   if(!running())startPause();
   renderCurve()}
 function curvePause(){const C=CURVE;if(!C.on||C.paused)return;C.paused=true;C.counting=false;metHalt();renderCurve()}
@@ -1503,7 +1634,7 @@ function transportPause(){if(running())pause();if(CURVE.on&&!CURVE.paused)curveP
 function transportStop(){if(CURVE.on||CURVE.hold)curveEnd();else{if(MET.on)metStop();if(running())pause()}renderTimer();renderMetBtn()}
 function metMissing(){const ex=exById(T.ex);return running()&&!MET.on&&!!ex&&!ex.trainer&&usesMet(ex)&&!(CURVE.on&&CURVE.paused)}
 function renderMetBtn(){const pl=playing()&&!metMissing();$('#metGo').textContent=pl?'⏸ Pause':'▶ Play';
-  $('#metStop').disabled=!(MET.on||running()||CURVE.on||CURVE.hold);renderLadPanel()}
+  $('#metStop').disabled=!(MET.on||running()||CURVE.on||CURVE.hold);renderLadPanel();tabTransport()}
 function setBars(el,html){if(el._h!==html){el._h=html;el.innerHTML=html}}
 function renderLadPanel(){const ex=exById(T.ex),pn=$('#ladPanel');if(!pn)return;
   const on=ladderOn(ex);$('#swLad').classList.toggle('on',on);$('#swLad').hidden=!usesMet(ex);
@@ -1549,9 +1680,12 @@ function renderMet(){
     '<button data-v="'+v+'" class="vtest" title="Play this sound">▶</button>'+
     '<button data-v="'+v+'" class="vup">'+(sm?'Replace…':'Use my sample…')+'</button>'+(sm?'<button data-v="'+v+'" class="vdel" title="Go back to the built-in sound">Remove</button>':'')+'</div>'}).join('');
   $$('#metVoices .vvol').forEach(r=>r.oninput=()=>{M.vol[r.dataset.v]=+r.value;save()});
-  $$('#metVoices .vtest').forEach(b=>b.onclick=async()=>{const a=audio();await loadSamples();voice(b.dataset.v,a.currentTime+.02)});
-  $$('#metVoices .vup').forEach(b=>b.onclick=()=>{upVoice=b.dataset.v;$('#metFile').click()});
-  $$('#metVoices .vdel').forEach(b=>b.onclick=async()=>{const v=b.dataset.v;try{await IDB.del(v)}catch(e){}delete SAMP[v];delete M.samples[v];save();renderMet()});
+  $$('#metVoices .vtest').forEach(b=>b.onclick=async()=>{const a=audio();
+    if(useEng()){engSyncSamples();voice(b.dataset.v,engNow()+.08);engFlush();return}
+    await loadSamples();voice(b.dataset.v,a.currentTime+.02)});
+  $$('#metVoices .vup').forEach(b=>b.onclick=()=>{const v=b.dataset.v;upVoice=v;
+    pickFile('sample-'+v,'Choose a sound for '+VOICES.find(x=>x[0]==v)[1].toLowerCase()+' beats','*.wav;*.aif;*.aiff;*.mp3;*.m4a;*.ogg;*.flac',20*1024*1024,$('#metFile'),f=>useSample(f,v))});
+  $$('#metVoices .vdel').forEach(b=>b.onclick=async()=>{const v=b.dataset.v;try{await IDB.del(v)}catch(e){}delete SAMP[v];delete M.samples[v];save();engSyncSamples();renderMet()});
   renderMetTempo();renderMetBtn();
 }
 $('#metBeats').onchange=e=>setMeter(+e.target.value,MC().sub);
@@ -1603,10 +1737,13 @@ let upVoice=null,samplesLoading=null;
 function loadSamples(){if(samplesLoading)return samplesLoading;const M=MC(),a=actx;if(!a)return Promise.resolve();
   samplesLoading=Promise.all(Object.keys(M.samples||{}).filter(v=>!SAMP[v]).map(async v=>{try{const buf=await IDB.get(v);if(buf)SAMP[v]=await a.decodeAudioData(buf.slice(0))}catch(e){}})).finally(()=>{samplesLoading=null});
   return samplesLoading}
-$('#metFile').onchange=async e=>{const f=e.target.files[0],v=upVoice;e.target.value='';if(!f||!v)return;
+$('#metFile').onchange=e=>{const f=e.target.files[0],v=upVoice;e.target.value='';if(f&&v)useSample(f,v)};
+async function useSample(f,v){
   try{const buf=await f.arrayBuffer();const a=audio();const dec=await a.decodeAudioData(buf.slice(0));
     if(dec.duration>5){toast('That sample is '+dec.duration.toFixed(1)+' s long — use something under 5 s');return}
-    await IDB.put(v,buf);SAMP[v]=dec;MC().samples[v]=f.name;save();renderMet();voice(v,a.currentTime+.02);toast('Using '+f.name+' for '+VOICES.find(x=>x[0]==v)[1].toLowerCase()+' beats')}
+    await IDB.put(v,buf);SAMP[v]=dec;MC().samples[v]=f.name;save();renderMet();
+    if(STUDIO_APP)engSendSample(v,f.name,buf);
+    if(useEng()){voice(v,engNow()+.1);engFlush()}else voice(v,a.currentTime+.02);toast('Using '+f.name+' for '+VOICES.find(x=>x[0]==v)[1].toLowerCase()+' beats')}
   catch(x){tell('Couldn’t use that file as a sound. Try a WAV, AIFF or MP3 file.')}};
 $('#bpm').addEventListener('input',renderMetTempo);
 addEventListener('pagehide',()=>{metStop();tunStop()});
@@ -1758,14 +1895,23 @@ $('#verTag').textContent='v'+APP_VERSION;
 // Scroll a section to the top and keep it there while the page finishes laying out
 // (the trainer settings load late and change height). Stops as soon as you scroll yourself.
 // The header stays on screen, so jumps to a section land just below it, not under it.
-{const h=document.querySelector('header.top');if(h){const pad=()=>document.documentElement.style.scrollPaddingTop=(h.getBoundingClientRect().height+8)+'px';pad();new ResizeObserver(pad).observe(h)}}
+{const h=document.querySelector('header.top');if(h){const pad=()=>{const hh=h.getBoundingClientRect().height;document.documentElement.style.scrollPaddingTop=(hh+8)+'px';document.documentElement.style.setProperty('--hdrH',hh+'px')};pad();new ResizeObserver(pad).observe(h)}}
 function pinTo(el){
   let stop=false,top=null,end=performance.now()+2500;const cap=end+8000,quit=()=>{stop=true};
   ['wheel','touchstart','keydown','pointerdown'].forEach(t=>addEventListener(t,quit,{once:true,capture:true}));
   const go=()=>{el.scrollIntoView({block:'start'});top=el.getBoundingClientRect().top};
   go();(function tick(){if(stop||performance.now()>end)return;if(Math.abs(el.getBoundingClientRect().top-top)>1){go();end=Math.min(cap,performance.now()+2500)}requestAnimationFrame(tick)})();
 }
-$('#verTag').onclick=()=>{show('settings');setTimeout(()=>pinTo($('#about')),30)};
+$('#verTag').onclick=()=>{show('settings');foldCard($('#about'),false);setTimeout(()=>pinTo($('#about')),30)};
+// Settings sections fold when you click their heading; each remembers (by its heading) between visits.
+function cardKey(c){const h=c.querySelector(':scope>h2:first-child,:scope>.row:first-child>h2');return h?(c.id||h.firstChild&&h.firstChild.textContent||h.textContent).trim():''}
+function foldCard(c,on){if(!c)return;c.classList.toggle('folded',on);const k=cardKey(c);if(!k)return;const f=D.settings.folded||(D.settings.folded={});if(on)f[k]=1;else delete f[k];save()}
+function applyFolds(){const f=D.settings.folded||{};$$('#v-settings .card').forEach(c=>{const k=cardKey(c);if(k)c.classList.toggle('folded',!!f[k])})}
+$('#v-settings').addEventListener('click',e=>{const h=e.target.closest('h2'),c=h&&h.closest('.card');if(!c)return;
+  const top=c.firstElementChild;if(h!==top&&!(top.classList.contains('row')&&h.parentElement===top))return;   // only the section's own heading
+  foldCard(c,!c.classList.contains('folded'))});
+applyFolds();new MutationObserver(applyFolds).observe($('#v-settings'),{childList:true,subtree:false});
+{const g=$('#v-settings .grid2');if(g)new MutationObserver(applyFolds).observe(g,{childList:true})}
 function renderChanges(){$('#verNow').textContent='· you have version '+APP_VERSION;
   $('#chlog').innerHTML=CHANGES.map(([v,d,items])=>'<h3>Version '+v+'<small>'+esc(d)+'</small></h3><ul>'+items.map(i=>'<li>'+esc(i)+'</li>').join('')+'</ul>').join('')}
 renderChanges();

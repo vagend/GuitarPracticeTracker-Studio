@@ -14,6 +14,7 @@ on:
       - .gitignore
       - LICENSE
       - "Build Studio (Mac).command"
+      - "Build Studio Test (Mac).command"
       - web/vendor/alphatab.version
       - .github/workflows/vendor-alphatab.yml
   workflow_dispatch:   # lets you start a build from the Actions tab

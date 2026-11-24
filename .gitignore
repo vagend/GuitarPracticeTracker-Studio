@@ -2,3 +2,5 @@
 external/
 build/
 build.log
+build-test/
+build-test.log
