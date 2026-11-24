@@ -669,7 +669,7 @@ function choose(title,msg,buttons){return new Promise(res=>{
   buttons.forEach(b=>{const e=document.createElement('button');e.textContent=b.label;if(b.cls)e.className=b.cls;e.onclick=()=>{d.returnValue=b.value;d.close()};row.appendChild(e)});
   d.addEventListener('close',()=>{d.remove();res(buttons.some(b=>b.value===d.returnValue)?d.returnValue:null)});
   document.body.appendChild(d);d.showModal();row.lastChild.focus()})}
-const SEED={"v":1,"exercises":[{"archived":false,"notes":"Strict alternate picking, all six strings and back.","trainer":false,"goal":140,"sub":"16th","metric":"BPM","id":1,"technique":"Alternate Picking","name":"Chromatic 1-2-3-4","lenBars":1,"curveBars":4},{"archived":false,"notes":"","trainer":false,"goal":120,"sub":"16th","metric":"BPM","id":2,"technique":"Alternate Picking","name":"G major 3-note-per-string scale","lenBars":2,"curveBars":2},{"archived":false,"notes":"","trainer":false,"goal":110,"sub":"16th Triplets","metric":"BPM","id":3,"technique":"Legato","name":"Hammer-on and pull-off trills","lenBars":1,"curveBars":4},{"archived":false,"notes":"","trainer":false,"goal":90,"sub":"16th Triplets","metric":"BPM","id":4,"technique":"Sweep Picking","name":"Three-string arpeggios","lenBars":2,"curveBars":3},{"archived":false,"notes":"","trainer":false,"goal":130,"sub":"16th","metric":"BPM","id":5,"technique":"Economy Picking","name":"Pentatonic in fours","lenBars":2,"curveBars":2},{"archived":false,"notes":"","trainer":false,"goal":170,"sub":"16th","metric":"BPM","id":6,"technique":"Rhythm","name":"Palm-muted gallop","lenBars":4,"curveBars":2,"curveMax":180},{"archived":false,"notes":"","trainer":true,"goal":null,"sub":"","metric":"Score","id":7,"technique":"Fretboard Notes","name":"Fretboard Trainer"},{"archived":false,"notes":"Playing songs you already know.","trainer":false,"goal":null,"sub":"","metric":"BPM","id":8,"technique":"","name":"Jamming","metronome":false}],"efforts":[{"id":1,"name":"Effortless","desc":"Easy all day"},{"id":2,"name":"Easy","desc":"Can play it cleanly but must be careful"},{"id":3,"name":"Tiring","desc":"Can play it for a while but get tired and make mistakes"},{"id":4,"name":"Broken","desc":"Can play a few notes here and there"},{"id":5,"name":"Impossible","desc":"Can't play it at all yet"},{"id":6,"name":"Tempo Ladder","desc":"A tempo ladder run"}],"techniques":["Alternate Picking","Economy Picking","Sweep Picking","Legato","Tapping","Rhythm","Chords","Scales","Songs","Fretboard Notes"],"entries":[]};
+const SEED={"v":1,"exercises":[{"archived":false,"notes":"Strict alternate picking, all six strings and back.","trainer":false,"goal":140,"sub":"16th","metric":"BPM","id":1,"technique":"Alternate Picking","name":"Chromatic 1-2-3-4","lenBars":1,"curveBars":4,"days":[0,1,2,3,4,5,6],"timeGoal":10},{"archived":false,"notes":"","trainer":false,"goal":120,"sub":"16th","metric":"BPM","id":2,"technique":"Alternate Picking","name":"G major 3-note-per-string scale","lenBars":2,"curveBars":2,"days":[1,3,5],"timeGoal":10},{"archived":false,"notes":"","trainer":false,"goal":110,"sub":"16th Triplets","metric":"BPM","id":3,"technique":"Legato","name":"Hammer-on and pull-off trills","lenBars":1,"curveBars":4,"days":[2,4],"timeGoal":10},{"archived":false,"notes":"","trainer":false,"goal":90,"sub":"16th Triplets","metric":"BPM","id":4,"technique":"Sweep Picking","name":"Three-string arpeggios","lenBars":2,"curveBars":3,"days":[2,4,6],"timeGoal":5},{"archived":false,"notes":"","trainer":false,"goal":130,"sub":"16th","metric":"BPM","id":5,"technique":"Economy Picking","name":"Pentatonic in fours","lenBars":2,"curveBars":2,"days":[1,3,5],"timeGoal":5},{"archived":false,"notes":"","trainer":false,"goal":170,"sub":"16th","metric":"BPM","id":6,"technique":"Rhythm","name":"Palm-muted gallop","lenBars":4,"curveBars":2,"curveMax":180,"days":[0,6],"timeGoal":10},{"archived":false,"notes":"","trainer":true,"goal":null,"sub":"","metric":"Score","id":7,"technique":"Fretboard Notes","name":"Fretboard Trainer","days":[0,1,2,3,4,5,6],"timeGoal":5},{"archived":false,"notes":"Playing songs you already know.","trainer":false,"goal":null,"sub":"","metric":"BPM","id":8,"technique":"","name":"Jamming","metronome":false,"days":[0,6],"timeGoal":20}],"efforts":[{"id":1,"name":"Effortless","desc":"Easy all day"},{"id":2,"name":"Easy","desc":"Can play it cleanly but must be careful"},{"id":3,"name":"Tiring","desc":"Can play it for a while but get tired and make mistakes"},{"id":4,"name":"Broken","desc":"Can play a few notes here and there"},{"id":5,"name":"Impossible","desc":"Can't play it at all yet"},{"id":6,"name":"Tempo Ladder","desc":"A tempo ladder run"}],"techniques":["Alternate Picking","Economy Picking","Sweep Picking","Legato","Tapping","Rhythm","Chords","Scales","Songs","Fretboard Notes"],"entries":[]};
 const DEFSET={goal:25,presets:[1,2,5,10,15,20,25,30],chimeVol:0.6,notify:false,lastBackup:null};
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 const LS={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},
@@ -1078,8 +1078,13 @@ function csv(list){
   const q=v=>{v=v==null?'':String(v);return/[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v};
   const rows=[['Date','Exercise','Technique','Subdivision','Tempo/Score','Measure','Minutes','Effort','Note']];
   list.slice().sort(cmpEntry).forEach(e=>{const x=exById(e.ex)||{};rows.push([e.date,x.id?exName(x):'',x.technique,x.sub,e.bpm,metricOf(x),e.min,(effById(e.effort)||{}).name,e.note])});
-  download('guitar-practice-'+dkey()+'.csv',rows.map(r=>r.map(q).join(',')).join('\n'),'text/csv')}
-function download(name,text,type){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([text],{type}));a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500)}
+  download('guitar-practice-'+dkey()+'.csv',rows.map(r=>r.map(q).join(',')).join('\n'),'text/csv','csv')}
+// Saving a file: in Studio, its own Save dialog (the web view can't download); in a browser, a download.
+// then() runs once it's saved.
+const SAVES={};
+function download(name,text,type,key,then){
+  if(STUDIO_APP){key=key||'save';SAVES[key]=then||null;studioSend({action:'saveFile',key,name,text,title:'Save '+name.replace(/^.*\./,'').toUpperCase()+' file',patterns:'*.'+name.replace(/^.*\./,'')});return}
+  if(then)then();const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([text],{type}));a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500)}
 $('#csvBtn').onclick=()=>csv(filteredEntries());
 
 // ---------- schedule and time goal ----------
@@ -1310,7 +1315,7 @@ $('#stTrainer').onchange=e=>{D.settings.hideTrainer=!e.target.checked;save();app
 $('#stNotify').onchange=async e=>{D.settings.notify=e.target.checked;save();if(e.target.checked&&'Notification' in window&&Notification.permission=='default'){try{await Notification.requestPermission()}catch(x){}}};
 $('#effAdd').onclick=()=>{const id=Math.max(0,...D.efforts.map(f=>f.id))+1;D.efforts.push({id,name:'New level',desc:''});save();renderSettings()};
 $('#techAdd').onclick=()=>{const v=$('#techNew').value.trim();if(v&&!D.techniques.includes(v)){D.techniques.push(v);save();$('#techNew').value='';renderSettings()}};
-function backup(){D.settings.lastBackup=Date.now();save();download('guitar-practice-backup-'+dkey()+'.json',JSON.stringify(D,null,1),'application/json');renderSettings()}
+function backup(){download('guitar-practice-backup-'+dkey()+'.json',JSON.stringify(D,null,1),'application/json','backup',()=>{D.settings.lastBackup=Date.now();save();renderSettings()})}
 $('#bkExport').onclick=backup;
 $('#bkCsv').onclick=()=>csv(D.entries);
 $('#bkImport').onclick=()=>pickFile('backup','Import a backup','*.json',50*1024*1024,$('#bkFile'),restoreBackup);
@@ -1436,6 +1441,9 @@ if(STUDIO_APP)try{window.__JUCE__.backend.addEventListener('studioPickedFile',m=
   if(m.cancel)return;
   if(m.error){tell(m.error=='big'?'That file is too big.':'Studio couldn’t read that file.');return}
   then(new File([bytesFromB64(m.data)],m.name))})}catch(e){}
+if(STUDIO_APP)try{window.__JUCE__.backend.addEventListener('studioSavedFile',m=>{if(!m||!(m.key in SAVES))return;const then=SAVES[m.key];delete SAVES[m.key];
+  if(m.cancel)return;if(m.error){tell('Studio couldn’t save that file.');return}
+  if(then)then();toast('Saved to '+shortPath(m.path))})}catch(e){}
 function shortPath(p){return String(p||'').replace(/^\/Users\/[^/]+/,'~').replace(/^[A-Za-z]:\\Users\\[^\\]+/,'~')}
 function renderDxTab(){const t=dxTab;
   $('#dxTabInfo').innerHTML=t?'<b>'+esc(t.kind=='tex'?(t.info.title||'Typed tab'):t.name)+'</b>'+esc(tabDesc(t))+

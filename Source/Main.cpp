@@ -495,6 +495,7 @@ private:
         else if (action == "tab")    { tabMessage (msg.getProperty ("msg", {})); return; }
         else if (action == "tabPick") { pickTabFile(); return; }
         else if (action == "pickFile") { pickFileFor (msg); return; }
+        else if (action == "saveFile") { saveFileFor (msg); return; }
         else if (action == "tabEdit") { editTabFile (msg.getProperty ("path", {}).toString()); return; }
         else if (action == "tabWatch") { watchTabFiles (msg.getProperty ("files", {})); return; }
         else if (action == "tabEditorPick") { pickTabEditor (msg.getProperty ("then", {}).toString()); return; }
@@ -1121,6 +1122,37 @@ private:
             if (f != juce::File())
                 self->rememberFolder (key, f);
             self->web->emitEventIfBrowserIsVisible ("studioPickedFile", juce::var (o));
+        });
+    }
+
+    // Saving a file the page made (a backup, a CSV): the web view can't download, so Studio asks
+    // where to save it, starting in the folder last used for that kind of file. The answer goes back
+    // as a "studioSavedFile" event: { key, path }, { key, cancel } or { key, error }.
+    void saveFileFor (const juce::var& msg)
+    {
+        const auto key = msg.getProperty ("key", "save").toString();
+        const auto name = juce::File::createLegalFileName (msg.getProperty ("name", "file.txt").toString());
+        const auto text = msg.getProperty ("text", {}).toString();
+        chooser = std::make_unique<juce::FileChooser> (msg.getProperty ("title", "Save").toString(),
+                      lastFolder (key, juce::File::getSpecialLocation (juce::File::userDocumentsDirectory)).getChildFile (name),
+                      msg.getProperty ("patterns", "*").toString());
+        const juce::Component::SafePointer<MainComponent> self (this);
+        chooser->launchAsync (juce::FileBrowserComponent::saveMode | juce::FileBrowserComponent::canSelectFiles
+                                | juce::FileBrowserComponent::warnAboutOverwriting,
+                              [self, key, text] (const juce::FileChooser& fc)
+        {
+            if (self == nullptr) return;
+            auto* o = new juce::DynamicObject();
+            o->setProperty ("key", key);
+            const auto f = fc.getResult();
+            if (f == juce::File())                        o->setProperty ("cancel", true);
+            else if (! f.replaceWithText (text, false, false, "\n")) o->setProperty ("error", "write");
+            else
+            {
+                o->setProperty ("path", f.getFullPathName());
+                self->rememberFolder (key, f);
+            }
+            self->web->emitEventIfBrowserIsVisible ("studioSavedFile", juce::var (o));
         });
     }
 
