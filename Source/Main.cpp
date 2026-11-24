@@ -496,6 +496,8 @@ private:
         else if (action == "tabPick") { pickTabFile(); return; }
         else if (action == "pickFile") { pickFileFor (msg); return; }
         else if (action == "saveFile") { saveFileFor (msg); return; }
+        else if (action == "exPlugins") { sendExercisePlugins (msg.getProperty ("ids", {})); return; }
+        else if (action == "setExPlugins") { setExercisePlugins (msg.getProperty ("plugins", {})); return; }
         else if (action == "tabEdit") { editTabFile (msg.getProperty ("path", {}).toString()); return; }
         else if (action == "tabWatch") { watchTabFiles (msg.getProperty ("files", {})); return; }
         else if (action == "tabEditorPick") { pickTabEditor (msg.getProperty ("then", {}).toString()); return; }
@@ -570,6 +572,46 @@ private:
         }
     }
 
+    // Routines (web/index.html): sharing a routine sends its exercises' plugins and settings along,
+    // as a "studioExPlugins" event { plugins: { exerciseId: { plugin, name, state } } }.
+    void sendExercisePlugins (const juce::var& ids)
+    {
+        storeCurrentExercisePlugin();
+        auto* out = new juce::DynamicObject();
+        if (auto* arr = ids.getArray())
+            for (const auto& id : *arr)
+            {
+                const auto entry = exercisePlugins.getProperty (id.toString(), {});
+                if (entry.isObject())
+                    out->setProperty (id.toString(), entry);
+            }
+        auto* o = new juce::DynamicObject();
+        o->setProperty ("plugins", juce::var (out));
+        web->emitEventIfBrowserIsVisible ("studioExPlugins", juce::var (o));
+    }
+
+    // ...and loading one gives its new exercises those plugins (if you have them; see applyExercise).
+    void setExercisePlugins (const juce::var& plugins)
+    {
+        auto* in = plugins.getDynamicObject();
+        auto* obj = exercisePlugins.getDynamicObject();
+        if (in == nullptr || obj == nullptr)
+            return;
+        bool current = false;
+        for (const auto& p : in->getProperties())
+            if (p.value.isObject() && p.value.getProperty ("plugin", {}).toString().isNotEmpty())
+            {
+                obj->setProperty (p.name, p.value);
+                current = current || p.name.toString() == currentExercise;
+            }
+        saveExercisePlugins();
+        if (current && loadingFor.isEmpty())
+        {
+            engine.removePlugin();
+            applyExercise();
+        }
+    }
+
     void switchExercise (const juce::String& exId)
     {
         if (exId == currentExercise)
@@ -630,6 +672,20 @@ private:
             const juce::PluginDescription* found = nullptr;
             for (const auto& pd : engine.knownPlugins.getTypes())
                 if (pd.createIdentifierString() == pluginId) { found = &pd; break; }
+
+            // A plugin from someone else's computer (a shared routine): its identifier includes where
+            // it's installed, so look for the same plugin by name, preferring the same format
+            // (VST3 or AudioUnit). Its saved settings only go with the same format.
+            const auto format = pluginId.upToFirstOccurrenceOf ("-", false, false);
+            const auto wanted = entry.getProperty ("name", {}).toString();
+            if (found == nullptr && wanted.isNotEmpty())
+            {
+                for (const auto& pd : engine.knownPlugins.getTypes())
+                    if (pd.name.equalsIgnoreCase (wanted) && (found == nullptr || pd.pluginFormatName == format))
+                        found = &pd;
+                if (found != nullptr && found->pluginFormatName != format)
+                    state.reset();
+            }
 
             editorWindow.reset();
             if (found == nullptr)

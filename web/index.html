@@ -201,7 +201,9 @@ th,td{text-align:left;padding:7px 8px;border-bottom:1px solid var(--line);vertic
 th{font-size:12px;color:var(--mut);font-weight:600}
 td.n,th.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
 td.nw{white-space:nowrap}
-tr.click{cursor:pointer}tr.click:hover td{background:var(--soft)}
+tr.click{cursor:pointer}#exTable td.ck,#exTable th.ck{width:28px;padding-right:0;cursor:default}
+#rtSel{max-width:240px}.rtonly{font-size:11px;color:var(--mut);border:1px solid var(--line);border-radius:999px;padding:0 6px;margin-left:4px}
+tr.click:hover td{background:var(--soft)}
 #exTable th.sort{cursor:pointer;user-select:none;white-space:nowrap}#exTable th.sort:hover{color:var(--fg)}
 #exTable th .ar{display:inline-block;width:1em;text-align:center;color:var(--acc);visibility:hidden}#exTable th.on .ar{visibility:visible}
 .tscroll{overflow-x:auto}
@@ -284,7 +286,7 @@ iframe#trFrame{width:100%;border:0;height:900px;display:block;border-radius:10px
   <div class="grid2">
     <div class="card">
       <div class="row" style="margin-bottom:10px">
-        <h2 style="margin:0">Exercise</h2>
+        <h2 style="margin:0">Exercise <span class="sub" id="rtName" style="font-weight:400"></span></h2>
         <span class="sp"></span>
         <button id="openTab" hidden style="margin-right:8px">Open tab</button>
         <button id="editEx">Edit exercise</button>
@@ -468,12 +470,17 @@ iframe#trFrame{width:100%;border:0;height:900px;display:block;border-radius:10px
 <section id="v-exercises" class="view" hidden>
   <div class="card">
     <div class="row" style="margin-bottom:10px">
-      <h2 style="margin:0">Exercises</h2><span class="sp"></span>
+      <h2 style="margin:0">Exercises</h2>
+      <select id="rtSel" aria-label="Routine" title="Show all your exercises, or a routine"></select>
+      <button id="rtForget" class="linkish" title="Take this routine off the list (its file stays where you saved it)" hidden>✕</button>
+      <span class="sp"></span>
+      <span class="sub" id="exSelN"></span><button id="rtAdd" hidden title="Add the selected exercises to your exercises">Add to my exercises</button><button id="rtSave" hidden>Save as routine…</button>
       <label class="sub row" style="gap:6px"><input type="checkbox" id="showArch"> Show archived</label>
       <button id="addEx" class="primary">+ Add exercise</button>
     </div>
     <div class="tscroll sticky"><table id="exTable"></table></div>
   </div>
+  <input type="file" id="rtFile" accept=".json,application/json" hidden>
 </section>
 
 <!-- STATS -->
@@ -747,7 +754,7 @@ function streaks(){const t=dayTotals();const days=Object.keys(t).filter(k=>t[k]>
 function weekStart(){const d=new Date();const w=(d.getDay()+6)%7;d.setDate(d.getDate()-w);return dkey(d)}
 function activeExercises(){return D.exercises.filter(e=>!e.archived)}
 function exOptions(sel,{all,includeArchived,noTrainer,noSub}={}){
-  const byT={};for(const e of D.exercises){if(e.archived&&!includeArchived&&e.id!=sel)continue;if(noTrainer&&e.trainer)continue;(byT[e.technique||'No technique']=byT[e.technique||'No technique']||[]).push(e)}
+  const byT={};for(const e of D.exercises){if(!includeArchived&&!exShown(e)&&e.id!=sel)continue;if(noTrainer&&e.trainer)continue;(byT[e.technique||'No technique']=byT[e.technique||'No technique']||[]).push(e)}
   let h=all?'<option value="">All exercises</option>':'';
   for(const t of Object.keys(byT).sort()){h+='<optgroup label="'+esc(t)+'">'+byT[t].map(e=>'<option value="'+e.id+'"'+(e.id==sel?' selected':'')+'>'+esc(exName(e))+(e.sub&&!noSub?' — '+esc(e.sub):'')+(e.archived?' (archived)':'')+'</option>').join('')+'</optgroup>'}
   return h}
@@ -806,7 +813,7 @@ function tick(){
 setInterval(tick,250);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden){if(running())wake();tick()}});
 let lastClock='';
-function hasPracticeEx(){return D.exercises.some(e=>!e.trainer&&!e.archived)}
+function hasPracticeEx(){return D.exercises.some(e=>!e.trainer&&exShown(e))}
 function renderTimer(){
   const el=elapsed(),down=T.mode=='down',v=down?Math.max(0,T.target-el):el,txt=clockStr(v,!down);
   if(txt!==lastClock&&!clockEditing){$('#clock').textContent=txt;lastClock=txt}
@@ -899,7 +906,7 @@ function renderPractice(){
     if(TABWIN.open){if(ex&&ex.tab)openTab();else tabSend({type:'none',name:ex?ex.name:''})}}
   renderLadder();
   renderCurve();
-  renderDue();
+  renderDue();renderRtName();
   // today list
   const te=D.entries.filter(e=>e.date==dkey()).sort(cmpEntry);
   $('#todayList').innerHTML=te.length?te.map(entRow).join(''):'<p class="sub" style="margin:4px 0">Nothing logged yet today.</p>';
@@ -1096,7 +1103,7 @@ function schedText(e){const t=schedDays(e);return t+(e&&e.timeGoal?(t?' · ':'')
 // The Fretboard Trainer can be turned off (Settings › Practice): its tab and schedule go, its past log stays
 function trainerShown(){return !D.settings.hideTrainer}
 function applyTrainerShown(){const b=$('#tabs [data-v="trainer"]');if(b)b.hidden=!trainerShown()}
-function dueToday(e){return !!e&&!e.archived&&!(e.trainer&&!trainerShown())&&(e.days||[]).includes(new Date().getDay())}
+function dueToday(e){return !!e&&exShown(e)&&!(e.trainer&&!trainerShown())&&(e.days||[]).includes(new Date().getDay())}
 // The Fretboard Trainer's schedule is set in its own settings (trainer page › ⚙ Settings › Schedule)
 window.gpTrainerSchedule={get(){const t=trainerEx()||{};return{days:(t.days||[]).slice(),goal:t.timeGoal||null}},
   set(days,goal){const t=trainerEx();if(!t)return;t.days=days.filter(x=>x>=0&&x<=6).sort();t.timeGoal=goal;save();render()}};
@@ -1136,13 +1143,101 @@ function sortExRows(rows){const o=D.settings.exSort;if(!o||!o.k)return rows;cons
     return c||col.compare(x.e.name||'',y.e.name||'')}).map(x=>x.e)}
 function renderExercises(){
   const arch=$('#showArch').checked;
-  const rows=sortExRows(D.exercises.filter(e=>!e.trainer&&(arch||!e.archived))),o=D.settings.exSort||{};
-  $('#exTable').innerHTML='<thead><tr>'+EXCOLS.map(([k,t,c])=>'<th class="sort'+(c?' '+c:'')+(o.k==k?' on':'')+'" data-k="'+k+'">'+t+'<span class="ar">'+(o.k==k&&o.desc?'▼':'▲')+'</span></th>').join('')+'</tr></thead><tbody>'+
+  const R=activeRoutine(),rows=sortExRows(D.exercises.filter(e=>!e.trainer&&(R?inRoutine(e,R):e.pool!==false&&(arch||!e.archived)))),o=D.settings.exSort||{};
+  $('#showArch').parentNode.hidden=!!R;renderRtSel();
+  for(const id of EXPICK)if(!rows.some(e=>e.id==id))EXPICK.delete(id);
+  $('#exTable').innerHTML='<thead><tr><th class="ck"><input type="checkbox" id="exAll" title="Select all"'+(rows.length&&rows.every(e=>EXPICK.has(e.id))?' checked':'')+'></th>'+EXCOLS.map(([k,t,c])=>'<th class="sort'+(c?' '+c:'')+(o.k==k?' on':'')+'" data-k="'+k+'">'+t+'<span class="ar">'+(o.k==k&&o.desc?'▼':'▲')+'</span></th>').join('')+'</tr></thead><tbody>'+
     rows.map(e=>{const s=exStats(e.id),p=e.goal&&s.best!=null?Math.min(1,s.best/e.goal):null;
-      return'<tr class="click" data-id="'+e.id+'"><td>'+esc(e.name)+(e.trainer?' <span title="Uses the fretboard trainer">🎸</span>':'')+(e.archived?' <span class="sub">(archived)</span>':'')+'</td><td>'+esc(e.technique||'')+'</td><td class="nw">'+esc(e.sub||'')+'</td><td class="n">'+(s.best!=null?trim(s.best):'—')+(e.goal?' / '+trim(e.goal):'')+(metricOf(e)!='BPM'?' <span class="sub">'+esc(metricOf(e))+'</span>':'')+'</td><td class="nw">'+(p!=null?'<span class="pct"><i style="width:'+(100*p)+'%"></i></span>'+Math.round(100*p)+'%':'<span class="sub">—</span>')+'</td><td class="nw">'+(schedText(e)?esc(schedText(e)):'<span class="sub">—</span>')+'</td><td class="nw">'+(s.last?fmtDate(s.last.date,{month:'short',day:'numeric',year:'numeric'})+' '+(s.last.effort?effHtml(s.last.effort):''):'<span class="sub">never</span>')+'</td><td class="n">'+fmtMin(s.tot)+'</td></tr>'}).join('')+'</tbody>';
-  $$('#exTable tr.click').forEach(r=>r.onclick=()=>editEx(+r.dataset.id));
+      return'<tr class="click" data-id="'+e.id+'"><td class="ck"><input type="checkbox" data-pick="'+e.id+'"'+(EXPICK.has(e.id)?' checked':'')+'></td><td>'+esc(e.name)+(e.trainer?' <span title="Uses the fretboard trainer">🎸</span>':'')+(e.archived?' <span class="sub">(archived)</span>':'')+(e.pool===false?'<span class="rtonly" title="Came with a routine; not in your exercises">routine only</span>':'')+'</td><td>'+esc(e.technique||'')+'</td><td class="nw">'+esc(e.sub||'')+'</td><td class="n">'+(s.best!=null?trim(s.best):'—')+(e.goal?' / '+trim(e.goal):'')+(metricOf(e)!='BPM'?' <span class="sub">'+esc(metricOf(e))+'</span>':'')+'</td><td class="nw">'+(p!=null?'<span class="pct"><i style="width:'+(100*p)+'%"></i></span>'+Math.round(100*p)+'%':'<span class="sub">—</span>')+'</td><td class="nw">'+(schedText(e)?esc(schedText(e)):'<span class="sub">—</span>')+'</td><td class="nw">'+(s.last?fmtDate(s.last.date,{month:'short',day:'numeric',year:'numeric'})+' '+(s.last.effort?effHtml(s.last.effort):''):'<span class="sub">never</span>')+'</td><td class="n">'+fmtMin(s.tot)+'</td></tr>'}).join('')+'</tbody>';
+  $$('#exTable tr.click').forEach(r=>r.onclick=e=>{if(e.target.closest('.ck'))return;editEx(+r.dataset.id)});
+  $$('#exTable [data-pick]').forEach(c=>c.onchange=()=>{const id=+c.dataset.pick;if(c.checked)EXPICK.add(id);else EXPICK.delete(id);renderPicks()});
+  $('#exAll').onchange=e=>{rows.forEach(x=>e.target.checked?EXPICK.add(x.id):EXPICK.delete(x.id));renderExercises()};
+  renderPicks();
   $$('#exTable th.sort').forEach(h=>h.onclick=()=>{const k=h.dataset.k,o=D.settings.exSort||{};D.settings.exSort={k,desc:o.k==k?!o.desc:false};save();renderExercises()});
 }
+// ---------- routines ----------
+// Your exercises are the pool. A routine is some of them with their own schedules, saved as a file you can
+// share: Save as routine writes the file (the whole exercises, their tabs, and in Studio their plugins and
+// plugin settings); loading one from a file makes it the active routine. While a routine is active, only its
+// exercises show (Practice, Exercises, today's schedule) with the routine's schedules; the rest of your
+// exercises are just out of play, not archived. Routines you've used stay in the list at the top of
+// Exercises, so switching is one click, and "All exercises" goes back to the pool.
+// Exercises that came with a routine and aren't yours yet are "routine only" (pool:false) until you add them.
+// D.routines: [{id, name, ex:[{id, days, timeGoal}]}]; D.settings.routine: the active one's id.
+// An exercise's own schedule is kept in poolSched while a routine's schedule is on it.
+const EXPICK=new Set();
+function routines(){return D.routines||(D.routines=[])}
+function activeRoutine(){const id=D.settings.routine;return id?routines().find(r=>r.id==id)||null:null}
+function inRoutine(e,R){return !!R&&R.ex.some(x=>x.id==e.id)}
+function exShown(e){if(!e)return false;if(e.trainer)return !e.archived;const R=activeRoutine();return R?inRoutine(e,R):!e.archived&&e.pool!==false}
+function renderPicks(){const n=EXPICK.size;$('#exSelN').textContent=n?n+' selected':'';$('#rtSave').hidden=!n;
+  $('#rtAdd').hidden=![...EXPICK].some(id=>(exById(id)||{}).pool===false);
+  const a=$('#exAll');if(a){const cs=$$('#exTable [data-pick]');a.checked=cs.length>0&&cs.every(c=>c.checked)}}
+function renderRtSel(){const R=activeRoutine();
+  $('#rtSel').innerHTML='<option value="">All exercises</option>'+(routines().length?'<optgroup label="Routines">'+routines().map(r=>'<option value="'+r.id+'">'+esc(r.name)+'</option>').join('')+'</optgroup>':'')+
+    '<option value="load">Load routine from file…</option>';
+  $('#rtSel').value=R?R.id:'';$('#rtForget').hidden=!R}
+$('#rtSel').onchange=e=>{const v=e.target.value;if(v=='load'){renderRtSel();pickFile('routine','Load a routine','*.json',100*1024*1024,$('#rtFile'),importRoutine);return}setRoutine(v||null)};
+$('#rtForget').onclick=()=>{const R=activeRoutine();if(!R)return;setRoutine(null);D.routines=routines().filter(r=>r!==R);
+  // its routine-only exercises go too, unless they have practice logged
+  D.exercises=D.exercises.filter(e=>!(e.pool===false&&!routines().some(r=>inRoutine(e,r))&&!D.entries.some(x=>x.ex==e.id)));save();render()};
+// switch routines (null: all your exercises)
+function setRoutine(id){
+  D.exercises.forEach(e=>{if(e.poolSched){e.days=e.poolSched.days;e.timeGoal=e.poolSched.timeGoal;delete e.poolSched}});
+  const R=id?routines().find(r=>r.id==id):null;D.settings.routine=R?R.id:null;
+  if(R)R.ex.forEach(x=>{const e=exById(x.id);if(!e)return;e.poolSched={days:(e.days||[]).slice(),timeGoal:e.timeGoal??null};e.days=x.days.slice();e.timeGoal=x.timeGoal});
+  EXPICK.clear();save();
+  if(!exShown(exById(T.ex))){const f=D.exercises.find(e=>!e.trainer&&exShown(e));T.ex=f?f.id:null;saveT();onExChanged()}
+  syncExSel();render();renderRtName()}
+function renderRtName(){const R=activeRoutine();$('#rtName').textContent=R?'· '+R.name:''}
+// an exercise edited while its routine is active: the schedule you set is the routine's; a new one joins it
+function rtExSaved(id,isNew){const R=activeRoutine(),e=exById(id);if(!R||!e)return;
+  if(isNew&&!inRoutine(e,R))R.ex.push({id:e.id,days:[],timeGoal:null});
+  const x=R.ex.find(x=>x.id==e.id);if(!x)return;x.days=(e.days||[]).slice();x.timeGoal=e.timeGoal??null;
+  if(!e.poolSched)e.poolSched={days:[],timeGoal:null}}
+$('#rtAdd').onclick=()=>{let n=0;EXPICK.forEach(id=>{const e=exById(id);if(e&&e.pool===false){delete e.pool;n++}});EXPICK.clear();save();render();toast(n+' exercise'+(n==1?'':'s')+' added to your exercises')};
+function promptText(title,msg,value,ok){return new Promise(res=>{
+  const d=document.createElement('dialog');d.className='askdlg';
+  d.innerHTML='<h2></h2><p class="sub" style="margin:0 0 10px"></p><input type="text" style="width:100%"><div class="row" style="justify-content:flex-end;gap:8px;margin-top:18px"><button value="0">Cancel</button><button value="1" class="primary"></button></div>';
+  d.querySelector('h2').textContent=title;d.querySelector('p').textContent=msg;d.querySelector('button.primary').textContent=ok||'OK';
+  const inp=d.querySelector('input');inp.value=value||'';
+  d.querySelectorAll('button').forEach(b=>b.onclick=()=>d.close(b.value));inp.onkeydown=e=>{if(e.key=='Enter'){e.preventDefault();d.close('1')}};
+  d.addEventListener('close',()=>{d.remove();res(d.returnValue==='1'&&inp.value.trim()?inp.value.trim():null)});
+  document.body.appendChild(d);d.showModal();inp.focus();inp.select()})}
+// plugins come from Studio (it keeps them per exercise)
+let rtPlugWait=null,rtPlugListen=false;
+function exPlugins(ids){if(!STUDIO_APP)return Promise.resolve({});
+  if(!rtPlugListen){rtPlugListen=true;try{window.__JUCE__.backend.addEventListener('studioExPlugins',m=>{if(rtPlugWait){rtPlugWait((m&&m.plugins)||{});rtPlugWait=null}})}catch(e){}}
+  return new Promise(res=>{rtPlugWait=res;studioSend({action:'exPlugins',ids:ids.map(String)});setTimeout(()=>{if(rtPlugWait==res){rtPlugWait=null;res({})}},3000)})}
+$('#rtSave').onclick=async()=>{const ids=[...EXPICK].filter(id=>exById(id));if(!ids.length)return;
+  const R=activeRoutine(),name=await promptText('Save as routine',ids.length+' exercise'+(ids.length==1?'':'s')+' with their schedules, tabs'+(STUDIO_APP?' and plugins':'')+'. Next, choose where to save it.',R?R.name:'','Next');if(!name)return;
+  const plugs=await exPlugins(ids);
+  const exs=ids.map(id=>{const e=clone(exById(id));delete e.archived;delete e.pool;delete e.poolSched;if(e.tab)delete e.tab.path;const p=plugs[String(id)];if(p)e.plugin=p;return e});
+  const o={guitarPracticeRoutine:1,name,made:new Date().toISOString().slice(0,10),exercises:exs};
+  download(name.replace(/[\\/:*?"<>|]+/g,' ').trim()+' (routine).json',JSON.stringify(o,null,1),'application/json','routine',()=>{
+    const old=routines().find(r=>r.name.toLowerCase()==name.toLowerCase()),r={id:old?old.id:uid(),name,ex:ids.map(id=>{const e=exById(id);return{id,days:(e.days||[]).slice(),timeGoal:e.timeGoal??null}})};
+    if(old)Object.assign(old,r);else routines().push(r);EXPICK.clear();save();renderExercises()})};
+$('#rtFile').onchange=e=>{const f=e.target.files[0];e.target.value='';if(f)importRoutine(f)};
+// loading a routine file: its exercises that you already have are used as they are; the others come in as
+// "routine only". It becomes the active routine.
+async function importRoutine(f){let o;
+  try{o=JSON.parse(await f.text());if(!o.guitarPracticeRoutine||!Array.isArray(o.exercises))throw 0}
+  catch(x){tell(o&&Array.isArray(o.entries)?'That’s a backup, not a routine. Use Settings › Backup › Import backup.':'That file doesn’t look like a Guitar Practice routine.');return}
+  const key=e=>(e.name||'').trim().toLowerCase()+'|'+(e.technique||'')+'|'+(e.sub||'').trim().toLowerCase();
+  let next=Math.max(0,...D.exercises.map(x=>+x.id||0),...D.entries.map(x=>+x.ex||0))+1,plugs={},noPlug=[];const ex=[];
+  o.exercises.forEach(e=>{if(e.trainer)return;
+    let m=D.exercises.find(x=>!x.trainer&&key(x)==key(e));
+    if(m){if(!m.tab&&e.tab)m.tab=e.tab}
+    else{m=clone(e);delete m.plugin;m.id=next++;m.trainer=false;m.archived=false;m.pool=false;D.exercises.push(m);
+      if(e.plugin){if(STUDIO_APP)plugs[m.id]=e.plugin;else noPlug.push(e.plugin.name)}}
+    if(m.technique&&!D.techniques.includes(m.technique))D.techniques.push(m.technique);
+    ex.push({id:m.id,days:(e.days||[]).slice(),timeGoal:e.timeGoal??null})});
+  if(Object.keys(plugs).length)studioSend({action:'setExPlugins',plugins:plugs});
+  const name=String(o.name||f.name.replace(/\.json$/i,'')).trim(),old=routines().find(r=>r.name.toLowerCase()==name.toLowerCase());
+  const r={id:old?old.id:uid(),name,ex};if(old)Object.assign(old,r);else routines().push(r);
+  setRoutine(r.id);if(view!='exercises'&&view!='practice')show('exercises');
+  toast('Loaded the routine “'+name+'”');
+  if(noPlug.length)tell('Plugins ('+noPlug.join(', ')+') only load in Guitar Practice Studio.')}
 function convert(){const b=num($('#cvBpm').value),f=+$('#cvFrom').value,t=+$('#cvTo').value;if(!(b>0)){$('#cvOut').textContent='';$('#cvNps').textContent='';return}
   const r=b*f/t,fn=$('#cvFrom').selectedOptions[0].text,tn=$('#cvTo').selectedOptions[0].text;
   $('#cvOut').innerHTML=trim(b)+' BPM in '+esc(fn)+' = <b>'+trim(r)+' BPM</b> in '+esc(tn);
@@ -1184,7 +1279,7 @@ $('#dlgEx').addEventListener('close',async()=>{
   if(editingEx!=null){Object.assign(exById(editingEx),v);if(editingEx==T.ex&&!v.metronome&&(CURVE.on||CURVE.hold))curveCancel()}
   else{const id=Math.max(0,...D.exercises.map(x=>x.id))+1;D.exercises.push(Object.assign(base||{},{id},v));if(!running()&&T.acc==0){T.ex=id;saveT()}
     if(base)toast('Added “'+v.name+'” as a new exercise')}
-  save();render();
+  rtExSaved(editingEx!=null?editingEx:Math.max(...D.exercises.map(x=>x.id)),editingEx==null);save();render();
 });
 
 // ---------- charts ----------
