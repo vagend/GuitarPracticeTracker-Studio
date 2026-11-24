@@ -1,7 +1,8 @@
 # Builds Guitar Practice Studio for Windows (installer) and Mac (one app for Apple Silicon and Intel).
 #   push to main -> the public app, published as the "latest" release (what everyone's Studio updates from)
 #   push to test -> Guitar Practice Studio Test, a separate app with its own data, published as the
-#                   "test" pre-release; only the test app updates from it, the public app never sees it
+#                   "test-build" pre-release (tag test-build: a tag named "test" would clash with the
+#                   test branch); only the test app updates from it, the public app never sees it
 # Each app checks its own release's BUILD.txt to offer updates.
 name: Build Guitar Practice Studio
 
@@ -209,10 +210,10 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
         run: |
-          gh release delete test --yes --cleanup-tag || true
+          gh release delete test-build --yes --cleanup-tag || true
           echo "${{ github.run_number }}" > out/BUILD.txt
           ls -la out
-          gh release create test out/GuitarPracticeStudioTest-setup.exe out/GuitarPracticeStudioTest-mac.dmg \
+          gh release create test-build out/GuitarPracticeStudioTest-setup.exe out/GuitarPracticeStudioTest-mac.dmg \
             out/GuitarPracticeStudioTest-mac.zip out/BUILD.txt \
             --target "$GITHUB_SHA" \
             --title "Guitar Practice Studio Test (build ${{ github.run_number }}, work in progress)" \

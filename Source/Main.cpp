@@ -25,7 +25,7 @@
 namespace
 {
 // Updates come from the GitHub release built by .github/workflows/release.yml: "latest" for
-// the public app, "test" for Guitar Practice Studio Test (see STUDIO_CHANNEL in CMakeLists.txt).
+// the public app, "test-build" for Guitar Practice Studio Test (see STUDIO_CHANNEL in CMakeLists.txt).
 #ifndef STUDIO_RELEASE_URL
  #define STUDIO_RELEASE_URL "https://github.com/vagend/GuitarPracticeTracker-Studio/releases/latest/download/"
  #define STUDIO_FILES "GuitarPracticeStudio"

@@ -8,13 +8,13 @@ project(GuitarPracticeStudio VERSION 0.8.0)
 set(STUDIO_BUILD "0" CACHE STRING "Build number")
 
 # "test" builds (from the test branch) are a separate app, Guitar Practice Studio Test, with
-# its own data, installed next to the real one, and updated only from the "test" release.
+# its own data, installed next to the real one, and updated only from the "test-build" release.
 set(STUDIO_CHANNEL "public" CACHE STRING "public or test")
 if(STUDIO_CHANNEL STREQUAL "test")
     set(STUDIO_NAME   "Guitar Practice Studio Test")
     set(STUDIO_BUNDLE "com.vagend.guitarpracticestudio.test")
     set(STUDIO_FILES  "GuitarPracticeStudioTest")   # download file names
-    set(STUDIO_RELEASE_URL "https://github.com/vagend/GuitarPracticeTracker-Studio/releases/download/test/")
+    set(STUDIO_RELEASE_URL "https://github.com/vagend/GuitarPracticeTracker-Studio/releases/download/test-build/")
     set(STUDIO_TEST 1)
     set(STUDIO_ICON "${CMAKE_CURRENT_SOURCE_DIR}/web/icons/studio-test-1024.png")
 else()
