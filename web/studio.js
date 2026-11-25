@@ -7,6 +7,18 @@
 // the same as the VERSION in CMakeLists.txt.
 
 window.STUDIO_CHANGES = [
+  ['0.9.0', 'Nov 25, 2026', [
+    'The metronome now plays in Studio\u2019s audio engine: through your audio interface, on the same clock as your guitar.',
+    'Hear the tab: Studio plays the exercise\u2019s tab along with the metronome, at the tempo it\u2019s playing, while the tab window is open.',
+    'Mixer (next to Mute input): the levels of the metronome, your guitar, the tab and the chime. Double-click a slider for 100%.',
+    'With no audio interface connected, the metronome and tab play through your computer. With one connected, Studio uses it.',
+    'Exercises can have a schedule (days of the week) and a time goal. Practice shows what\u2019s still to practice today; click one to count down the time left.',
+    'Routines: tick exercises and Save as routine to make a file you can share. Load one to practice just its exercises; All exercises brings back the rest.',
+    'Click the timer to type a countdown. Switching exercises keeps the time you\u2019ve done, and Finish & log works without starting the timer.',
+    'Export backup and CSV ask where to save; Import backup can merge into what you have.',
+    'The Fretboard Trainer logs its own time and has its own schedule. Settings \u2192 Practice can hide it, or draw the neck left-handed.',
+    'Settings sections fold, Stats can include archived exercises, and clicking the logo shows the app\u2019s About window.'
+  ]],
   ['0.8.0', 'Nov 20, 2026', [
     'Tabs: give an exercise a tab in Edit exercise (Guitar Pro, MusicXML or Capella file, or type it). Open tab shows it in its own window.',
     'With Use tab on (on the Exercise card), the tab\u2019s tempo is the goal, the bars you select in the tab are the tempo ladder\u2019s length, and the metronome follows the tab\u2019s time signatures and tempo changes. Use tab off brings back the exercise\u2019s own settings.',
