@@ -176,20 +176,18 @@ jobs:
           merge-multiple: true
           path: out
 
+      # The release is updated in place, never deleted first: if GitHub fails partway (an outage),
+      # the previous build stays up. BUILD.txt goes last, so Studio only offers the build once its files are there.
       - name: Publish "Latest build"
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
         run: |
-          gh release delete latest --yes --cleanup-tag || true
           echo "${{ github.run_number }}" > out/BUILD.txt   # what Studio reads to see if it's out of date
           ls -la out
-          gh release create latest out/GuitarPracticeStudio-setup.exe out/GuitarPracticeStudio-mac.dmg \
-            out/GuitarPracticeStudio-mac.zip out/BUILD.txt \
-            --target "$GITHUB_SHA" \
-            --title "Guitar Practice Studio (build ${{ github.run_number }})" \
-            --latest \
-            --notes "Built from ${GITHUB_SHA::7} on $(date -u '+%Y-%m-%d %H:%M') UTC.
+          title="Guitar Practice Studio (build ${{ github.run_number }})"
+          cat > notes.md <<EOF
+          Built from ${GITHUB_SHA::7} on $(date -u '+%Y-%m-%d %H:%M') UTC.
 
           **Windows:** download **GuitarPracticeStudio-setup.exe** and run it. It installs just for you (no admin needed), adds Guitar Practice Studio to the Start menu, and can be uninstalled from Settings > Apps.
           Windows SmartScreen may warn that the app isn't from a known publisher: click **More info > Run anyway**.
@@ -198,7 +196,18 @@ jobs:
           The first time, macOS says it can't verify the app: click **Done**, open **System Settings > Privacy & Security**, scroll down and click **Open Anyway**.
           (GuitarPracticeStudio-mac.zip is what Studio uses to update itself.)
 
-          After that, Studio offers new builds itself: Settings > Studio > Check for updates."
+          After that, Studio offers new builds itself: Settings > Studio > Check for updates.
+          EOF
+          sed -i 's/^          //' notes.md
+          files="out/GuitarPracticeStudio-setup.exe out/GuitarPracticeStudio-mac.dmg out/GuitarPracticeStudio-mac.zip"
+          if gh release view latest >/dev/null 2>&1; then
+            gh release upload latest $files --clobber
+            gh release upload latest out/BUILD.txt --clobber
+            gh api -X PATCH "repos/$GH_REPO/git/refs/tags/latest" -f sha="$GITHUB_SHA" -F force=true >/dev/null
+            gh release edit latest --title "$title" --notes-file notes.md --latest
+          else
+            gh release create latest $files out/BUILD.txt --target "$GITHUB_SHA" --title "$title" --notes-file notes.md --latest
+          fi
 
   release-test:
     needs: [windows, mac]
@@ -212,26 +221,39 @@ jobs:
           merge-multiple: true
           path: out
 
+      # Updated in place like the public release (see above). A Windows-only build takes the Mac files
+      # off, so a Mac file from an older full build is never left next to a newer Windows one.
       - name: Publish the test build (a pre-release, never marked latest)
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
         run: |
-          gh release delete test-build --yes --cleanup-tag || true
           echo "${{ github.run_number }}" > out/BUILD.txt
           ls -la out
-          files="out/GuitarPracticeStudioTest-setup.exe out/BUILD.txt"
+          files="out/GuitarPracticeStudioTest-setup.exe"
           mac="Windows only: the Mac test app is built locally."
           if [ -f out/GuitarPracticeStudioTest-mac.dmg ]; then
             files="$files out/GuitarPracticeStudioTest-mac.dmg out/GuitarPracticeStudioTest-mac.zip"
             mac="Mac: GuitarPracticeStudioTest-mac.dmg. Windows: GuitarPracticeStudioTest-setup.exe."
           fi
-          gh release create test-build $files \
-            --target "$GITHUB_SHA" \
-            --title "Guitar Practice Studio Test (build ${{ github.run_number }}, work in progress)" \
-            --prerelease --latest=false \
-            --notes "**Work in progress, not for general use.** Built from the test branch (${GITHUB_SHA::7}) on $(date -u '+%Y-%m-%d %H:%M') UTC.
+          title="Guitar Practice Studio Test (build ${{ github.run_number }}, work in progress)"
+          cat > notes.md <<EOF
+          **Work in progress, not for general use.** Built from the test branch (${GITHUB_SHA::7}) on $(date -u '+%Y-%m-%d %H:%M') UTC.
 
           Installs as a separate app, **Guitar Practice Studio Test**, next to the normal one, with its own practice log, exercises and settings. The normal app never updates to these builds.
           $mac
-          Get the normal app from the Latest release instead."
+          Get the normal app from the Latest release instead.
+          EOF
+          sed -i 's/^          //' notes.md
+          if gh release view test-build >/dev/null 2>&1; then
+            gh release upload test-build $files --clobber
+            if [ ! -f out/GuitarPracticeStudioTest-mac.dmg ]; then
+              gh release delete-asset test-build GuitarPracticeStudioTest-mac.dmg --yes 2>/dev/null || true
+              gh release delete-asset test-build GuitarPracticeStudioTest-mac.zip --yes 2>/dev/null || true
+            fi
+            gh release upload test-build out/BUILD.txt --clobber
+            gh api -X PATCH "repos/$GH_REPO/git/refs/tags/test-build" -f sha="$GITHUB_SHA" -F force=true >/dev/null
+            gh release edit test-build --title "$title" --notes-file notes.md --prerelease --latest=false
+          else
+            gh release create test-build $files out/BUILD.txt --target "$GITHUB_SHA" --title "$title" --notes-file notes.md --prerelease --latest=false
+          fi
