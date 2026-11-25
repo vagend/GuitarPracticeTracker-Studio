@@ -174,10 +174,16 @@ try{stats=JSON.parse(localStorage.getItem('fbstats')||'{}')}catch(e){}
 const $=id=>document.getElementById(id), NS='http://www.w3.org/2000/svg';
 const pc=(s,f)=>(OPEN[s]+f)%12;
 const px=f=>f==0?28:X0+(f-.5)*FW, py=s=>Y0+s*SP;
-function el(t,a,p){const e=document.createElementNS(NS,t);for(const k in a)e.setAttribute(k,a[k]);(p||$('fb')).appendChild(e);return e}
+// Left-handed (shared with the app's Settings, in localStorage gp.lefty): the neck is mirrored, nut on the right.
+// Everything is drawn into a flipped group; text is flipped back so it reads normally.
+let LEFTY=false,G=null;try{LEFTY=localStorage.getItem('gp.lefty')=='1'}catch(e){}
+function el(t,a,p){const e=document.createElementNS(NS,t);for(const k in a)e.setAttribute(k,a[k]);
+  const par=p||G||$('fb');if(t=='text'&&LEFTY&&par==G)e.setAttribute('transform','matrix(-1 0 0 1 '+(2*(+a.x||0))+' 0)');
+  par.appendChild(e);return e}
 
 function drawBoard(){
-  const svg=$('fb');svg.innerHTML='';FW=Math.min(68,820/maxF);
+  const svg=$('fb');svg.innerHTML='';FW=Math.min(68,820/maxF);G=null;
+  G=el('g',LEFTY?{transform:'translate(880 0) scale(-1 1)'}:{},svg);
   const end=X0+maxF*FW;
   el('rect',{x:X0,y:Y0-14,width:end-X0,height:5*SP+28,fill:'var(--wood)',rx:4});
   el('rect',{x:X0-4,y:Y0-14,width:6,height:5*SP+28,fill:'var(--fg)'});
@@ -192,7 +198,7 @@ function drawBoard(){
   }
   for(let s=0;s<6;s++){
     el('line',{x1:X0,x2:end,y1:py(s),y2:py(s),stroke:'var(--str)','stroke-width':1+s*.45,opacity:active.has(s)?1:.3});
-    const t=el('text',{x:6,y:py(s)+4,'font-size':13,fill:'var(--mut)'});t.textContent=SN[s];
+    const t=el('text',{x:6,y:py(s)+4,'font-size':13,fill:'var(--mut)','text-anchor':LEFTY?'end':'start'});t.textContent=SN[s];
   }
   if(mode=='find')for(const s of active)for(let f=0;f<=maxF;f++){
     const r=el('rect',{x:f==0?10:X0+(f-1)*FW,y:py(s)-SP/2,width:f==0?36:FW,height:SP,class:'cell'});
@@ -329,6 +335,7 @@ document.querySelectorAll('#modes button[data-m]').forEach(b=>b.onclick=()=>{
   if(running)stopRun(false);mode=b.dataset.m;micWanted=(mode=='listen'||mode=='tune');document.querySelectorAll('#modes button[data-m]').forEach(x=>x.classList.toggle('on',x==b));next()});
 $('maxf').onchange=e=>{maxF=+e.target.value;S.maxF=maxF;saveS();next()};
 $('acc').onchange=e=>{acc=e.target.checked;S.acc=acc?1:0;saveS();buildNotes();next()};
+addEventListener('storage',e=>{if(e.key=='gp.lefty'){LEFTY=e.newValue=='1';drawBoard();if(q&&mode=='name'&&!locked)dot(q.s,q.f,'var(--acc)')}});
 $('reset').onclick=()=>{hist=[];try{localStorage.removeItem('fbhist')}catch(e){}score=streak=hit=tot=bestStreak=0;judge(false,false);renderStats()};
 addEventListener('keydown',e=>{
   if(mode!='name'||e.target.tagName=='SELECT'||e.target.type=='range'||e.target.type=='text')return;

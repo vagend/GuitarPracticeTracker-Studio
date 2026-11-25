@@ -523,6 +523,7 @@ iframe#trFrame{width:100%;border:0;height:900px;display:block;border-radius:10px
         <label class="f">Daily goal (minutes)<input id="stGoal" type="number" min="0" step="5"></label>
         <label class="f w">Chime volume<span class="row"><input id="stVol" type="range" min="0" max="1" step="0.05" style="flex:1"><button id="stTest">Test</button></span></label>
         <label class="chk w"><input type="checkbox" id="stTrainer"> Show the Fretboard Trainer</label>
+        <label class="chk w"><input type="checkbox" id="stLefty"> Left-handed (the Fretboard Trainer draws the neck with the nut on the right)</label>
         <label class="chk w"><input type="checkbox" id="stNotify"> Show a notification when a countdown ends while the app is in the background</label>
       </div>
     </div>
@@ -1401,7 +1402,7 @@ function renderSettings(){
   const s=D.settings;
   renderSkins();
   $('#stGoal').value=s.goal;$('#stTabCol').value=s.tabColors=='paper'?'paper':'theme';$('#stVol').value=s.chimeVol;
-  $('#stNotify').checked=!!s.notify;$('#stTrainer').checked=trainerShown();
+  $('#stNotify').checked=!!s.notify;$('#stTrainer').checked=trainerShown();try{$('#stLefty').checked=localStorage.getItem('gp.lefty')=='1'}catch(x){}
   $('#bkInfo').innerHTML=D.entries.length+' entries, '+D.exercises.filter(x=>!x.trainer).length+' exercises. Last backup: '+(s.lastBackup?new Date(s.lastBackup).toLocaleDateString():'never')+'. <span id="persist"></span>';
   try{navigator.storage&&navigator.storage.persisted&&navigator.storage.persisted().then(p=>{const e=$('#persist');if(e)e.textContent=p?'Storage is marked persistent.':''})}catch(e){}
   $('#effEdit').innerHTML=D.efforts.map(f=>'<div class="erow" data-id="'+f.id+'"><span class="ed ed'+f.id+'" style="margin:0 auto"></span><input type="text" class="en" value="'+esc(f.name)+'" aria-label="Name"><input type="text" class="ex" value="'+esc(f.desc||'')+'" aria-label="Description"><button class="ex-del" title="Remove">✕</button></div>').join('');
@@ -1417,6 +1418,7 @@ function renderSettings(){
 $('#stGoal').onchange=e=>{D.settings.goal=Math.max(0,num(e.target.value)||0);save()};
 $('#stVol').oninput=e=>mixSet('chime',e.target.value);
 $('#stTest').onclick=()=>chime(0);
+$('#stLefty').onchange=e=>{try{localStorage.setItem('gp.lefty',e.target.checked?'1':'0')}catch(x){}const f=$('#trFrame');try{if(f&&f.contentWindow)f.contentWindow.dispatchEvent(new StorageEvent('storage',{key:'gp.lefty',newValue:e.target.checked?'1':'0'}))}catch(x){}};
 $('#stTrainer').onchange=e=>{D.settings.hideTrainer=!e.target.checked;save();applyTrainerShown()};
 $('#stNotify').onchange=async e=>{D.settings.notify=e.target.checked;save();if(e.target.checked&&'Notification' in window&&Notification.permission=='default'){try{await Notification.requestPermission()}catch(x){}}};
 $('#effAdd').onclick=()=>{const id=Math.max(0,...D.efforts.map(f=>f.id))+1;D.efforts.push({id,name:'New level',desc:''});save();renderSettings()};
