@@ -45,7 +45,7 @@ body.paper .sel{background:rgba(212,166,74,.28)}
   <button id="sound" title="Hear the tab: Studio plays it with the metronome" hidden>🔊</button><input type="range" id="tvol" min="0" max="1.5" step="0.05" title="Tab volume" aria-label="Tab volume" hidden>
   <b id="title">Tab</b><span class="st" id="tech"></span><span class="sp"></span>
   <button id="edit" disabled>✎ Edit in tab editor</button>
-  <button id="pick" title="Then click a bar, or drag across bars, to choose what the tempo ladder plays">Select bars</button>
+  <button id="pick" title="Then click a bar, or drag across bars, to choose what the tempo ladder plays (shortcut: S)" aria-keyshortcuts="S"><u>S</u>elect bars</button>
   <button id="clear" disabled>Clear selection</button>
   <select id="track" hidden aria-label="Track"></select>
   <select id="view" aria-label="View"><option value="tab">Tab only</option><option value="both">Tab + notation</option></select>
@@ -118,9 +118,11 @@ function drawMarks(){const m=$('marks');m.innerHTML='';const s=selRange();if(!s)
 // Choosing bars takes a click on Select bars first, so a stray click on the tab never changes them.
 // After you click or drag once (Shift+click extends), it goes back to normal. Esc cancels.
 let drag=null,picking=false;
-function setPicking(on){picking=on;$('pick').classList.toggle('on',on);$('pick').textContent=on?'Click or drag bars…':'Select bars';document.body.classList.toggle('picking',on)}
+function setPicking(on){picking=on;$('pick').classList.toggle('on',on);$('pick').innerHTML=on?'Click or drag bars…':'<u>S</u>elect bars';document.body.classList.toggle('picking',on)}
 $('pick').onclick=()=>setPicking(!picking);
 addEventListener('keydown',e=>{if(e.key=='Escape'&&picking)setPicking(false)});
+// S: Select bars (as the underlined S on the button shows)
+addEventListener('keydown',e=>{if(e.key.toLowerCase()!='s'||e.repeat||e.ctrlKey||e.metaKey||e.altKey||/^(INPUT|SELECT|TEXTAREA)$/.test(e.target.tagName)||$('pick').disabled||$('wrap').hidden)return;e.preventDefault();setPicking(!picking)});
 $('at').addEventListener('pointerdown',e=>{if(e.button!==0||!S.bars.length||!picking)return;const r=$('at').getBoundingClientRect(),i=barAt(e.clientX-r.left,e.clientY-r.top);if(i<0)return;
   const cur=selRange();drag={a:e.shiftKey&&cur?cur.from:i};S.sel={from:Math.min(drag.a,i),to:Math.max(drag.a,i)};drawMarks();status();$('at').setPointerCapture(e.pointerId)});
 $('at').addEventListener('pointermove',e=>{if(!drag)return;const r=$('at').getBoundingClientRect(),i=barAt(e.clientX-r.left,e.clientY-r.top);if(i<0)return;

@@ -505,6 +505,7 @@ private:
         else if (action == "metHits") { scheduleMetronome (msg.getProperty ("hits", {})); return; }
         else if (action == "metClear") { engine.metronome.clearScheduled(); engine.tabSynth.clearScheduled(); return; }
         else if (action == "tabNotes") { scheduleTab (msg.getProperty ("ev", {})); return; }
+        else if (action == "guitarVol") { engine.setGuitarVolume ((float) (double) msg.getProperty ("v", 1.0)); return; }
         else if (action == "tabVol")   { engine.tabSynth.setVolume ((float) (double) msg.getProperty ("v", 0.8)); return; }
         else if (action == "metSample") { setMetronomeSample (msg); return; }
         else if (action == "showData") appData.revealToUser();

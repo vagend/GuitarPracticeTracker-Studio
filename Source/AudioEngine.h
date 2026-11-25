@@ -113,6 +113,9 @@ public:
 
     bool isAuto() const noexcept { return wantedDevice == nullptr; }
 
+    // Mixer > Guitar: the level of your guitar (after the plugin), 0 to 2.
+    void setGuitarVolume (float v) noexcept { guitarGain.store (juce::jlimit (0.0f, 2.0f, v)); }
+
     // Playing through the computer's own output because your interface is missing.
     bool isOnSpeakers() const noexcept { return onSpeakers && deviceManager.getCurrentAudioDevice() != nullptr; }
 
@@ -363,6 +366,10 @@ public:
         }
 
         processGuitar (inputs, numInputs, outputs, numOutputs, numSamples);
+        if (const float g = guitarGain.load(); std::abs (g - 1.0f) > 0.001f)   // Mixer > Guitar
+            for (int ch = 0; ch < numOutputs; ++ch)
+                if (outputs[ch] != nullptr)
+                    juce::FloatVectorOperations::multiply (outputs[ch], g, numSamples);
 
         // The metronome and the tab play on top, whether or not the guitar is muted.
         const double t0 = metronome.now();
@@ -486,6 +493,7 @@ private:
     bool onSpeakers = false;   // message thread
     int reopenAttempts = 0;
     std::atomic<bool> standIn { false };
+    std::atomic<float> guitarGain { 1.0f };
 
     // Is this the interface you picked? (Always yes if you never picked one.)
     bool isWantedDevice (juce::AudioIODevice* dev) const

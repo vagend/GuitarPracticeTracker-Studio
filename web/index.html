@@ -104,6 +104,13 @@ nav#tabs button{border:0;background:none;padding:9px 14px;border-bottom:3px soli
 nav#tabs button.on{color:var(--fg);border-bottom-color:var(--acc)}
 nav#tabs button,nav#tabs button.on{box-shadow:none;text-shadow:none}
 nav#tabs .tabgap{flex:1;min-width:12px}
+nav#tabs button.navmix{align-self:center;margin:0 0 0 6px;padding:7px 14px;background:var(--card);border:1px solid var(--line);border-radius:10px;color:var(--fg);font-weight:400}
+nav#tabs button.navmix.on{border-color:var(--acc)}
+#mixPop{position:fixed;z-index:80;width:320px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 16px;box-shadow:0 18px 50px rgba(0,0,0,.45)}
+#mixPop h3{margin:0 0 10px;font:600 15px system-ui,sans-serif}
+#mixPop .mx{display:grid;grid-template-columns:90px 1fr 46px;align-items:center;gap:10px;margin:8px 0}
+#mixPop .mx span{color:var(--mut);font-size:14px}#mixPop .mx b{font-weight:500;font-size:13px;text-align:right;color:var(--mut)}
+#mixPop input{width:100%;accent-color:var(--acc)}
 main{max-width:1100px;margin:0 auto;padding:16px}
 .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:16px}
 .card h2{font:600 16px/1.3 system-ui,sans-serif;margin:0 0 10px}
@@ -267,6 +274,7 @@ iframe#trFrame{width:100%;border:0;height:900px;display:block;border-radius:10px
     <button data-v="exercises">Exercises</button>
     <button data-v="stats">Stats</button>
     <span class="tabgap"></span>
+    <button id="mixBtn" class="navmix" title="Volume of the metronome, your guitar, the tab and the chime" aria-expanded="false">Mixer</button>
     <button data-v="tuner">Tuner</button>
     <button data-v="settings">Settings</button>
   </nav>
@@ -348,7 +356,6 @@ iframe#trFrame{width:100%;border:0;height:900px;display:block;border-radius:10px
         <h2 style="margin:0">Metronome</h2>
         <span class="sp"></span>
         <label class="sw" id="swLad" title="Step the tempo up the ladder and back down automatically"><i></i>Tempo ladder</label>
-        <button id="metTap" title="Tap 4 or more times to set the tempo">Tap tempo</button>
         <button id="metGo" class="primary" title="Play and pause the metronome and the practice timer (Space)">▶ Play</button>
         <button id="metStop" title="Stop the metronome and the timer (the time stays until you finish or discard)">■ Stop</button>
       </div>
@@ -357,7 +364,7 @@ iframe#trFrame{width:100%;border:0;height:900px;display:block;border-radius:10px
         <button id="bm5" aria-label="minus 5">−5</button><button id="bm1" aria-label="minus 1">−1</button>
         <input id="bpm" type="number" inputmode="decimal" min="20" max="400" step="any" placeholder="100" aria-label="Metronome tempo in BPM">
         <button id="bp1" aria-label="plus 1">+1</button><button id="bp5" aria-label="plus 5">+5</button>
-        <span class="sub">BPM</span><span class="sub" id="bpmNow"></span>
+        <span class="sub">BPM</span><button id="metTap" title="Tap 4 or more times to set the tempo" style="margin-left:8px">Tap tempo</button><span class="sub" id="bpmNow"></span>
       </div>
       <div class="ladrun" id="ladPanel"><div class="lpL"><div class="lpBig" id="lpBig"></div><div class="sub" id="lpSub"></div><div class="lpReps" id="lpReps"></div></div><div class="stairs" id="lpBars"></div></div>
       <div class="row curve" style="margin-top:10px">
@@ -763,7 +770,7 @@ function exOptions(sel,{all,includeArchived,noTrainer,noSub}={}){
 let view='practice';
 function show(v){if(!$('#v-'+v)||(v=='trainer'&&!trainerShown()))v='practice';if(view=='trainer'&&v!='trainer'&&typeof TR!='undefined')trainerLeave();if(v!='tuner'&&view=='tuner'&&typeof TU!='undefined'&&(TU.stream||TU.sg))tunStop();if(v=='tuner')setTimeout(tunAuto,0);if(v!='settings'&&typeof IN!='undefined'&&IN.stream)inStop();if(v=='settings'&&typeof inList=='function')setTimeout(inList,0);view=v;$$('.view').forEach(s=>s.hidden=s.id!='v-'+v);$$('#tabs button').forEach(b=>b.classList.toggle('on',b.dataset.v==v));
   try{history.replaceState(null,'','#'+v)}catch(e){}render()}
-$$('#tabs button').forEach(b=>b.onclick=()=>show(b.dataset.v));
+$$('#tabs button[data-v]').forEach(b=>b.onclick=()=>show(b.dataset.v));
 function render(){({practice:renderPractice,tuner:()=>{},trainer:loadTrainer,log:renderLog,exercises:renderExercises,stats:renderStats,settings:renderSettings})[view]();renderTimer()}
 
 // ---------- timer ----------
@@ -817,6 +824,7 @@ function hasPracticeEx(){return D.exercises.some(e=>!e.trainer&&exShown(e))}
 function renderTimer(){
   const el=elapsed(),down=T.mode=='down',v=down?Math.max(0,T.target-el):el,txt=clockStr(v,!down);
   if(txt!==lastClock&&!clockEditing){$('#clock').textContent=txt;lastClock=txt}
+  if(view=='practice'){const k=T.ex+'|'+Math.floor(el/6000);if(k!==lastDueKey){lastDueKey=k;renderDue()}}   // the daily list counts the timer
   $('#clock').classList.toggle('done',!!T.done);
 
   $$('#tmode button').forEach(b=>{b.classList.toggle('on',b.dataset.m==T.mode)});
@@ -1108,11 +1116,14 @@ function dueToday(e){return !!e&&exShown(e)&&!(e.trainer&&!trainerShown())&&(e.d
 window.gpTrainerSchedule={get(){const t=trainerEx()||{};return{days:(t.days||[]).slice(),goal:t.timeGoal||null}},
   set(days,goal){const t=trainerEx();if(!t)return;t.days=days.filter(x=>x>=0&&x<=6).sort();t.timeGoal=goal;save();render()}};
 function minToday(id){return D.entries.filter(x=>x.ex==id&&x.date==dkey()).reduce((s,x)=>s+(+x.min||0),0)}
+// today's minutes including what's on the timer now (not logged yet) for the selected exercise
+function minSoFar(id){return minToday(id)+(id==T.ex&&typeof elapsed=='function'?elapsed()/60000:0)}
+var lastDueKey='';
 // Only what's still to do shows (above the Exercise card); finished ones are in the day's log below.
 function renderDue(){const el=$('#dueList');if(!el)return;
-  const due=D.exercises.filter(e=>{if(!dueToday(e))return false;const m=minToday(e.id),g=+e.timeGoal||0;return g?m<g:m<=0});
+  const due=D.exercises.filter(e=>{if(!dueToday(e))return false;const m=minSoFar(e.id),g=+e.timeGoal||0;return(g?m<g:m<=0)||(e.id==T.ex&&elapsed()>0)});
   $('#dueCard').hidden=!due.length;if(!due.length){el.innerHTML='';return}
-  el.innerHTML='<div class="sub" style="margin-bottom:6px">Still to practice today</div>'+due.map(e=>{const m=minToday(e.id),g=+e.timeGoal||0,ok=g?m>=g:m>0;
+  el.innerHTML='<div class="sub" style="margin-bottom:6px">Still to practice today</div>'+due.map(e=>{const m=minSoFar(e.id),g=+e.timeGoal||0,ok=g?m>=g:m>0;
     return'<button type="button" class="due'+(ok?' done':'')+(e.id==T.ex?' cur':'')+'" data-id="'+e.id+'"><span class="nm">'+esc(exName(e))+(schedDays(e)?' <small class="sub">'+esc(schedDays(e))+'</small>':'')+'</span>'+
       (g?'<span class="pct"><i style="width:'+Math.min(100,100*m/g)+'%"></i></span><span class="sub">'+trim(Math.round(m*10)/10)+' / '+trim(g)+' min</span>':'<span class="sub">'+(m?trim(Math.round(m*10)/10)+' min':'not yet')+'</span>')+'</button>'}).join('');
   el.querySelectorAll('.due').forEach(b=>b.onclick=async()=>{const id=+b.dataset.id,x=exById(id);
@@ -1404,7 +1415,7 @@ function renderSettings(){
     r.querySelector('button').onclick=()=>{const n=D.exercises.filter(x=>x.technique==old&&!x.trainer).length;if(n){tell(n+' exercise(s) use “'+old+'”. Change them first.');return}D.techniques.splice(i,1);save();renderSettings()}});
 }
 $('#stGoal').onchange=e=>{D.settings.goal=Math.max(0,num(e.target.value)||0);save()};
-$('#stVol').oninput=e=>{D.settings.chimeVol=+e.target.value;save()};
+$('#stVol').oninput=e=>mixSet('chime',e.target.value);
 $('#stTest').onclick=()=>chime(0);
 $('#stTrainer').onchange=e=>{D.settings.hideTrainer=!e.target.checked;save();applyTrainerShown()};
 $('#stNotify').onchange=async e=>{D.settings.notify=e.target.checked;save();if(e.target.checked&&'Notification' in window&&Notification.permission=='default'){try{await Notification.requestPermission()}catch(x){}}};
@@ -1513,12 +1524,12 @@ function tabFromWindow(m){if(!m||!m.type)return;
   if(m.type=='closed'){TABWIN.open=false;TABWIN.wReady=false;return}
   // the tab window's own Play/Pause and Stop: the same as pressing them here
   if(m.type=='transport'){if(m.cmd=='stop')$('#metStop').click();else $('#metGo').click();return}
+  if(m.type=='tabVol'){mixSet('tab',m.v);return}
   const ex=exById(m.ex);if(!ex||!ex.tab)return;
   if(m.type=='sel'){ex.tabSel=m.from==null?null:{from:m.from,to:m.to};save();if(CURVE.on&&tabOn(ex))CURVE.len=tabLen(ex);render()}
   else if(m.type=='track'){ex.tabTrack=m.track|0;save()}
   else if(m.type=='edit'){if(STUDIO_APP&&ex.tab.path)studioSend({action:'tabEdit',path:ex.tab.path})}
-  else if(m.type=='sound'){if(tabOn(ex))setHearTab(ex,!hearTab(ex))}
-  else if(m.type=='tabVol'){const v=Math.max(0,Math.min(1.5,+m.v||0));MC().tabVol=v;save();tabVolSend();$('#tabVol').value=v}}
+  else if(m.type=='sound'){if(tabOn(ex))setHearTab(ex,!hearTab(ex))}}
 addEventListener('message',e=>{if(TABWIN.w&&e.source===TABWIN.w)tabFromWindow(e.data)});
 try{if(window.__JUCE__&&window.__JUCE__.backend)window.__JUCE__.backend.addEventListener('studioTab',m=>tabFromWindow(m))}catch(e){}
 $('#openTab').onclick=openTab;
@@ -1528,6 +1539,7 @@ $('#stTabCol').onchange=e=>{D.settings.tabColors=e.target.value;save();tabTheme(
 let dxTab=null;
 const STUDIO_APP=!!(window.__JUCE__&&window.__JUCE__.backend);
 function studioSend(o){try{window.__JUCE__.backend.emitEvent('studio',o)}catch(e){}}
+if(STUDIO_APP)setTimeout(()=>{guitarVolSend();tabVolSend()},500);
 // Browse buttons: in Studio they use Studio's own file picker, which opens in the folder that button was
 // last used in. In a plain browser they use the page's hidden file input, as before.
 const PICKS={};
@@ -1672,7 +1684,7 @@ async function buildTabNotes(ex,k){
   catch(e){TABN[k]={ready:true,bars:[],ticks:[],program:0,failed:true}}}
 // the bar B (from tabBarStart) starting at t0 on the engine's clock
 function playTabBar(B,t0){const ex=exById(T.ex);
-  if(!MET.eng||!B||!hearTab(ex)||(CURVE.on&&(CURVE.counting||CURVE.first)))return;
+  if(!MET.eng||!B||!hearTab(ex)||!TABWIN.open||(CURVE.on&&(CURVE.counting||CURVE.first)))return;
   const N=tabNotes(ex);if(!N||N.perc)return;const notes=N.bars[B.bar],ticks=N.ticks[B.bar];if(!notes||!ticks)return;
   const sec=B.beats*60/(metTempo()*B.mult)/ticks,r=x=>Math.round(x*1e5)/1e5;
   if(MET.tabProg!==N.program){MET.tabProg=N.program;MET.tabOut.push([r(t0-.002),2,0,N.program,0])}
@@ -1904,8 +1916,28 @@ $('#curveRepReady').onchange=e=>{const ex=exById(T.ex);if(!ex)return;ex.repReady
 $('#curveBars').oninput=e=>{const ex=exById(T.ex),v=Math.round(num(e.target.value)||0);if(ex&&v>0){ex.curveBars=Math.min(64,v);save();if(CURVE.on)CURVE.bars=ex.curveBars}};
 $('#curveBars').onchange=e=>{const ex=exById(T.ex),v=Math.round(num(e.target.value)||0);if(ex&&v>0){ex.curveBars=Math.min(64,v);save();if(CURVE.on)CURVE.bars=ex.curveBars}renderCurve()};
 $('#metKit').onchange=e=>{MC().kit=e.target.value;save();renderMet()};
-$('#metMaster').oninput=e=>{MC().master=+e.target.value;save()};
-$('#tabVol').oninput=e=>{MC().tabVol=+e.target.value;save();tabVolSend();const ex=exById(T.ex);if(TABWIN.open&&ex)tabSend({type:'sound',on:hearTab(ex),vol:MC().tabVol})};
+$('#metMaster').oninput=e=>mixSet('met',e.target.value);
+// ---- Mixer (top bar): one place for every level. The same settings as Metronome > Sounds & options
+// (metronome and tab) and Settings (chime); the guitar level is Studio's, after your plugin.
+const MIX=[['met','Metronome',1],['guitar','Guitar',2],['tab','Tab',1.5],['chime','Chime',1]];
+function mixGet(k){const M=MC();return+(k=='met'?M.master:k=='tab'?(M.tabVol??.8):k=='guitar'?(D.settings.guitarVol??1):D.settings.chimeVol)}
+function mixSet(k,v){const mx=(MIX.find(x=>x[0]==k)||[])[2]||1;v=Math.max(0,Math.min(mx,+v||0));const M=MC();
+  if(k=='met')M.master=v;else if(k=='tab'){M.tabVol=v;tabVolSend();const ex=exById(T.ex);if(TABWIN.open&&ex)tabSend({type:'sound',on:hearTab(ex),vol:v})}
+  else if(k=='guitar'){D.settings.guitarVol=v;guitarVolSend()}else D.settings.chimeVol=v;
+  save();const ids={met:'#metMaster',tab:'#tabVol',chime:'#stVol'};if(ids[k]&&document.activeElement!==$(ids[k]))$(ids[k]).value=v;renderMix()}
+function guitarVolSend(){if(STUDIO_APP)studioSend({action:'guitarVol',v:mixGet('guitar')})}
+function renderMix(){const p=$('#mixPop');if(!p)return;
+  p.querySelectorAll('input[data-k]').forEach(i=>{const v=mixGet(i.dataset.k);if(document.activeElement!==i)i.value=v;i.nextElementSibling.textContent=Math.round(v*100)+'%'})}
+function mixClose(){const p=$('#mixPop');if(!p)return;p.parentNode.removeChild(p);$('#mixBtn').classList.toggle('on',false);$('#mixBtn').setAttribute('aria-expanded','false')}
+$('#mixBtn').onclick=e=>{e.stopPropagation();if($('#mixPop')){mixClose();return}
+  const p=document.createElement('div');p.id='mixPop';
+  p.innerHTML='<h3>Mixer</h3>'+MIX.filter(([k])=>STUDIO_APP||(k!='guitar'&&k!='tab')).map(([k,n,mx])=>'<label class="mx"><span>'+n+'</span><input type="range" min="0" max="'+mx+'" step="0.05" data-k="'+k+'"><b></b></label>').join('');
+  document.body.appendChild(p);const r=$('#mixBtn').getBoundingClientRect();p.style.top=(r.bottom+8)+'px';p.style.left=Math.max(8,Math.min(innerWidth-330,r.right-320))+'px';
+  p.querySelectorAll('input[data-k]').forEach(i=>{i.oninput=()=>mixSet(i.dataset.k,i.value);i.ondblclick=()=>mixSet(i.dataset.k,1);i.title='Double-click for 100%'});p.onclick=e=>e.stopPropagation();
+  $('#mixBtn').classList.toggle('on',true);$('#mixBtn').setAttribute('aria-expanded','true');renderMix()};
+document.addEventListener('click',mixClose);
+addEventListener('keydown',e=>{if(e.key=='Escape')mixClose()});
+$('#tabVol').oninput=e=>mixSet('tab',e.target.value);
 $('#metFollow').onchange=e=>{MC().follow=e.target.checked;save();if(e.target.checked)followEx()};
 $('#metTap').onclick=()=>{const t=performance.now();MET.taps=MET.taps.filter(x=>t-x<2500);MET.taps.push(t);
   if(MET.taps.length>=2){const ts=MET.taps.slice(-5),iv=(ts[ts.length-1]-ts[0])/(ts.length-1);$('#bpm').value=Math.round(60000/iv);$('#bpm').oninput()}};
