@@ -1501,7 +1501,7 @@ function tabSend(m){try{if(window.__JUCE__&&window.__JUCE__.backend){window.__JU
 function tabColors(){const cs=getComputedStyle(document.documentElement),v=n=>cs.getPropertyValue(n).trim();
   return{paper:D.settings.tabColors=='paper',bg:v('--bg'),card:v('--card'),fg:v('--fg'),mut:v('--mut'),line:v('--line'),acc:v('--acc'),accfg:v('--accfg')}}
 function openTab(){const ex=exById(T.ex);if(!ex||!ex.tab)return;TABWIN.open=true;TABWIN.ex=ex.id;TABWIN.lastPos='';
-  tabSend({type:'open',ex:ex.id,name:ex.name,technique:ex.technique||'',kind:ex.tab.kind,data:ex.tab.data,sel:ex.tabSel||null,track:ex.tabTrack||0,colors:tabColors(),canEdit:!!(STUDIO_APP&&ex.tab.path),sound:hearTab(ex),canSound:!!(STUDIO_APP&&tabOn(ex))});
+  tabSend({type:'open',ex:ex.id,name:ex.name,technique:ex.technique||'',kind:ex.tab.kind,data:ex.tab.data,sel:ex.tabSel||null,track:ex.tabTrack||0,colors:tabColors(),canEdit:!!(STUDIO_APP&&ex.tab.path),sound:hearTab(ex),canSound:!!(STUDIO_APP&&tabOn(ex)),vol:+(MC().tabVol??.8)});
   TABWIN.lastTr='';tabTransport()}
 // keeps the tab window's Play/Pause and Stop showing the same as this page's
 function tabTransport(){if(!TABWIN.open)return;const playing=/Pause/.test($('#metGo').textContent),canStop=!$('#metStop').disabled,k=playing+'|'+canStop;
@@ -1517,7 +1517,8 @@ function tabFromWindow(m){if(!m||!m.type)return;
   if(m.type=='sel'){ex.tabSel=m.from==null?null:{from:m.from,to:m.to};save();if(CURVE.on&&tabOn(ex))CURVE.len=tabLen(ex);render()}
   else if(m.type=='track'){ex.tabTrack=m.track|0;save()}
   else if(m.type=='edit'){if(STUDIO_APP&&ex.tab.path)studioSend({action:'tabEdit',path:ex.tab.path})}
-  else if(m.type=='sound'){if(tabOn(ex))setHearTab(ex,!hearTab(ex))}}
+  else if(m.type=='sound'){if(tabOn(ex))setHearTab(ex,!hearTab(ex))}
+  else if(m.type=='tabVol'){const v=Math.max(0,Math.min(1.5,+m.v||0));MC().tabVol=v;save();tabVolSend();$('#tabVol').value=v}}
 addEventListener('message',e=>{if(TABWIN.w&&e.source===TABWIN.w)tabFromWindow(e.data)});
 try{if(window.__JUCE__&&window.__JUCE__.backend)window.__JUCE__.backend.addEventListener('studioTab',m=>tabFromWindow(m))}catch(e){}
 $('#openTab').onclick=openTab;
@@ -1677,7 +1678,7 @@ function playTabBar(B,t0){const ex=exById(T.ex);
   if(MET.tabProg!==N.program){MET.tabProg=N.program;MET.tabOut.push([r(t0-.002),2,0,N.program,0])}
   notes.forEach(([tk,d,key,vel])=>{const a=t0+tk*sec;MET.tabOut.push([r(a),0,0,key,vel],[r(a+Math.max(.03,d*sec*.97)),1,0,key,0])})}
 function tabVolSend(){if(STUDIO_APP)studioSend({action:'tabVol',v:+(MC().tabVol??.8)})}
-function setHearTab(ex,on){ex.tabSound=on;save();render();if(TABWIN.open)tabSend({type:'sound',on:hearTab(ex),can:tabOn(ex)&&STUDIO_APP})}
+function setHearTab(ex,on){ex.tabSound=on;save();render();if(TABWIN.open)tabSend({type:'sound',on:hearTab(ex),can:tabOn(ex)&&STUDIO_APP,vol:+(MC().tabVol??.8)})}
 // Studio gets its own copy of your samples (from this page's sample store) to play them itself
 function engSendSample(v,name,buf){MET.sent[v]=name;studioSend({action:'metSample',v,data:buf?b64FromBytes(new Uint8Array(buf)):''})}
 function engSyncSamples(){if(!STUDIO_APP)return;const M=MC();
@@ -1904,7 +1905,7 @@ $('#curveBars').oninput=e=>{const ex=exById(T.ex),v=Math.round(num(e.target.valu
 $('#curveBars').onchange=e=>{const ex=exById(T.ex),v=Math.round(num(e.target.value)||0);if(ex&&v>0){ex.curveBars=Math.min(64,v);save();if(CURVE.on)CURVE.bars=ex.curveBars}renderCurve()};
 $('#metKit').onchange=e=>{MC().kit=e.target.value;save();renderMet()};
 $('#metMaster').oninput=e=>{MC().master=+e.target.value;save()};
-$('#tabVol').oninput=e=>{MC().tabVol=+e.target.value;save();tabVolSend()};
+$('#tabVol').oninput=e=>{MC().tabVol=+e.target.value;save();tabVolSend();const ex=exById(T.ex);if(TABWIN.open&&ex)tabSend({type:'sound',on:hearTab(ex),vol:MC().tabVol})};
 $('#metFollow').onchange=e=>{MC().follow=e.target.checked;save();if(e.target.checked)followEx()};
 $('#metTap').onclick=()=>{const t=performance.now();MET.taps=MET.taps.filter(x=>t-x<2500);MET.taps.push(t);
   if(MET.taps.length>=2){const ts=MET.taps.slice(-5),iv=(ts[ts.length-1]-ts[0])/(ts.length-1);$('#bpm').value=Math.round(60000/iv);$('#bpm').oninput()}};

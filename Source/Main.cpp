@@ -906,7 +906,8 @@ private:
 
         // Your audio interface is missing (busy at start-up, unplugged or switched off):
         // look for it every 2 s.
-        if (! engine.isWantedDeviceOpen() && ++deviceRetryTicks >= 40)
+        // With no interface picked yet, follow the computer's default devices the same way.
+        if ((! engine.isWantedDeviceOpen() || engine.isAuto()) && ++deviceRetryTicks >= 40)
         {
             deviceRetryTicks = 0;
             followDevice (false);

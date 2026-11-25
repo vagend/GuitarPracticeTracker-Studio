@@ -19,7 +19,7 @@ html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);font:14px -a
 .st{color:var(--mut)}.st em{color:var(--acc);font-style:normal}
 button,select{background:var(--card);color:var(--fg);border:1px solid var(--line);border-radius:10px;padding:7px 14px;font:inherit;cursor:pointer}
 button:disabled{opacity:.45;cursor:default}
-#sound.off{opacity:.55;text-decoration:line-through}
+#sound.off{opacity:.55;text-decoration:line-through}#tvol{width:90px;accent-color:var(--acc)}#tvol:disabled{opacity:.4}
 #play{background:var(--acc);color:var(--accfg);border-color:var(--acc);font-weight:600;min-width:92px}
 #zoom{min-width:52px;text-align:center;color:var(--mut)}
 #page{padding:14px}
@@ -42,7 +42,7 @@ body.paper .sel{background:rgba(212,166,74,.28)}
 <div class="bar">
   <button id="play" title="Play and pause the metronome and the practice timer (Space)">▶ Play</button>
   <button id="stop" title="Stop the metronome and the timer" disabled>■ Stop</button>
-  <button id="sound" title="Hear the tab: Studio plays it with the metronome" hidden>🔊</button>
+  <button id="sound" title="Hear the tab: Studio plays it with the metronome" hidden>🔊</button><input type="range" id="tvol" min="0" max="1.5" step="0.05" title="Tab volume" aria-label="Tab volume" hidden>
   <b id="title">Tab</b><span class="st" id="tech"></span><span class="sp"></span>
   <button id="edit" disabled>✎ Edit in tab editor</button>
   <button id="pick" title="Then click a bar, or drag across bars, to choose what the tempo ladder plays">Select bars</button>
@@ -88,7 +88,7 @@ function bytesFrom(m){if(m.kind=='tex')return new TextEncoder().encode(m.data);c
 function load(m){
   S.ex=m.ex;S.name=m.name||'';S.sel=m.sel||null;S.track=m.track|0;setColors(m.colors);
   // Edit opens the tab's file in your tab editor; Studio reloads it here when you save it there
-  sound(!!m.sound,!!m.canSound);$('edit').disabled=!m.canEdit;$('edit').title=m.canEdit?'Open this tab in your tab editor (for example Guitar Pro or TuxGuitar). It updates here when you save it.'
+  sound(!!m.sound,!!m.canSound,m.vol);$('edit').disabled=!m.canEdit;$('edit').title=m.canEdit?'Open this tab in your tab editor (for example Guitar Pro or TuxGuitar). It updates here when you save it.'
     :m.kind=='tex'?'A typed tab: change it in Edit exercise › Type it…':'This tab is a copy, not linked to a file. Link one with Edit exercise › Open file…';
   setPicking(false);$('title').textContent=S.name||'Tab';$('tech').textContent=m.technique?'· '+m.technique:'';document.title=(S.name?S.name+' – ':'')+'Tab';
   try{S.score=alphaTab.importer.ScoreLoader.loadScoreFromBytes(bytesFrom(m),new alphaTab.Settings())}
@@ -144,7 +144,8 @@ $('play').onclick=()=>send({type:'transport',cmd:'play'});
 $('stop').onclick=()=>send({type:'transport',cmd:'stop'});
 $('edit').onclick=()=>send({type:'edit',ex:S.ex});
 $('sound').onclick=()=>send({type:'sound',ex:S.ex});
-function sound(on,can){const b=$('sound');if(can!=null)b.hidden=!can;b.classList.toggle('off',!on);b.title=on?'Hear the tab: on (click to turn off)':'Hear the tab: off (click to turn on)'}
+$('tvol').oninput=e=>send({type:'tabVol',v:+e.target.value});
+function sound(on,can,vol){const b=$('sound'),v=$('tvol');if(can!=null){b.hidden=!can;v.hidden=!can}v.disabled=!on;if(vol!=null&&document.activeElement!==v)v.value=vol;b.classList.toggle('off',!on);b.title=on?'Hear the tab: on (click to turn off)':'Hear the tab: off (click to turn on)'}
 addEventListener('keydown',e=>{if(e.code!='Space'||e.repeat||e.target.tagName=='SELECT'||e.ctrlKey||e.metaKey||e.altKey)return;e.preventDefault();$('play').click()});
 function transport(m){$('play').textContent=m.playing?'⏸ Pause':'▶ Play';$('stop').disabled=!m.canStop}
 
@@ -154,7 +155,7 @@ function onMsg(m){if(!m||!m.type)return;
   else if(m.type=='pos')cursor(m.bar,m.frac);
   else if(m.type=='theme'){setColors(m.colors);render()}
   else if(m.type=='transport')transport(m)
-  else if(m.type=='sound')sound(m.on,m.can)
+  else if(m.type=='sound')sound(m.on,m.can,m.vol)
   else if(m.type=='none'){S.score=null;S.ex=null;$('edit').disabled=true;$('tech').textContent='';setPicking(false);$('title').textContent=m.name||'Tab';showMsg('This exercise has no tab. Add one in Edit exercise.')}}
 if(isJuce)window.__JUCE__.backend.addEventListener('tab',onMsg);else addEventListener('message',e=>onMsg(e.data));
 addEventListener('beforeunload',()=>send({type:'closed'}));

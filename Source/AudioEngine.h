@@ -23,12 +23,15 @@ public:
         inputOn = settings.getBoolValue ("inputOn", true);
 
         wantedDevice = settings.getXmlValue ("audioDevice");
-        // The guitar only ever comes from an audio interface you picked in Audio settings. Until you pick
-        // one, Studio plays through the computer's own output, with no input at all.
+        // The interface you picked in Audio settings. Until you pick one, Studio uses the interface the
+        // computer is set to use (followAuto), and never the computer's own microphone.
         if (wantedDevice != nullptr)
             deviceManager.initialise (2, 2, wantedDevice.get(), false);
         else
+        {
             deviceManager.initialise (0, 2, nullptr, true);
+            followAuto();
+        }
         deviceManager.addAudioCallback (this);
         checkDevice();
     }
@@ -46,7 +49,10 @@ public:
     void followWantedDevice (bool devicesChanged)
     {
         if (wantedDevice == nullptr)
+        {
+            followAuto();
             return;
+        }
         checkDevice();
         if (deviceOk)
             return;
@@ -71,6 +77,41 @@ public:
             deviceManager.initialise (0, 2, nullptr, true);   // output only; your choice stays saved
         }
     }
+
+    // No interface picked yet: use the computer's default input and output when the input is an audio
+    // interface (in and out both through it, when it has outputs), otherwise only the default output.
+    // Runs again when devices come and go, so plugging an interface in switches to it.
+    void followAuto()
+    {
+        auto* type = deviceManager.getCurrentDeviceTypeObject();
+        if (type == nullptr)
+            return;
+        const auto ins = type->getDeviceNames (true), outs = type->getDeviceNames (false);
+        const auto defIn = ins[juce::jmax (0, type->getDefaultDeviceIndex (true))];
+        const auto defOut = outs[juce::jmax (0, type->getDefaultDeviceIndex (false))];
+        const bool iface = defIn.isNotEmpty() && ! isComputerMic (defIn);
+
+        auto setup = deviceManager.getAudioDeviceSetup();
+        const auto wantIn = iface ? defIn : juce::String();
+        const auto wantOut = iface && outs.contains (defIn) ? defIn : defOut;
+        if (deviceManager.getCurrentAudioDevice() != nullptr && setup.inputDeviceName == wantIn && setup.outputDeviceName == wantOut)
+            return;
+        setup.inputDeviceName = wantIn;
+        setup.outputDeviceName = wantOut;
+        setup.useDefaultInputChannels = setup.useDefaultOutputChannels = true;
+        if (! iface) { setup.useDefaultInputChannels = false; setup.inputChannels.clear(); }
+        deviceManager.setAudioDeviceSetup (setup, false);
+        onSpeakers = ! iface;
+    }
+
+    static bool isComputerMic (const juce::String& name)
+    {
+        return name.containsIgnoreCase ("microphone") || name.containsIgnoreCase ("built-in")
+            || name.containsIgnoreCase ("macbook") || name.containsIgnoreCase ("imac")
+            || name.containsIgnoreCase ("webcam") || name.containsIgnoreCase ("camera");
+    }
+
+    bool isAuto() const noexcept { return wantedDevice == nullptr; }
 
     // Playing through the computer's own output because your interface is missing.
     bool isOnSpeakers() const noexcept { return onSpeakers && deviceManager.getCurrentAudioDevice() != nullptr; }
